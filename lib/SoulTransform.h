@@ -48,9 +48,7 @@ namespace Soul
 	}
 
     namespace FText {
-        const char* FromName(std::string s) {
-            return s.c_str();
-        }
+        const char* FromName(std::string s);
     };
 
     struct FVector;
@@ -151,14 +149,8 @@ namespace Soul
         }
     };
 
-    FVector operator*(double Scale, const FVector& V)
-    {
-        return V.operator*(Scale);
-    }
-    FVector operator-(double Scale, const FVector& V)
-    {
-        return FVector(Scale) - V;
-    }
+    FVector operator*(double Scale, const FVector& V);
+    FVector operator-(double Scale, const FVector& V);
 
     struct FQuat;
     struct FRotator : public glm::dvec3 {

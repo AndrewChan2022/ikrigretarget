@@ -14,30 +14,7 @@
 #include "SoulTransform.h"
 #include "SoulRetargeter.h"
 
-namespace Soul {
-
-    class FBXReader {
-    public:
-
-        FBXReader() = default;
-        ~FBXReader() = default;
-        FBXReader(std::string inPath) {
-            m_path = inPath;
-        }
-        void setPath(std::string inPath) {
-            m_path = inPath;
-        }
-        void readSkeketon() {
-            m_skeleton = nullptr;
-
-        }
-
-    private:
-        std::string m_path;
-        std::shared_ptr<USkeleton> m_skeleton;
-    };
-}
-
+#include "FBXRW.h"
 
 
 
@@ -57,6 +34,13 @@ extern "C"
 bool test_libikrigretarget();
 
 int main(int argc, char *argv[]) {
+
+
+    SoulIK::FBXRW  fbxrw;
+    fbxrw.setPath("d:/data/fbx/3D_Avatar2_Rig_0723.fbx");
+    fbxrw.readSkeketonMesh();
+    fbxrw.writeSkeletonMesh("d:/data/fbx/3D_Avatar2_Rig_0723_out.fbx");
+
 
     bool ret = test_libikrigretarget();
 
