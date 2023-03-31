@@ -23,16 +23,48 @@
 #include "glm/ext/scalar_constants.hpp" // glm::pi
 #include "glm/gtx/matrix_decompose.hpp"
 
-
-
 namespace SoulIK {
+
+    // meta variant define, similar to std::variant
+    enum class FbxMetadataType: uint8_t {
+        BOOL = 0,
+        INT32 = 1,
+        UINT64 = 2,
+        FLOAT = 3,
+        DOUBLE = 4,
+        STRING = 5,
+        VEC3 = 6,
+        METADATA = 7,
+        INT64 = 8,
+        UINT32 = 9,
+        META_MAX = 10,
+    };
+    struct FbxMetaData;
+    struct FbxMetadataValue {  // cannot be union, not know how to destroy
+        bool boolValue;
+        int32_t int32Value;
+        uint64_t uint64Value;
+        float floatValue;
+        double doubleValue;
+        std::string stringValue;
+        glm::vec3 vec3Value;
+        std::vector<FbxMetaData> metadataValue;  // no need wrapper of pointer
+        int64_t int64Value;
+        uint32_t uint32Value;
+    };
+    struct FbxMetaData {
+        std::string key;
+        FbxMetadataType type;
+        FbxMetadataValue value; // data or more metadata in nestled
+    };
 
     // skeleton
     struct FbxJoint {
         std::string             name;
         uint32_t                parentId;
+
+        // transforms from mesh space to bone space in bind pose
         glm::mat4               inverseWorldMatrix{ 1.0 };
-        glm::mat4               offsetMatrix{ 1.0 };
     };
     struct FbxSkeleton {
         std::vector<FbxJoint>   joints;
@@ -40,11 +72,11 @@ namespace SoulIK {
 
     // skeleton animation
     struct FbxVec3Key {
-        float       time;
+        double      time;
         glm::vec3   value;
     };
     struct FbxQuatKey {
-        float       time;
+        double      time;
         glm::quat   value;
     };
     struct FbxAniChannel {
@@ -58,7 +90,7 @@ namespace SoulIK {
         std::vector<FbxAniChannel> channels;
     };
 
-    // 
+    // skeleton mesh
     struct FbxSkeletonMesh {
         std::string             name;
 
@@ -71,7 +103,7 @@ namespace SoulIK {
         std::vector<uint32_t>   indices;
 
         // skin
-        std::vector<glm::ivec4> jointIds;
+        std::vector<glm::uvec4> jointIds;
         std::vector<glm::vec4>  weights;
         std::vector<uint8_t>    weightCounts;
 
@@ -83,44 +115,79 @@ namespace SoulIK {
         
         // morph
         // material and others ...
+
+        // material
+        int32_t                 materialIndex{0};
     };
 
+    // node
+    struct FbxNode {
+        std::string name;
+
+        // tree
+        FbxNode* parent;
+        std::vector<std::shared_ptr<FbxNode>> children;
+        //uint32_t parentIndex;  // todo: rootNode tree or nodes array with parentIndex
+        glm::mat4 transform; // transformation relative to parent
+
+        // data
+        std::vector<uint32_t> meshes; // meshIndex
+
+        std::vector<FbxMetaData> metaData;
+    };
+
+    // material
+    struct FbxMaterialProperty {
+        std::string key;
+        int semantic;       // texture usage semantic, non-texture 0
+        int index;          // index of the texture, non-texture 0
+        int dataLenght;     // data len
+        int dataType;       // data type
+        std::vector<char> data; // data buffer
+    };
+    struct FbxMaterial {
+        std::string name;  // property of ?mat.name
+        std::vector<std::shared_ptr<FbxMaterialProperty>> properties; // todo: array of member
+    };
+
+    struct FbxScene {
+        std::string name;
+
+        // node tree
+        std::shared_ptr<FbxNode> rootNode; // todo: rootNode tree or nodes array with parentIndex
+
+        // meshes
+        std::vector<std::shared_ptr<FbxSkeletonMesh>> skmeshes;
+
+        // materials and textures
+        std::vector<std::shared_ptr<FbxMaterial>> materials;
+
+        // skeleton and animation
+        std::vector<std::shared_ptr<FbxSkeleton>> skeletons;
+        std::vector<std::shared_ptr<FbxJointAnimation>> animations;
+    };
+
+    class FBXRWImpl;
     class FBXRW {
     public:
 
-        FBXRW() = default;
+        FBXRW();
         ~FBXRW() = default;
 
-        // path
-        FBXRW(std::string inPath) {
-            m_path = inPath;
-        }
-        void setPath(std::string inPath) {
-            m_path = inPath;
-        }
-
         // read
-        void readSkeketonMesh(float scale = 1.0);
-        void setSkeleton(std::vector<std::shared_ptr<FbxSkeletonMesh>>& skmeshes) {
-            m_skeletonMeshes = skmeshes;
-        }
+        void readSkeketonMesh(std::string inPath, float scale = 1.0);        
 
         // write
+        void setScene(std::shared_ptr<FbxScene>& fbxScene) { m_fbxScene = fbxScene; }
         void writeSkeletonMesh(std::string outPath, float scale = 1.0);
 
-        bool hasAnimation() {
-            for(auto& skm : m_skeletonMeshes) {
-                if (skm->animation.channels.size() != 0) { 
-                    return true; 
-                }
-            }
-            return false;
-        }
-    private:
+        // other
+        bool hasAnimation();
+        void printScene();
     private:
         std::string m_path;
-        std::vector<std::shared_ptr<FbxSkeletonMesh>> m_skeletonMeshes;
+        std::shared_ptr<FBXRWImpl> pimpl;
+        std::shared_ptr<FbxScene> m_fbxScene;
     };
-
 }
 

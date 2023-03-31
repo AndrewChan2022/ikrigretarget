@@ -262,7 +262,7 @@ namespace Soul
             return x * Q.x + y * Q.y + z * Q.z + w * Q.w;
         }
 
-        static float FloatSelect( float Comparand, float ValueGEZero, float ValueLTZero )
+        static float FloatSelect(const float Comparand, const float ValueGEZero, const float ValueLTZero )
         {
             return Comparand >= 0.f ? ValueGEZero : ValueLTZero;
         }
