@@ -15,7 +15,7 @@ using namespace SoulIK;
 using namespace Assimp;
 #define KINDA_SMALL_NUMBER  (1.e-4f)
 
-typedef std::shared_ptr<FbxSkeletonMesh> FbxSkeletonMeshPtr;
+typedef std::shared_ptr<SoulSkeletonMesh> SoulSkeletonMeshPtr;
 
 namespace SoulIK {
 class FBXRWImpl {
@@ -23,35 +23,35 @@ public:
 
     bool hasAnimation(){return m_hasAnimation; }
 
-    void processNode(aiNode* node, const aiScene* scene, FbxScene& fbxScene,
-        FbxNode* parentFbxNode,
+    void processNode(aiNode* node, const aiScene* scene, SoulScene& fbxScene,
+        SoulNode* parentSoulNode,
         std::vector<std::string>& materialNames, 
-        std::vector<aiNode*>& nodes, std::vector<std::string>& nodeNames, std::vector<std::shared_ptr<FbxSkeletonMesh>>& skeletonMeshes);
+        std::vector<aiNode*>& nodes, std::vector<std::string>& nodeNames, std::vector<std::shared_ptr<SoulSkeletonMesh>>& skeletonMeshes);
 
-    void processMetaData(std::vector<FbxMetaData>& fbxMetadata, aiMetadata* aimetaData);
+    void processMetaData(std::vector<SoulMetaData>& fbxMetadata, aiMetadata* aimetaData);
     
-    FbxSkeletonMeshPtr processMesh(aiMesh* mesh, const aiScene* scene, std::vector<std::string>& materialNames, 
+    SoulSkeletonMeshPtr processMesh(aiMesh* mesh, const aiScene* scene, std::vector<std::string>& materialNames, 
         std::vector<aiNode*>& nodes, std::vector<std::string>& nodeNames);
     
-    void processSkeleton(aiMesh *mesh, FbxSkeletonMesh &fbxMesh, 
+    void processSkeleton(aiMesh *mesh, SoulSkeletonMesh &fbxMesh, 
         std::vector<aiNode*>& nodes, std::vector<std::string>& nodeNames);
 
-    void sortJointsByNodeTree(std::vector<FbxJoint> &joints, std::vector<std::string> &jointNames, 
+    void sortJointsByNodeTree(std::vector<SoulJoint> &joints, std::vector<std::string> &jointNames, 
         const std::vector<aiNode*>& nodes, std::vector<std::string> &nodeNames);
     
-    void processSkeletonAnimation(const aiScene* scene, aiMesh *mesh, FbxSkeletonMesh &fbxMesh, 
+    void processSkeletonAnimation(const aiScene* scene, aiMesh *mesh, SoulSkeletonMesh &fbxMesh, 
         std::vector<aiNode*>& nodes, std::vector<std::string>& nodeNames);
 
-    void buildSkeletonTree(std::vector<FbxJoint>& joints, std::vector<std::string>& jointNames, 
+    void buildSkeletonTree(std::vector<SoulJoint>& joints, std::vector<std::string>& jointNames, 
         const std::vector<aiNode*>& nodes, std::vector<std::string>& nodeNames);
 
-    void createMeshes(std::vector<std::shared_ptr<FbxSkeletonMesh>>& skeletonMeshes, aiScene* scene);
+    void createMeshes(std::vector<std::shared_ptr<SoulSkeletonMesh>>& skeletonMeshes, aiScene* scene);
     void createDefaultMaterial(aiScene* scene);
-    void createNodes(aiScene* scene, FbxScene& fbxScene);
-    void createMesh(FbxSkeletonMesh& fbxMesh, aiMesh* mesh, aiScene* scene);
-    void createNode(FbxNode* node, aiNode* parentNode, aiScene* scene, int32_t nodeIndex);
-    void createSkeleton(FbxSkeletonMesh &fbxMesh, aiMesh* mesh);
-    void createSkeletonAnimation(std::vector<std::shared_ptr<FbxSkeletonMesh>>& skeletonMeshes, aiScene* scene);
+    void createNodes(aiScene* scene, SoulScene& fbxScene);
+    void createMesh(SoulSkeletonMesh& fbxMesh, aiMesh* mesh, aiScene* scene);
+    void createNode(SoulNode* node, aiNode* parentNode, aiScene* scene, int32_t nodeIndex);
+    void createSkeleton(SoulSkeletonMesh &fbxMesh, aiMesh* mesh);
+    void createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeletonMesh>>& skeletonMeshes, aiScene* scene);
 public:
     Importer importer;
     bool m_hasAnimation{false};
@@ -81,7 +81,7 @@ static inline uint32_t getJointIdByName(std::string& name, const std::vector<std
         return 0xffffffff;
     }
 }
-static inline uint32_t getJointIdFromSkeleton(std::string& name, FbxSkeleton& skeleton) {
+static inline uint32_t getJointIdFromSkeleton(std::string& name, SoulSkeleton& skeleton) {
 
     auto pos = std::find_if(skeleton.joints.begin(), skeleton.joints.end(), [&name](const auto& v) {
         return v.name == name;
@@ -137,7 +137,7 @@ static void ____read____(){}
 
 void FBXRW::readSkeketonMesh(std::string inPath, float scale) {
     m_path = inPath;
-    m_fbxScene = std::make_shared<FbxScene>();
+    m_soulScene = std::make_shared<SoulScene>();
 
     // read
     pimpl = std::make_shared<FBXRWImpl>();
@@ -145,11 +145,13 @@ void FBXRW::readSkeketonMesh(std::string inPath, float scale) {
     
     // import as centi-meter by set GlobalScale = 100, which is default
     importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 100.0); 
+    //importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
     const aiScene* scene = importer.ReadFile(m_path, aiProcess_Triangulate 
                                                    | aiProcess_JoinIdenticalVertices 
                                                    | aiProcess_CalcTangentSpace 
                                                    | aiProcess_FlipUVs
-                                                   | aiProcess_GlobalScale);
+                                                   | aiProcess_GlobalScale
+                                                   | aiProcess_PopulateArmatureData);
     // scene is part of importer, so no need free
 
     if (!scene || !scene->mRootNode) {
@@ -226,9 +228,12 @@ void FBXRW::readSkeketonMesh(std::string inPath, float scale) {
     std::vector<aiNode*> nodes;
     std::vector<std::string> nodeNames;
     traversalAllNodes(scene->mRootNode, nodes, nodeNames);
+
+    // scene meta
+    pimpl->processMetaData(m_soulScene->metaData, scene->mMetaData);
     
     // process mesh nodes
-    pimpl->processNode(scene->mRootNode, scene, *m_fbxScene, nullptr, materialNames, nodes, nodeNames, m_fbxScene->skmeshes);
+    pimpl->processNode(scene->mRootNode, scene, *m_soulScene, nullptr, materialNames, nodes, nodeNames, m_soulScene->skmeshes);
 
 
     for (auto& name : nodeNames) {
@@ -237,22 +242,22 @@ void FBXRW::readSkeketonMesh(std::string inPath, float scale) {
     printf("process done\n");
 }
 
-void FBXRWImpl::processNode(aiNode *node, const aiScene* scene,  FbxScene& fbxScene,
-                        FbxNode* parentFbxNode,
+void FBXRWImpl::processNode(aiNode *node, const aiScene* scene,  SoulScene& fbxScene,
+                        SoulNode* parentSoulNode,
                         std::vector<std::string>& materialNames, 
                         std::vector<aiNode*>& nodes, 
                         std::vector<std::string>& nodeNames, 
-                        std::vector<std::shared_ptr<FbxSkeletonMesh>>& skeletonMeshes) {
+                        std::vector<std::shared_ptr<SoulSkeletonMesh>>& skeletonMeshes) {
 
-    auto curNode = std::make_shared<FbxNode>();
+    auto curNode = std::make_shared<SoulNode>();
     curNode->name = node->mName.data;
 
     // node tree and transform
-    curNode->parent = parentFbxNode;
-    if (parentFbxNode == nullptr) {
+    curNode->parent = parentSoulNode;
+    if (parentSoulNode == nullptr) {
         fbxScene.rootNode = curNode;
     } else {
-        parentFbxNode->children.push_back(curNode);
+        parentSoulNode->children.push_back(curNode);
     }
     const auto& mat = node->mTransformation;
     // assimp row major, glm column major
@@ -289,40 +294,40 @@ void FBXRWImpl::processNode(aiNode *node, const aiScene* scene,  FbxScene& fbxSc
     }
 }
 
-static bool aimetadataToFbxMetada( aiMetadataType& aitype, void* aimetadata, FbxMetaData& fbxMetaDataItem) {
+static bool aimetadataToSoulMetada( aiMetadataType& aitype, void* aimetadata, SoulMetaData& fbxMetaDataItem) {
     switch(aitype) {
         case AI_BOOL: {
-            fbxMetaDataItem.type = FbxMetadataType::BOOL;
+            fbxMetaDataItem.type = SoulMetadataType::BOOL;
             fbxMetaDataItem.value.boolValue = *static_cast<bool*>(aimetadata);
             break;
         }
         case AI_INT32: {
-            fbxMetaDataItem.type = FbxMetadataType::INT32;
+            fbxMetaDataItem.type = SoulMetadataType::INT32;
             fbxMetaDataItem.value.int32Value = *static_cast<int32_t*>(aimetadata);
             break;
         }
         case AI_UINT64: {
-            fbxMetaDataItem.type = FbxMetadataType::UINT64;
+            fbxMetaDataItem.type = SoulMetadataType::UINT64;
             fbxMetaDataItem.value.uint64Value = *static_cast<uint64_t*>(aimetadata);
             break;
         }
         case AI_FLOAT: {
-            fbxMetaDataItem.type = FbxMetadataType::FLOAT;
+            fbxMetaDataItem.type = SoulMetadataType::FLOAT;
             fbxMetaDataItem.value.floatValue = *static_cast<float*>(aimetadata);
             break;
         }
         case AI_DOUBLE: {
-            fbxMetaDataItem.type = FbxMetadataType::DOUBLE;
+            fbxMetaDataItem.type = SoulMetadataType::DOUBLE;
             fbxMetaDataItem.value.doubleValue = *static_cast<double*>(aimetadata);
             break;
         }
         case AI_AISTRING: {
-            fbxMetaDataItem.type = FbxMetadataType::STRING;
+            fbxMetaDataItem.type = SoulMetadataType::STRING;
             fbxMetaDataItem.value.stringValue = (*static_cast<aiString*>(aimetadata)).data;
             break;
         }
         case AI_AIVECTOR3D: {
-            fbxMetaDataItem.type = FbxMetadataType::VEC3;
+            fbxMetaDataItem.type = SoulMetadataType::VEC3;
             aiVector3D& v = *static_cast<aiVector3D*>(aimetadata);
             fbxMetaDataItem.value.vec3Value = glm::vec3(v.x, v.y, v.z);
             break;
@@ -332,12 +337,12 @@ static bool aimetadataToFbxMetada( aiMetadataType& aitype, void* aimetadata, Fbx
             break;
         }
         case AI_INT64: {
-            fbxMetaDataItem.type = FbxMetadataType::INT64;
+            fbxMetaDataItem.type = SoulMetadataType::INT64;
             fbxMetaDataItem.value.int64Value = *static_cast<int64_t*>(aimetadata);
             break;
         }
         case AI_UINT32: {
-            fbxMetaDataItem.type = FbxMetadataType::UINT32;
+            fbxMetaDataItem.type = SoulMetadataType::UINT32;
             fbxMetaDataItem.value.uint32Value = *static_cast<uint32_t*>(aimetadata);
             break;
         }
@@ -348,7 +353,7 @@ static bool aimetadataToFbxMetada( aiMetadataType& aitype, void* aimetadata, Fbx
     return true;
 }
 
-void FBXRWImpl::processMetaData(std::vector<FbxMetaData>& fbxMetadata, aiMetadata* aimetaData) {
+void FBXRWImpl::processMetaData(std::vector<SoulMetaData>& fbxMetadata, aiMetadata* aimetaData) {
 
     if (aimetaData == nullptr) {
         return;
@@ -364,16 +369,16 @@ void FBXRWImpl::processMetaData(std::vector<FbxMetaData>& fbxMetadata, aiMetadat
         fbxMetaDataItem.key = key.data;
         printf("meta key:%s\n", fbxMetaDataItem.key.c_str());
         if (aitype == AI_AIMETADATA) {
-            fbxMetaDataItem.type = FbxMetadataType::METADATA;
+            fbxMetaDataItem.type = SoulMetadataType::METADATA;
             aiMetadata* v = static_cast<aiMetadata*>(aimetadataBuf);
             processMetaData(fbxMetaDataItem.value.metadataValue, v);
         } else {
-            aimetadataToFbxMetada(aitype, aimetadataBuf, fbxMetaDataItem);
+            aimetadataToSoulMetada(aitype, aimetadataBuf, fbxMetaDataItem);
         }
     }
 }
 
-std::shared_ptr<FbxSkeletonMesh> FBXRWImpl::processMesh(aiMesh* mesh, const aiScene* scene, 
+std::shared_ptr<SoulSkeletonMesh> FBXRWImpl::processMesh(aiMesh* mesh, const aiScene* scene, 
                                                     std::vector<std::string>& materialNames, 
                                                     std::vector<aiNode*>& nodes, 
                                                     std::vector<std::string>& nodeNames) {
@@ -437,8 +442,8 @@ std::shared_ptr<FbxSkeletonMesh> FBXRWImpl::processMesh(aiMesh* mesh, const aiSc
     //     }
     // }
 
-    std::shared_ptr<FbxSkeletonMesh> pFbxMesh = std::make_shared<FbxSkeletonMesh>();
-    FbxSkeletonMesh& fbxMesh = *pFbxMesh;
+    std::shared_ptr<SoulSkeletonMesh> pSoulMesh = std::make_shared<SoulSkeletonMesh>();
+    SoulSkeletonMesh& fbxMesh = *pSoulMesh;
     fbxMesh.name = std::string(mesh->mName.data) + '_' + materialNames[mesh->mMaterialIndex];
     fbxMesh.vertices = std::move(vertices);
     fbxMesh.normals = std::move(normals);
@@ -479,10 +484,10 @@ std::shared_ptr<FbxSkeletonMesh> FBXRWImpl::processMesh(aiMesh* mesh, const aiSc
     // skeleton animation
     processSkeletonAnimation(scene, mesh, fbxMesh, nodes, nodeNames);
 
-    return pFbxMesh;
+    return pSoulMesh;
 }
 
-void FBXRWImpl::processSkeleton(aiMesh *mesh, FbxSkeletonMesh &fbxMesh, 
+void FBXRWImpl::processSkeleton(aiMesh *mesh, SoulSkeletonMesh &fbxMesh, 
                             std::vector<aiNode*>& nodes, std::vector<std::string>& nodeNames) {
 
     std::vector<std::string> jointNames;
@@ -490,7 +495,7 @@ void FBXRWImpl::processSkeleton(aiMesh *mesh, FbxSkeletonMesh &fbxMesh,
     // build skeleton
     // skeleton name and matrix
     for (uint32_t i = 0; i < mesh->mNumBones; i++) {
-        FbxJoint joint;
+        SoulJoint joint;
 
         joint.name = std::string(mesh->mBones[i]->mName.data);
         const auto& mat = mesh->mBones[i]->mOffsetMatrix;
@@ -554,7 +559,7 @@ void FBXRWImpl::processSkeleton(aiMesh *mesh, FbxSkeletonMesh &fbxMesh,
 
 
 /// find parent by name relation:  parentName_childName
-void FBXRWImpl::buildSkeletonTree(std::vector<FbxJoint>& joints, 
+void FBXRWImpl::buildSkeletonTree(std::vector<SoulJoint>& joints, 
                               std::vector<std::string>& jointNames,
                               const std::vector<aiNode*>& nodes,
                               std::vector<std::string>& nodeNames) {
@@ -573,7 +578,7 @@ void FBXRWImpl::buildSkeletonTree(std::vector<FbxJoint>& joints,
 }
 
 // use node parent relation to sort skeleton
-void FBXRWImpl::sortJointsByNodeTree(std::vector<FbxJoint> &joints, 
+void FBXRWImpl::sortJointsByNodeTree(std::vector<SoulJoint> &joints, 
                                  std::vector<std::string> &jointNames, 
                                  const std::vector<aiNode*>& nodes, 
                                  std::vector<std::string> &nodeNames) {
@@ -606,7 +611,7 @@ void FBXRWImpl::sortJointsByNodeTree(std::vector<FbxJoint> &joints,
 
 // first animation as skeleton animation
 void FBXRWImpl::processSkeletonAnimation(const aiScene* scene, 
-                            aiMesh *mesh, FbxSkeletonMesh &fbxMesh, 
+                            aiMesh *mesh, SoulSkeletonMesh &fbxMesh, 
                             std::vector<aiNode*>& nodes, 
                             std::vector<std::string>& nodeNames) {
 
@@ -618,7 +623,7 @@ void FBXRWImpl::processSkeletonAnimation(const aiScene* scene,
 
     std::unordered_map<std::string, uint32_t> jointNameToId;
     for (int i = 0; i < fbxMesh.skeleton.joints.size(); i++) {
-        const FbxJoint& joint = fbxMesh.skeleton.joints[i];
+        const SoulJoint& joint = fbxMesh.skeleton.joints[i];
         jointNameToId[joint.name] = i;
     }
 
@@ -632,7 +637,7 @@ void FBXRWImpl::processSkeletonAnimation(const aiScene* scene,
         if (auto it = jointNameToId.find(channelName); it != jointNameToId.end()) {
             auto jointId = (*it).second;
             fbxMesh.animation.channels.emplace_back();
-            FbxAniChannel& fbxChannel = fbxMesh.animation.channels.back();
+            SoulAniChannel& fbxChannel = fbxMesh.animation.channels.back();
 
             fbxChannel.jointId = jointId;
             // scaling key
@@ -684,10 +689,10 @@ void FBXRW::writeSkeletonMesh(std::string outPath, float scale) {
     scene->mRootNode = new aiNode();  // transfer owner to scene
     scene->mRootNode->mName.Set("root");
 
-    scene->mRootNode->mNumChildren = (uint32_t)m_fbxScene->skmeshes.size();
+    scene->mRootNode->mNumChildren = (uint32_t)m_soulScene->skmeshes.size();
     scene->mRootNode->mChildren = new aiNode* [scene->mRootNode->mNumChildren]; // transfer owner to parent node
-    for(int i = 0; i < m_fbxScene->skmeshes.size(); i++) {
-        auto& mesh = *m_fbxScene->skmeshes[i];
+    for(int i = 0; i < m_soulScene->skmeshes.size(); i++) {
+        auto& mesh = *m_soulScene->skmeshes[i];
 
         aiNode* child = new aiNode;
         scene->mRootNode->mChildren[i] = child;
@@ -711,10 +716,10 @@ void FBXRW::writeSkeletonMesh(std::string outPath, float scale) {
     // build material
     pimpl->createDefaultMaterial(scene);
 
-    pimpl->createNodes(scene, *m_fbxScene);
+    pimpl->createNodes(scene, *m_soulScene);
 
     // build mesh
-    pimpl->createMeshes(m_fbxScene->skmeshes, scene);
+    pimpl->createMeshes(m_soulScene->skmeshes, scene);
     
     // export as meter by set GlobalScale = 1/100, which is default
     aiReturn ret = exporter.Export(scene, "fbx", outPath);
@@ -768,11 +773,11 @@ void FBXRWImpl::createDefaultMaterial(aiScene* scene) {
     pdata2[2] = c.b;
 }
 
-void FBXRWImpl::createNodes(aiScene* scene, FbxScene& fbxScene) {
+void FBXRWImpl::createNodes(aiScene* scene, SoulScene& fbxScene) {
     createNode(fbxScene.rootNode.get(), nullptr, scene, 0);
 }
 
-void FBXRWImpl::createNode(FbxNode* node, aiNode* parentNode, aiScene* scene, int32_t nodeIndex) {
+void FBXRWImpl::createNode(SoulNode* node, aiNode* parentNode, aiScene* scene, int32_t nodeIndex) {
     
     aiNode* curNode = new aiNode;
     curNode->mName = node->name;
@@ -809,7 +814,7 @@ void FBXRWImpl::createNode(FbxNode* node, aiNode* parentNode, aiScene* scene, in
     }
 }
 
-void FBXRWImpl::createMeshes(std::vector<std::shared_ptr<FbxSkeletonMesh>>& skeletonMeshes, aiScene* scene) {
+void FBXRWImpl::createMeshes(std::vector<std::shared_ptr<SoulSkeletonMesh>>& skeletonMeshes, aiScene* scene) {
     // build meshes
     scene->mNumMeshes = (uint32_t)skeletonMeshes.size();
     scene->mMeshes = new aiMesh* [scene->mNumMeshes];
@@ -831,7 +836,7 @@ void FBXRWImpl::createMeshes(std::vector<std::shared_ptr<FbxSkeletonMesh>>& skel
 
 
 
-void FBXRWImpl::createMesh(FbxSkeletonMesh& fbxMesh, aiMesh* mesh, aiScene* scene) {
+void FBXRWImpl::createMesh(SoulSkeletonMesh& fbxMesh, aiMesh* mesh, aiScene* scene) {
 
     // global
     mesh->mName = fbxMesh.name;
@@ -880,9 +885,9 @@ void FBXRWImpl::createMesh(FbxSkeletonMesh& fbxMesh, aiMesh* mesh, aiScene* scen
 }
 
 // create skeleton of mesh will mark world node as joint
-void FBXRWImpl::createSkeleton(FbxSkeletonMesh &fbxMesh, aiMesh* mesh) {
+void FBXRWImpl::createSkeleton(SoulSkeletonMesh &fbxMesh, aiMesh* mesh) {
 
-    FbxSkeleton& sk = fbxMesh.skeleton;
+    SoulSkeleton& sk = fbxMesh.skeleton;
     
     // build skeleton
     mesh->mNumBones = (uint32_t)sk.joints.size();
@@ -893,7 +898,7 @@ void FBXRWImpl::createSkeleton(FbxSkeletonMesh &fbxMesh, aiMesh* mesh) {
         mesh->mBones[i] = new aiBone;
         
         aiBone* bone = mesh->mBones[i];
-        FbxJoint& joint = sk.joints[i];
+        SoulJoint& joint = sk.joints[i];
 
         bone->mName     = joint.name;
         
@@ -944,7 +949,7 @@ void FBXRWImpl::createSkeleton(FbxSkeletonMesh &fbxMesh, aiMesh* mesh) {
 }
 
 // save one animation
-void FBXRWImpl::createSkeletonAnimation(std::vector<std::shared_ptr<FbxSkeletonMesh>>& skeletonMeshes, aiScene* scene) {
+void FBXRWImpl::createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeletonMesh>>& skeletonMeshes, aiScene* scene) {
     
     // find animation count
     int aniCount = 0;

@@ -40,8 +40,11 @@ int main(int argc, char *argv[]) {
     std::string dir_path = file_path.substr(0, file_path.rfind("\\"));
     //std::string inputfile = dir_path + "\\..\\..\\model\\3D_Avatar2_Rig_0723.fbx";
     //std::string outfile = dir_path + "\\..\\..\\model\\3D_Avatar2_Rig_0723_out.fbx";
-    std::string inputfile = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts.fbx";
-    std::string outfile = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts_tiny_out.fbx";
+    // std::string inputfile = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts.fbx";
+    // std::string outfile = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts_tiny_out.fbx";
+    std::string inputfile = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts_tiny_ball.fbx";
+    std::string outfile = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts_tiny_ball_out.fbx";
+    
 #else
     std::string dir_path = file_path.substr(0, file_path.rfind("/"));
     std::string inputfile = dir_path + "/../../model/3D_Avatar2_Rig_0723.fbx";
