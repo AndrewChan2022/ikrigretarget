@@ -6,7 +6,7 @@
 //
 #include "SoulTransform.h"
 
-using namespace Soul;
+using namespace SoulIK;
 
 
 const FVector FVector::ZeroVector = FVector(0, 0, 0);
@@ -18,6 +18,7 @@ const FVector YAxisVector = FVector(0, 1, 0);
 // Unit Z axis vector (0,0,1)
 const FVector ZAxisVector = FVector(0, 0, 1);
 
+namespace SoulIK {
 namespace FText {
     const char* FromName(std::string s) {
         return s.c_str();
@@ -31,6 +32,8 @@ FVector operator*(double Scale, const FVector& V)
 FVector operator-(double Scale, const FVector& V) 
 {
     return FVector(Scale) - V;
+}
+
 }
 
 const FRotator FRotator::ZeroRotator = FRotator(0, 0, 0);

@@ -39,6 +39,7 @@ namespace SoulIK {
         // other
         bool hasAnimation();
         void printScene();
+        std::shared_ptr<SoulScene> getSoulScene() { return m_soulScene; }
     private:
         std::string m_path;
         std::shared_ptr<FBXRWImpl> pimpl;

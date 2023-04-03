@@ -11,7 +11,7 @@
 #include "SoulRetargeter.h"
 
 
-namespace Soul {
+namespace SoulIK {
 
 
 
@@ -205,11 +205,13 @@ struct FRootRetargeter
 	
 	bool InitializeSource(
 		const FName SourceRootBoneName,
+		const FName SourceGroundBoneName,
 		const FRetargetSkeleton& SourceSkeleton,
 		FIKRigLogger& Log);
 	
 	bool InitializeTarget(
 		const FName TargetRootBoneName,
+		const FName TargetGroundBoneName,
 		const FTargetSkeleton& TargetSkeleton,
 		FIKRigLogger& Log);
 

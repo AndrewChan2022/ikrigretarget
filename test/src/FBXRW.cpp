@@ -146,12 +146,15 @@ void FBXRW::readSkeketonMesh(std::string inPath, float scale) {
     // import as centi-meter by set GlobalScale = 100, which is default
     importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 100.0); 
     //importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
+    importer.SetPropertyBool(AI_CONFIG_IMPORT_NO_SKELETON_MESHES, true);
+    importer.SetPropertyBool(AI_CONFIG_FBX_USE_SKELETON_BONE_CONTAINER, true);
+    
     const aiScene* scene = importer.ReadFile(m_path, aiProcess_Triangulate 
                                                    | aiProcess_JoinIdenticalVertices 
                                                    | aiProcess_CalcTangentSpace 
                                                    | aiProcess_FlipUVs
                                                    | aiProcess_GlobalScale
-                                                   | aiProcess_PopulateArmatureData);
+                                                   /*| aiProcess_PopulateArmatureData*/);
     // scene is part of importer, so no need free
 
     if (!scene || !scene->mRootNode) {
@@ -629,6 +632,8 @@ void FBXRWImpl::processSkeletonAnimation(const aiScene* scene,
 
     aiAnimation* pAnimation = scene->mAnimations[0];
     fbxMesh.animation.name = pAnimation->mName.data;
+    fbxMesh.animation.duration = pAnimation->mDuration;
+    fbxMesh.animation.ticksPerSecond = pAnimation->mTicksPerSecond;
     for (uint32_t k = 0; k < pAnimation->mNumChannels; k++) {
         
         const aiNodeAnim* pNodeAnim = pAnimation->mChannels[k];
@@ -670,6 +675,9 @@ void FBXRWImpl::processSkeletonAnimation(const aiScene* scene,
 static void ____write____(){}
 
 void FBXRW::writeSkeletonMesh(std::string outPath, float scale) {
+
+
+    std::cout << "start write to file:" << outPath << std::endl; 
 
     Exporter exporter;
     // aiReturn ret2 = exporter.Export(pimpl->importer.GetScene(), "fbx", outPath);
@@ -831,7 +839,7 @@ void FBXRWImpl::createMeshes(std::vector<std::shared_ptr<SoulSkeletonMesh>>& ske
     }
 
     // skeleton animation
-    //createSkeletonAnimation(skeletonMeshes, scene);
+    createSkeletonAnimation(skeletonMeshes, scene);
 }
 
 
@@ -965,6 +973,7 @@ void FBXRWImpl::createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeleton
     // 
     scene->mNumAnimations = 1;
     scene->mAnimations = new aiAnimation* [1];
+    scene->mAnimations[0] = new aiAnimation;
     auto& animation = *(scene->mAnimations[0]);
     for(auto& psk : skeletonMeshes) {
         auto& sk = *psk;
@@ -975,6 +984,8 @@ void FBXRWImpl::createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeleton
             auto& channels = ani.channels;
 
             animation.mName = ani.name;
+            animation.mDuration = ani.duration;
+            animation.mTicksPerSecond = ani.ticksPerSecond;
             animation.mNumChannels = (uint32_t)channels.size();
             animation.mChannels = new aiNodeAnim* [animation.mNumChannels];
 
@@ -992,7 +1003,7 @@ void FBXRWImpl::createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeleton
                 for (uint32_t k = 0; k < nodeAnimation->mNumPositionKeys; k++) {
                     auto& element = nodeAnimation->mPositionKeys[k];
                     auto& e = channel.PositionKeys[k];
-                    element.mTime = e.time;
+                    element.mTime = e.time / animation.mTicksPerSecond;
                     element.mValue = aiVector3D(e.value.x, e.value.y, e.value.z);
                 }
 
@@ -1001,7 +1012,7 @@ void FBXRWImpl::createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeleton
                 for (uint32_t k = 0; k < nodeAnimation->mNumRotationKeys; k++) {
                     auto& element = nodeAnimation->mRotationKeys[k];
                     auto& e = channel.RotationKeys[k];
-                    element.mTime = e.time;
+                    element.mTime = e.time / animation.mTicksPerSecond;
                     element.mValue = aiQuaterniont(e.value.w, e.value.x, e.value.y, e.value.z);
                 }
 
@@ -1010,10 +1021,11 @@ void FBXRWImpl::createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeleton
                 for (uint32_t k = 0; k < nodeAnimation->mNumScalingKeys; k++) {
                     auto& element = nodeAnimation->mScalingKeys[k];
                     auto& e = channel.ScalingKeys[k];
-                    element.mTime = e.time;
+                    element.mTime = e.time / animation.mTicksPerSecond;
                     element.mValue = aiVector3D(e.value.x, e.value.y, e.value.z);
                 }
             }
+            break;
         }
     }
 }

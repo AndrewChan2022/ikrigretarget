@@ -14,7 +14,7 @@
 // MARK: - retargeter
 #pragma region retargeter
 
-namespace Soul
+namespace SoulIK
 {
     class UObject {
     };
@@ -23,7 +23,7 @@ namespace Soul
     {
         std::string name;
         int32_t parent;
-        int32_t mode;
+        int32_t mode{-1};       // not ignore it
     };
 
     ////////////////////////////////////////////////////////////////////////
@@ -34,7 +34,7 @@ namespace Soul
         public:
         std::string name;
         std::vector<FBoneNode> boneTree;
-        std::vector<FTransform> refpose;
+        std::vector<FTransform> refpose;    // important: local transform
 
         std::string GetName() { return name; }
         int32_t GetNum() const {
@@ -241,6 +241,10 @@ namespace Soul
             : BoneName(name), BoneIndex(-1), bUseSkeletonIndex(false)
         {
         }
+        FBoneReference(std::string name, int32_t index)
+            : BoneName(name), BoneIndex(index), bUseSkeletonIndex(false)
+        {
+        }
 
         std::string BoneName;
         int32_t BoneIndex : 31;
@@ -249,6 +253,10 @@ namespace Soul
 
     struct FBoneChain
     {
+        FBoneChain()
+            : ChainName(""), StartBone(""), EndBone(""), IKGoalName("")
+        {
+        }
         FBoneChain(std::string InName, const std::string &InStartBone, const std::string &InEndBone)
             : ChainName(InName), StartBone(InStartBone), EndBone(InEndBone), IKGoalName("")
         {
@@ -261,7 +269,9 @@ namespace Soul
 
     class URetargetDefinition
     {
+    public:
         std::string RootBone;
+        std::string GroundBone;         // RootBone.z - GroundBone.z = height
         TArray<FBoneChain> BoneChains;
 
         friend class UIKRigDefinition;
@@ -269,6 +279,7 @@ namespace Soul
 
     class UIKRigDefinition
     {
+    public:
         FIKRigSkeleton Skeleton;
         // TArray<TObjectPtr<UIKRigEffectorGoal>> Goals;
         // TArray<TObjectPtr<UIKRigSolver>> Solvers;
@@ -277,6 +288,7 @@ namespace Soul
         public:
         const TArray<FBoneChain>& GetRetargetChains() const { return RetargetDefinition.BoneChains; };
         const FName& GetRetargetRoot() const { return RetargetDefinition.RootBone; };
+        const FName& GetRetargetGround() const { return RetargetDefinition.GroundBone; };
         const FBoneChain* UIKRigDefinition::GetRetargetChainByName(FName ChainName) const
         {
             for (const FBoneChain& Chain : RetargetDefinition.BoneChains)
@@ -294,19 +306,19 @@ namespace Soul
     class UIKRetargeter
     {
     public:
-        UIKRigDefinition *SourceIKRigAsset;
-        UIKRigDefinition *TargetIKRigAsset;
+        std::shared_ptr<UIKRigDefinition> SourceIKRigAsset; // skeleton/root/ground/bonechains
+        std::shared_ptr<UIKRigDefinition> TargetIKRigAsset; // skeleton/root/ground/bonechains
 
-        URetargetRootSettings RootSetting;
-        TArray<std::shared_ptr<URetargetChainSettings>> ChainSettings;
+        URetargetRootSettings RootSetting;                              // root setting
+        TArray<std::shared_ptr<URetargetChainSettings>> ChainSettings;  // chain mappings
         std::shared_ptr<UIKRetargetGlobalSettings> GlobalSettings;
 
 
         UIKRigDefinition* GetSourceIKRig() {
-            return SourceIKRigAsset;
+            return SourceIKRigAsset.get();
         }
         UIKRigDefinition* GetTargetIKRig() {
-            return TargetIKRigAsset;
+            return TargetIKRigAsset.get();
         }
         const TArray<std::shared_ptr<URetargetChainSettings>>& GetAllChainSettings() const { return ChainSettings; };
     };

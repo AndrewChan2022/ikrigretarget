@@ -13,25 +13,381 @@
 #include <stdio.h>
 #include "SoulTransform.h"
 #include "SoulRetargeter.h"
+#include "SoulIKRetargetProcessor.h"
 
 #include "FBXRW.h"
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+using namespace SoulIK;
 
 extern "C" 
 bool test_libikrigretarget();
+
+SoulNode* findNodeOfTreeByName(SoulNode* rootNode, std::string& name) {
+    if (rootNode->name == name) {
+        return rootNode;
+    }
+
+    for(auto& child : rootNode->children) {
+        auto ret = findNodeOfTreeByName(child.get(), name);
+        if (ret != nullptr) {
+            return ret;
+        }
+    }
+    return nullptr;
+}
+
+bool getRefPoseFromMesh(SoulIK::SoulScene& scene, SoulIK::SoulSkeletonMesh& skmesh, std::vector<SoulIK::SoulTransform>& pose) {
+
+    SoulSkeleton& sk = skmesh.skeleton;
+    std::vector<SoulJoint>&  joints = sk.joints;
+
+    // refpose
+    for(uint64_t i = 0; i < joints.size(); i++) {
+        std::string name = joints[i].name;
+
+        // find node
+        auto node = findNodeOfTreeByName(scene.rootNode.get(), name);
+        glm::mat4 m = node->transform;
+        SoulTransform t;
+
+        glm::vec3 scale, translation, skew;
+        glm::vec4 perspective;
+        glm::quat q;
+        glm::decompose(m, scale, q, translation, skew, perspective);
+        t.translation = translation;
+        t.scale = scale;
+        t.rotation = q;
+        pose.push_back(t);
+    }
+
+    return true;
+}
+bool getUSkeletonFromMesh(SoulIK::SoulScene& scene, SoulIK::SoulSkeletonMesh& skmesh, SoulIK::USkeleton& usk) {
+
+    SoulSkeleton& sk = skmesh.skeleton;
+    std::vector<SoulJoint>&  joints = sk.joints;
+    
+    // name
+    usk.name = scene.skmeshes[0]->name;
+
+    // bone tree
+    for(uint64_t i = 0; i < joints.size(); i++) {
+        SoulJoint& joint = joints[i];
+        FBoneNode node;
+        node.name = joint.name;
+        node.parent = joint.parentId;
+        usk.boneTree.push_back(node);
+    }
+
+    // refpose is local
+    for(uint64_t i = 0; i < joints.size(); i++) {
+        std::string name = joints[i].name;
+
+        // find node
+        auto node = findNodeOfTreeByName(scene.rootNode.get(), name);
+        glm::mat4 m = node->transform;
+        FTransform t;
+
+        glm::vec3 scale, translation, skew;
+        glm::vec4 perspective;
+        glm::quat q;
+        glm::decompose(m, scale, q, translation, skew, perspective);
+        t.Translation = FVector(translation);
+        t.Scale3D = FVector(scale);
+        t.Rotation = FQuat(q);
+        usk.refpose.push_back(t);
+    }
+
+    return true;
+}
+
+// generate pose of every joint and every frame
+void buildSoulPoseAnimation(SoulIK::SoulScene& scene, 
+                        SoulIK::SoulSkeletonMesh& skmesh,
+                        SoulIK::SoulJointAnimation& animation,
+                        std::vector<SoulIK::SoulPose>& poses) {
+
+
+    std::vector<SoulIK::SoulTransform> refpose(skmesh.skeleton.joints.size()); 
+    getRefPoseFromMesh(scene, skmesh, refpose);
+
+    std::vector<SoulAniChannel> channelsSparse(skmesh.skeleton.joints.size());  // [jointId][frame]
+    std::vector<SoulAniChannel> channelsDense(skmesh.skeleton.joints.size());   // [jointId][frame]
+
+    // copy
+    for(int i = 0; i < skmesh.animation.channels.size(); i++) {
+        SoulAniChannel& channel = skmesh.animation.channels[i];
+        uint32_t jointId = channel.jointId;
+        channelsSparse[jointId] = channel;
+    }
+
+    // interpolation
+    std::vector<SoulIK::SoulTransform> curpose = refpose;
+    for(int jointId = 0; jointId < skmesh.skeleton.joints.size(); jointId++) {
+        
+        int prevFrame = 0;
+        int curFrame = 0;
+        int frameCount = skmesh.animation.duration + 1;
+        
+        // position
+        if (channelsSparse[jointId].PositionKeys.size() == 0) {
+            auto& DenseKeys = channelsDense[jointId].PositionKeys;
+            SoulVec3Key key{0, refpose[jointId].translation};
+            DenseKeys.resize(frameCount, key);
+            for(int frame = 0; frame < skmesh.animation.duration; frame++) {
+                DenseKeys[frame].time = frame;
+            }
+        } else {
+            auto& SparseKeys = channelsSparse[jointId].PositionKeys;
+            auto& DenseKeys = channelsDense[jointId].PositionKeys;
+            DenseKeys.resize(frameCount);
+
+            prevFrame = 0;
+            glm::vec3 prevValue = SparseKeys[0].value;
+            glm::vec3 curValue;
+            for (int j = 0; j < SparseKeys.size(); j++) {
+                curFrame = SparseKeys[j].time;
+                curValue = SparseKeys[j].value;
+                for(int frame = prevFrame; frame <= curFrame; frame++) {
+                    DenseKeys[frame].time = frame;
+                    float alpha = prevFrame == curFrame ? 1 : (frame - prevFrame) / (curFrame - prevFrame); 
+                    DenseKeys[frame].value = glm::mix(prevValue, curValue, alpha);
+                }
+
+                // next iteration
+                prevFrame = curFrame;
+                prevValue = curValue;
+            }
+            // tail
+            for(int frame = prevFrame+1; frame < frameCount; frame++) {
+                DenseKeys[frame].time = frame;
+                DenseKeys[frame].value = curValue;
+            }
+        }
+
+        // scale
+        if (channelsSparse[jointId].ScalingKeys.size() == 0) {
+            auto& DenseKeys = channelsDense[jointId].ScalingKeys;
+            SoulVec3Key key{0, refpose[jointId].scale};
+            DenseKeys.resize(frameCount, key);
+            for(int frame = 0; frame < skmesh.animation.duration; frame++) {
+                DenseKeys[frame].time = frame;
+            }
+        } else {
+            auto& SparseKeys = channelsSparse[jointId].ScalingKeys;
+            auto& DenseKeys = channelsDense[jointId].ScalingKeys;
+            DenseKeys.resize(frameCount);
+
+            prevFrame = 0;
+            glm::vec3 prevValue = SparseKeys[0].value;
+            glm::vec3 curValue;
+            for (int j = 0; j < SparseKeys.size(); j++) {
+                curFrame = SparseKeys[j].time;
+                curValue = SparseKeys[j].value;
+                for(int frame = prevFrame; frame <= curFrame; frame++) {
+                    DenseKeys[frame].time = frame;
+                    float alpha = prevFrame == curFrame ? 1 : (frame - prevFrame) / (curFrame - prevFrame); 
+                    DenseKeys[frame].value = glm::mix(prevValue, curValue, alpha);
+                }
+
+                // next iteration
+                prevFrame = curFrame;
+                prevValue = curValue;
+            }
+            // tail
+            for(int frame = prevFrame+1; frame < frameCount; frame++) {
+                DenseKeys[frame].time = frame;
+                DenseKeys[frame].value = curValue;
+            }
+        }
+
+        // rotation
+        if (channelsSparse[jointId].RotationKeys.size() == 0) {
+            auto& DenseKeys = channelsDense[jointId].RotationKeys;
+            SoulQuatKey key{0, refpose[jointId].rotation};
+            DenseKeys.resize(frameCount, key);
+            for(int frame = 0; frame < skmesh.animation.duration; frame++) {
+                DenseKeys[frame].time = frame;
+            }
+        } else {
+            auto& SparseKeys = channelsSparse[jointId].RotationKeys;
+            auto& DenseKeys = channelsDense[jointId].RotationKeys;
+            DenseKeys.resize(frameCount);
+
+            prevFrame = 0;
+            glm::quat prevValue = SparseKeys[0].value;
+            glm::quat curValue;
+            for (int j = 0; j < SparseKeys.size(); j++) {
+                curFrame = SparseKeys[j].time;
+                curValue = SparseKeys[j].value;
+                for(int frame = prevFrame; frame <= curFrame; frame++) {
+                    DenseKeys[frame].time = frame;
+                    float alpha = prevFrame == curFrame ? 1 : (frame - prevFrame) / (curFrame - prevFrame); 
+                    DenseKeys[frame].value = glm::lerp(prevValue, curValue, alpha);
+                }
+
+                // next iteration
+                prevFrame = curFrame;
+                prevValue = curValue;
+            }
+            // tail
+            for(int frame = prevFrame+1; frame < frameCount; frame++) {
+                DenseKeys[frame].time = frame;
+                DenseKeys[frame].value = curValue;
+            }
+        }
+    }
+
+    // pose
+    poses.resize(skmesh.animation.duration);
+    int frameCount = skmesh.animation.duration;
+    for(int frame = 0; frame < frameCount; frame++) {
+        SoulPose& pose = poses[frame];
+        pose.transforms.resize(skmesh.skeleton.joints.size());
+        for(int jointId = 0; jointId < skmesh.skeleton.joints.size(); jointId++) {
+            pose.transforms[jointId].translation = channelsDense[jointId].PositionKeys[frame].value;
+            pose.transforms[jointId].scale = channelsDense[jointId].ScalingKeys[frame].value;
+            pose.transforms[jointId].rotation = channelsDense[jointId].RotationKeys[frame].value;
+        }
+    }
+}
+
+void SoulPose2FPose(SoulIK::SoulPose& soulpose, std::vector<FTransform>& pose) {
+    pose.resize(soulpose.transforms.size());
+    for(int i = 0; i < soulpose.transforms.size(); i++) {
+        pose[i].Translation = FVector(soulpose.transforms[i].translation);
+        pose[i].Rotation = FQuat(soulpose.transforms[i].rotation);
+        pose[i].Scale3D = FVector(soulpose.transforms[i].scale);
+    }
+}
+
+void FPose2SoulPose(std::vector<FTransform>& pose, SoulIK::SoulPose& soulpose) {
+    soulpose.transforms.resize(pose.size());
+    for(int i = 0; i < soulpose.transforms.size(); i++) {
+        soulpose.transforms[i].translation = pose[i].Translation;
+        soulpose.transforms[i].rotation = pose[i].Rotation;
+        soulpose.transforms[i].scale = pose[i].Scale3D;
+    }
+}
+
+void writeSoulPosesToAnimation(std::vector<SoulIK::SoulPose>& tempoutposes, SoulIK::SoulSkeletonMesh& tgtskm) {
+    tgtskm.animation.channels.clear();
+    tgtskm.animation.channels.resize(tgtskm.skeleton.joints.size());
+    for(uint32_t jointId = 0; jointId < tgtskm.skeleton.joints.size(); jointId++) {
+        tgtskm.animation.channels[jointId].jointId = jointId;
+        auto frameCount = tempoutposes.size();
+        // position
+        tgtskm.animation.channels[jointId].PositionKeys.resize(frameCount);
+        for(uint64_t frame = 0; frame < tempoutposes.size(); frame++) {
+            tgtskm.animation.channels[jointId].PositionKeys[frame].time = frame;
+            tgtskm.animation.channels[jointId].PositionKeys[frame].value =  tempoutposes[frame].transforms[jointId].translation;
+        }
+
+        tgtskm.animation.channels[jointId].ScalingKeys.resize(frameCount);
+        for(uint64_t frame = 0; frame < tempoutposes.size(); frame++) {
+            tgtskm.animation.channels[jointId].ScalingKeys[frame].time = frame;
+            tgtskm.animation.channels[jointId].ScalingKeys[frame].value =  tempoutposes[frame].transforms[jointId].scale;
+        }
+
+        tgtskm.animation.channels[jointId].RotationKeys.resize(frameCount);
+        for(uint64_t frame = 0; frame < tempoutposes.size(); frame++) {
+            tgtskm.animation.channels[jointId].RotationKeys[frame].time = frame;
+            tgtskm.animation.channels[jointId].RotationKeys[frame].value =  tempoutposes[frame].transforms[jointId].rotation;
+        }        
+    }
+}
+
+bool USkeleton2RigSkeletonI(SoulIK::USkeleton& sk, FIKRigSkeleton& rigsk) {
+    for (size_t i = 0; i < sk.boneTree.size(); i++) {
+        rigsk.BoneNames.push_back(sk.boneTree[i].name);
+        rigsk.ParentIndices.push_back(sk.boneTree[i].parent);
+    }
+    rigsk.CurrentPoseGlobal = sk.refpose;
+    rigsk.RefPoseGlobal = sk.refpose;
+    for(int i = 0; i < sk.refpose.size(); i++) {
+        if (i == 0) {
+            rigsk.CurrentPoseLocal.push_back(rigsk.CurrentPoseGlobal[i]);
+        } else {
+            rigsk.CurrentPoseLocal.push_back(rigsk.CurrentPoseGlobal[i].GetRelativeTransform(rigsk.CurrentPoseGlobal[i]));
+        }
+    }
+    return true;
+}
+
+std::shared_ptr<UIKRetargeter> buildIKRigRetargetAsset(SoulIK::USkeleton& srcusk, SoulIK::USkeleton& tgtusk) {
+
+    std::shared_ptr<UIKRetargeter> InRetargeterAsset = std::make_shared<UIKRetargeter>();
+
+    // ikrig1 asset
+    
+    InRetargeterAsset->SourceIKRigAsset = std::make_shared<UIKRigDefinition>();
+    FIKRigSkeleton rigsk;
+    USkeleton2RigSkeletonI(srcusk, rigsk);
+    InRetargeterAsset->SourceIKRigAsset->Skeleton = rigsk;
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.RootBone = "Hip";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.GroundBone = "RightAnkle_end";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains.resize(1);
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneName = "RightHip";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneIndex = 1;
+    //InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneName = "RightKnee";
+    //InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneIndex = 2;
+    //InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneName = "RightAnkle";
+    //InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneIndex = 3;
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneName = "RightKnee";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneIndex = 2;
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].ChainName = "lleg";
+
+    // ikrig2 asset
+    InRetargeterAsset->TargetIKRigAsset = std::make_shared<UIKRigDefinition>();
+    FIKRigSkeleton rigsk2;
+    USkeleton2RigSkeletonI(tgtusk, rigsk2);
+    InRetargeterAsset->SourceIKRigAsset->Skeleton = rigsk2;
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.RootBone = "Hip";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.GroundBone = "RightAnkle_end";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains.resize(1);
+    //InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneName = "RightKnee";
+    //InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneIndex = 2;
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneName = "RightHip";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneIndex = 1;
+    //InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneName = "RightAnkle";
+    //InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneIndex = 3;
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneName = "RightKnee";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneIndex = 2;
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].ChainName = "lleg";
+
+    // ik rig retarget asset
+    std::shared_ptr<URetargetChainSettings> chainSetting = std::make_shared<URetargetChainSettings>();
+    chainSetting->Settings.FK.EnableFK = true;
+    chainSetting->Settings.IK.EnableIK = false;
+    chainSetting->SourceChain = "lleg";
+    chainSetting->TargetChain = "lleg";
+    InRetargeterAsset->ChainSettings.push_back(chainSetting);
+
+    return InRetargeterAsset;
+}
+
+void FPoseToLocal(SoulSkeleton& sk, std::vector<FTransform>& globalpose, std::vector<FTransform>& localpose) {
+    assert(sk.joints.size() == globalpose.size());
+    localpose.resize(globalpose.size());
+    
+    localpose[0] = globalpose[0];
+    for(int jointId = 1; jointId < globalpose.size(); jointId++) {
+        int parentId = sk.joints[jointId].parentId;
+        localpose[jointId] = globalpose[jointId].GetRelativeTransform(globalpose[parentId]);
+    }
+}
+
+void FPoseToGlobal(SoulSkeleton& sk, std::vector<FTransform>& localpose, std::vector<FTransform>& globalpose) {
+    assert(sk.joints.size() == localpose.size());
+    globalpose.resize(localpose.size());
+    
+    globalpose[0] = localpose[0];
+    for(int jointId = 1; jointId < localpose.size(); jointId++) {
+        int parentId = sk.joints[jointId].parentId;
+        globalpose[jointId] = localpose[jointId] * globalpose[parentId];
+    }
+}
 
 int main(int argc, char *argv[]) {
 
@@ -43,7 +399,8 @@ int main(int argc, char *argv[]) {
     // std::string inputfile = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts.fbx";
     // std::string outfile = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts_tiny_out.fbx";
     std::string inputfile = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts_tiny_ball.fbx";
-    std::string outfile = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts_tiny_ball_out.fbx";
+    std::string inputfile2 = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts_tiny_ball.fbx";
+    std::string outfile = dir_path + "\\..\\..\\model\\out.fbx";
     
 #else
     std::string dir_path = file_path.substr(0, file_path.rfind("/"));
@@ -52,17 +409,72 @@ int main(int argc, char *argv[]) {
 #endif
 
     SoulIK::FBXRW  fbxrw;
+    SoulIK::FBXRW  fbxrw2;
     fbxrw.readSkeketonMesh(inputfile);
-    fbxrw.writeSkeletonMesh(outfile);
+    fbxrw2.readSkeketonMesh(inputfile2);
+    //fbxrw.writeSkeletonMesh(outfile);
 
 
-    bool ret = test_libikrigretarget();
+    // build uskeleton of mesh 0
+    SoulIK::USkeleton srcusk;
+    SoulIK::USkeleton tgtusk;
 
-    if(ret) {
-        printf("test_libikrigretarget success\n");
-    } else {
-        printf("test_libikrigretarget fail\n");
+    SoulIK::SoulScene& srcscene = *fbxrw.getSoulScene();
+    SoulIK::SoulScene& tgtscene = *fbxrw2.getSoulScene();
+    auto& srcskm = *srcscene.skmeshes[0];
+    auto& tgtskm = *tgtscene.skmeshes[0];
+
+    getUSkeletonFromMesh(srcscene, srcskm, srcusk);
+    getUSkeletonFromMesh(tgtscene, tgtskm, tgtusk);
+
+    // build input pose of mesh 0
+    std::vector<SoulIK::SoulPose> tempposes;
+    std::vector<SoulIK::SoulPose> tempoutposes;
+    buildSoulPoseAnimation(srcscene, srcskm, srcskm.animation, tempposes);
+    int frameCount = tempposes.size();
+    tempoutposes.resize(tempposes.size());
+    
+    // build retargetProcessor
+    SoulIK::UIKRetargetProcessor ikretarget;
+	std::shared_ptr<UIKRetargeter> InRetargeterAsset = buildIKRigRetargetAsset(srcusk, tgtusk);
+    ikretarget.Initialize(&srcusk, &tgtusk, InRetargeterAsset.get(), false);
+
+    // run retarget
+    for(int frame = 0; frame < tempposes.size(); frame++) {
+        std::vector<FTransform> inposeLocal;
+        SoulPose2FPose(tempposes[frame], inposeLocal);
+        if (frame == 0) {
+            inposeLocal = tgtusk.refpose;
+        }
+        
+
+        // printf("%d: t(%f %f %f) t(%f %f %f) t(%f %f %f) %f %f %f\n", frame, 
+        //     inpose[1].Translation.x, inpose[1].Translation.y, inpose[1].Translation.z,
+        //     inpose[2].Translation.x, inpose[2].Translation.y, inpose[2].Translation.z,
+        //     inpose[3].Translation.x, inpose[3].Translation.y, inpose[3].Translation.z,
+        //     inpose[1].Rotation.getAngleDegree(), inpose[2].Rotation.getAngleDegree(), inpose[3].Rotation.getAngleDegree());
+
+        std::unordered_map<FName, float> SpeedValuesFromCurves;
+        float DeltaTime = 0;
+
+        // retarget
+        std::vector<FTransform> inpose;
+        FPoseToGlobal(tgtskm.skeleton, inposeLocal, inpose);
+        std::vector<FTransform>& outpose = ikretarget.RunRetargeter(inpose, SpeedValuesFromCurves, DeltaTime);
+        std::vector<FTransform> outposeLocal;
+        FPoseToLocal(tgtskm.skeleton, outpose, outposeLocal);
+
+        // inpose
+        //std::vector<FTransform>& outposeLocal = inpose;
+        
+        FPose2SoulPose(outposeLocal, tempoutposes[frame]);
     }
+
+    // output to mesh 0
+    writeSoulPosesToAnimation(tempoutposes, tgtskm);
+    fbxrw2.writeSkeletonMesh(outfile);
+
+    //bool ret = test_libikrigretarget();
     
     return 0;
 }

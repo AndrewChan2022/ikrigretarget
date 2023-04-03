@@ -84,12 +84,20 @@ namespace SoulIK {
     };
 
     // skeleton animation
+    struct SoulTransform {
+        glm::vec3 translation;
+        glm::quat rotation;
+        glm::vec3 scale;
+    };
+    struct SoulPose {
+        std::vector<SoulTransform> transforms;
+    };
     struct SoulVec3Key {
-        double      time;
+        double      time;       // frame
         glm::vec3   value;
     };
     struct SoulQuatKey {
-        double      time;
+        double      time;       // frame
         glm::quat   value;
     };
     struct SoulAniChannel {
@@ -100,6 +108,8 @@ namespace SoulIK {
     };
     struct SoulJointAnimation {
         std::string name;
+        double duration;
+        double ticksPerSecond;
         std::vector<SoulAniChannel> channels;
     };
 

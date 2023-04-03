@@ -12,7 +12,13 @@
 
 #define RETARGETSKELETON_INVALID_BRANCH_INDEX -2
 
-using namespace Soul;
+using namespace SoulIK;
+
+
+FVector FIKRetargetPose::GetRootTranslationDelta() const
+{
+	return RootTranslationOffset;
+}
 
 void FRetargetSkeleton::Initialize(
 	USkeleton* InSkeleton,
@@ -437,6 +443,45 @@ bool FChainFK::Initialize(
 		ChainParentInitialGlobalTransform = InitialGlobalPose[ChainParentBoneIndex];
 	}
 
+	printf("encode init\n");
+	printf("InitialGlobalPose[1]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+		InitialGlobalPose[1].Translation.x,
+		InitialGlobalPose[1].Translation.y,
+		InitialGlobalPose[1].Translation.z,
+		InitialGlobalPose[1].Rotation.x,
+		InitialGlobalPose[1].Rotation.y,
+		InitialGlobalPose[1].Rotation.z,
+		InitialGlobalPose[1].Rotation.w
+	);
+	printf("InitialGlobalPose[2]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+		InitialGlobalPose[2].Translation.x, 
+		InitialGlobalPose[2].Translation.y,
+		InitialGlobalPose[2].Translation.z,
+		InitialGlobalPose[2].Rotation.x,
+		InitialGlobalPose[2].Rotation.y,
+		InitialGlobalPose[2].Rotation.z,
+		InitialGlobalPose[2].Rotation.w
+	);
+
+	printf("InitialGlobalTransforms[0]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+		InitialGlobalTransforms[0].Translation.x,
+		InitialGlobalTransforms[0].Translation.y,
+		InitialGlobalTransforms[0].Translation.z,
+		InitialGlobalTransforms[0].Rotation.x,
+		InitialGlobalTransforms[0].Rotation.y,
+		InitialGlobalTransforms[0].Rotation.z,
+		InitialGlobalTransforms[0].Rotation.w
+	);
+	printf("InitialGlobalTransforms[1]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+		InitialGlobalTransforms[1].Translation.x, 
+		InitialGlobalTransforms[1].Translation.y,
+		InitialGlobalTransforms[1].Translation.z,
+		InitialGlobalTransforms[1].Rotation.x,
+		InitialGlobalTransforms[1].Rotation.y,
+		InitialGlobalTransforms[1].Rotation.z,
+		InitialGlobalTransforms[1].Rotation.w
+	);
+
 	// calculate parameter of each bone, normalized by the length of the bone chain
 	return CalculateBoneParameters(Log);
 }
@@ -534,6 +579,26 @@ void FChainEncoderFK::EncodePose(
     const TArray<FTransform> &InSourceGlobalPose)
 {
 	//check(SourceBoneIndices.Num() == CurrentGlobalTransforms.Num());
+
+	printf("encode\n");
+	printf("InSourceGlobalPose[1]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+		InSourceGlobalPose[1].Translation.x, 
+		InSourceGlobalPose[1].Translation.y,
+		InSourceGlobalPose[1].Translation.z,
+		InSourceGlobalPose[1].Rotation.x,
+		InSourceGlobalPose[1].Rotation.y,
+		InSourceGlobalPose[1].Rotation.z,
+		InSourceGlobalPose[1].Rotation.w
+	);
+	printf("InSourceGlobalPose[2]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+		InSourceGlobalPose[2].Translation.x, 
+		InSourceGlobalPose[2].Translation.y,
+		InSourceGlobalPose[2].Translation.z,
+		InSourceGlobalPose[2].Rotation.x,
+		InSourceGlobalPose[2].Rotation.y,
+		InSourceGlobalPose[2].Rotation.z,
+		InSourceGlobalPose[2].Rotation.w
+	);
 	
 	// copy the global input pose for the chain
 	for (int32 ChainIndex=0; ChainIndex<SourceBoneIndices.size(); ++ChainIndex)
@@ -682,11 +747,32 @@ void FChainDecoderFK::DecodePose(
 				checkNoEntry();
 			break;
 		}
+
+		printf("ChainIndex:%d jointId:%d\n", ChainIndex, BoneIndex);
+		printf("SourceCurrentTransform:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+			SourceCurrentTransform.Translation.x, 
+			SourceCurrentTransform.Translation.y,
+			SourceCurrentTransform.Translation.z,
+			SourceCurrentTransform.Rotation.x,
+			SourceCurrentTransform.Rotation.y,
+			SourceCurrentTransform.Rotation.z,
+			SourceCurrentTransform.Rotation.w
+		);
+		printf("SourceInitialTransform:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+			SourceInitialTransform.Translation.x, 
+			SourceInitialTransform.Translation.y,
+			SourceInitialTransform.Translation.z,
+			SourceInitialTransform.Rotation.x,
+			SourceInitialTransform.Rotation.y,
+			SourceInitialTransform.Rotation.z,
+			SourceInitialTransform.Rotation.w
+		);
 		
 		// apply rotation offset to the initial target rotation
 		const FQuat SourceCurrentRotation = SourceCurrentTransform.GetRotation();
 		const FQuat SourceInitialRotation = SourceInitialTransform.GetRotation();
 		const FQuat RotationDelta = SourceCurrentRotation * SourceInitialRotation.Inverse();
+		//printf("rot0:%f rotnow:%f rotationDelta:%f\n", SourceInitialRotation.getAngleDegree(), SourceCurrentRotation.getAngleDegree(), RotationDelta.getAngleDegree());
 		const FQuat TargetInitialRotation = TargetInitialTransform.GetRotation();
 		const FQuat OutRotation = RotationDelta * TargetInitialRotation;
 
@@ -1012,6 +1098,7 @@ bool FRetargetChainPairIK::Initialize(
 
 bool FRootRetargeter::InitializeSource(
 	const FName SourceRootBoneName,
+	const FName SourceGroundBoneName,
 	const FRetargetSkeleton& SourceSkeleton,
 	FIKRigLogger& Log)
 {
@@ -1026,8 +1113,14 @@ bool FRootRetargeter::InitializeSource(
 	}
 	
 	// record initial root data
+	int32 groundBoneIndex = SourceSkeleton.FindBoneIndexByName(SourceGroundBoneName);
+	if (groundBoneIndex == -1) {
+		Log.LogError("NoGroundBone", "must set GroundBone");
+		return false;
+	}
+	const FTransform InitialTransformGround = SourceSkeleton.RetargetGlobalPose[groundBoneIndex]; 
 	const FTransform InitialTransform = SourceSkeleton.RetargetGlobalPose[Source.BoneIndex]; 
-	float InitialHeight = InitialTransform.GetTranslation().z;
+	float InitialHeight = InitialTransform.GetTranslation().z - InitialTransformGround.GetTranslation().z;
 	Source.InitialRotation = InitialTransform.GetRotation();
 
 	// ensure root height is not at origin, this happens if user sets root to ACTUAL skeleton root and not pelvis
@@ -1046,6 +1139,7 @@ bool FRootRetargeter::InitializeSource(
 
 bool FRootRetargeter::InitializeTarget(
 	const FName TargetRootBoneName,
+	const FName TargetGroundBoneName,
 	const FTargetSkeleton& TargetSkeleton,
 	FIKRigLogger& Log)
 {
@@ -1060,8 +1154,14 @@ bool FRootRetargeter::InitializeTarget(
 		return false;
 	}
 
+	int32 groundBoneIndex = TargetSkeleton.FindBoneIndexByName(TargetGroundBoneName);
+	if (groundBoneIndex == -1) {
+		Log.LogError("NoGroundBone", "must set GroundBone");
+		return false;
+	}
+	const FTransform InitialTransformGround = TargetSkeleton.RetargetGlobalPose[groundBoneIndex]; 
 	const FTransform TargetInitialTransform = TargetSkeleton.RetargetGlobalPose[Target.BoneIndex];
-	Target.InitialHeight = TargetInitialTransform.GetTranslation().z;
+	Target.InitialHeight = TargetInitialTransform.GetTranslation().z - InitialTransformGround.GetTranslation().z;
 	Target.InitialRotation = TargetInitialTransform.GetRotation();
 	Target.InitialPosition = TargetInitialTransform.GetTranslation();
 
@@ -1208,6 +1308,10 @@ void UIKRetargetProcessor::Initialize(
 
 	// initialize roots
 	bRootsInitialized = InitializeRoots();
+	if (!bRootsInitialized) {
+		bIsInitialized = false;
+		return;
+	}
 
 	// initialize pairs of bone chains
 	bAtLeastOneValidBoneChainPair = InitializeBoneChainPairs();
@@ -1251,7 +1355,8 @@ bool UIKRetargetProcessor::InitializeRoots()
 	
 	// initialize root encoder
 	const FName SourceRootBoneName = RetargeterAsset->GetSourceIKRig()->GetRetargetRoot();
-	const bool bRootEncoderInit = RootRetargeter.InitializeSource(SourceRootBoneName, SourceSkeleton, Log);
+	const FName SourceGroundBoneName = RetargeterAsset->GetSourceIKRig()->GetRetargetGround();
+	const bool bRootEncoderInit = RootRetargeter.InitializeSource(SourceRootBoneName, SourceGroundBoneName, SourceSkeleton, Log);
 	if (!bRootEncoderInit)
 	{
 		//Log.LogWarning( FText::Format(
@@ -1261,7 +1366,8 @@ bool UIKRetargetProcessor::InitializeRoots()
 
 	// initialize root decoder
 	const FName TargetRootBoneName = RetargeterAsset->GetTargetIKRig()->GetRetargetRoot();
-	const bool bRootDecoderInit = RootRetargeter.InitializeTarget(TargetRootBoneName, TargetSkeleton, Log);
+	const FName TargetGroundBoneName = RetargeterAsset->GetTargetIKRig()->GetRetargetGround();
+	const bool bRootDecoderInit = RootRetargeter.InitializeTarget(TargetRootBoneName, TargetGroundBoneName, TargetSkeleton, Log);
 	if (!bRootDecoderInit)
 	{
 		// Log.LogWarning( FText::Format(
@@ -1411,11 +1517,10 @@ TArray<FTransform>&  UIKRetargetProcessor::RunRetargeter(
 	const float DeltaTime)
 {
 	//check(bIsInitialized);
-
-	Log.LogWarning("MissingSourceMesh,UIKRetargetProcessor run retargeter");
-	
+		
 	// start from retarget pose
 	TargetSkeleton.OutputGlobalPose = TargetSkeleton.RetargetGlobalPose;
+	//return TargetSkeleton.OutputGlobalPose;
 
 	// ROOT retargeting
 	if (GlobalSettings.bEnableRoot && bRootsInitialized)
@@ -1484,6 +1589,10 @@ void UIKRetargetProcessor::RunIKRetarget(
     const std::unordered_map<FName, float>& SpeedValuesFromCurves,
     const float DeltaTime)
 {
+	// todo
+}
+
+void UIKRetargetProcessor::RunPoleVectorMatching(const TArray<FTransform>& InGlobalTransforms, TArray<FTransform>& OutGlobalTransforms) {
 	// todo
 }
 

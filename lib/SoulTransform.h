@@ -24,7 +24,7 @@
 #include "glm/gtx/matrix_decompose.hpp"
 
 
-namespace Soul
+namespace SoulIK
 {
 
     using FName = std::string;
@@ -216,6 +216,14 @@ namespace Soul
         {
 	        return (x * x + y * y + z * z + w * w);
         }
+        double getAngle() const
+        {
+            return std::acos(w) * 2.0 ;
+        }
+        double getAngleDegree() const
+        {
+            return std::acos(w) * 2.0 * 180.0 / 3.1415926;
+        }
 
         FQuat GetNormalized(double Tolerance = UE_SMALL_NUMBER) const
         {
@@ -261,7 +269,59 @@ namespace Soul
         {
             return x * Q.x + y * Q.y + z * Q.z + w * Q.w;
         }
+        void VectorQuaternionMultiply(FQuat* Result, const FQuat* Quat1, const FQuat* Quat2) const {
+            // input wxyz, but need store:  xyzw
+            typedef double Double4[4];
+            const double A[4] =  {Quat1->x, Quat1->y, Quat1->z, Quat1->w};
+            const double B[4] =  {Quat2->x, Quat2->y, Quat2->z, Quat2->w};
+            double R[4] =  {Quat2->x, Quat2->y, Quat2->z, Quat2->w};
+            
+            //const Double4& A = *((const Double4*)Quat1);
+            //const Double4& B = *((const Double4*)Quat2);
+            //Double4& R = *((Double4*)Result);
+        #define USE_FAST_QUAT_MUL 1
+        #if USE_FAST_QUAT_MUL
+            const double T0 = (A[2] - A[1]) * (B[1] - B[2]);
+            const double T1 = (A[3] + A[0]) * (B[3] + B[0]);
+            const double T2 = (A[3] - A[0]) * (B[1] + B[2]);
+            const double T3 = (A[1] + A[2]) * (B[3] - B[0]);
+            const double T4 = (A[2] - A[0]) * (B[0] - B[1]);
+            const double T5 = (A[2] + A[0]) * (B[0] + B[1]);
+            const double T6 = (A[3] + A[1]) * (B[3] - B[2]);
+            const double T7 = (A[3] - A[1]) * (B[3] + B[2]);
+            const double T8 = T5 + T6 + T7;
+            const double T9 = 0.5 * (T4 + T8);
 
+            R[0] = T1 + T9 - T8;
+            R[1] = T2 + T9 - T7;
+            R[2] = T3 + T9 - T6;
+            R[3] = T0 + T9 - T5;
+        #else
+            // store intermediate results in temporaries
+            const double TX = A[3] * B[0] + A[0] * B[3] + A[1] * B[2] - A[2] * B[1];
+            const double TY = A[3] * B[1] - A[0] * B[2] + A[1] * B[3] + A[2] * B[0];
+            const double TZ = A[3] * B[2] + A[0] * B[1] - A[1] * B[0] + A[2] * B[3];
+            const double TW = A[3] * B[3] - A[0] * B[0] - A[1] * B[1] - A[2] * B[2];
+
+            // copy intermediate result to *this
+            R[0] = TX;
+            R[1] = TY;
+            R[2] = TZ;
+            R[3] = TW;
+        #endif
+
+            Result->w = R[3];
+            Result->x = R[0];
+            Result->y = R[1];
+            Result->z = R[2];
+        }
+        // use parent multiply
+        //FQuat operator*(const FQuat& Q) const {
+	        //FQuat Result;
+            //VectorQuaternionMultiply(&Result, this, &Q);
+            //return Result;
+        //}
+        
         static float FloatSelect(const float Comparand, const float ValueGEZero, const float ValueLTZero )
         {
             return Comparand >= 0.f ? ValueGEZero : ValueLTZero;
@@ -436,6 +496,12 @@ namespace Soul
         void operator*=(const FTransform& Other)
         {
 	        Multiply(this, this, &Other);
+        }
+        FTransform operator/(const FTransform& Other) const
+        {
+            FTransform Output;
+            Output = GetRelativeTransform(Other);
+            return Output;
         }
         //FTransform operator*(const FQuat& Other) const;
         //void operator*=(const FQuat& Other);
