@@ -37,9 +37,13 @@
 # usage:
 
 coordinate system: 
+
     right hand
+
     z up
+
     x left
+    
     y front
 
 example code:
@@ -49,15 +53,15 @@ example code:
     SoulIK::USkeleton srcusk = ...;
     SoulIK::USkeleton tgtusk = ...;
 
-    // init IKRigRetarget and IKRigRetargetAsset
+    // init IKRigAsset and IKRigRetargetAsset
     std::shared_ptr<UIKRetargeter> InRetargeterAsset;
     InRetargeterAsset  = buildIKRigRetargetAsset(srcskm.skeleton, tgtskm.skeleton, srcusk, tgtusk);
 
-    // init ikretarget with Skeleton, IKRigRetarget and IKRigRetargetAsset
+    // init ikretarget with Skeleton, IKRigAsset and IKRigRetargetAsset
     SoulIK::UIKRetargetProcessor ikretarget;
     ikretarget.Initialize(&srcusk, &tgtusk, InRetargeterAsset.get(), false);
 
-    // run retarteting every frame
+    // run retargeting every frame
     std::unordered_map<FName, float> SpeedValuesFromCurves;
     float DeltaTime = 0;
     for(int frame = 0; frame < frameCount; frame++) {
