@@ -81,6 +81,7 @@ namespace SoulIK {
     };
     struct SoulSkeleton {
         std::vector<SoulJoint>  joints;
+        inline int32_t getJointIdByName(std::string name);
     };
 
     // skeleton animation
@@ -102,9 +103,9 @@ namespace SoulIK {
     };
     struct SoulAniChannel {
         uint32_t                    jointId;
-        std::vector<SoulVec3Key>    PositionKeys;
-        std::vector<SoulVec3Key>    ScalingKeys;
-        std::vector<SoulQuatKey>    RotationKeys;
+        std::vector<SoulVec3Key>    PositionKeys;       // local
+        std::vector<SoulVec3Key>    ScalingKeys;        // local
+        std::vector<SoulQuatKey>    RotationKeys;       // local
     };
     struct SoulJointAnimation {
         std::string name;
@@ -151,7 +152,7 @@ namespace SoulIK {
         SoulNode* parent;
         std::vector<std::shared_ptr<SoulNode>> children;
         //uint32_t parentIndex;  // todo: rootNode tree or nodes array with parentIndex
-        glm::mat4 transform; // transformation relative to parent
+        glm::mat4 transform; // transformation relative to parent, local
 
         // data
         std::vector<uint32_t> meshes; // meshIndex
@@ -197,3 +198,17 @@ namespace SoulIK {
     };
 }
 
+
+//
+
+void ____method_impl____();
+
+int32_t SoulIK::SoulSkeleton::getJointIdByName(std::string name) {
+    auto it = std::find_if(joints.begin(), joints.end(), [&](const auto& e) {
+        return e.name == name;
+    });
+    if (it != joints.end()) {
+        return it - joints.begin();
+    }
+    return -1;
+}

@@ -443,44 +443,44 @@ bool FChainFK::Initialize(
 		ChainParentInitialGlobalTransform = InitialGlobalPose[ChainParentBoneIndex];
 	}
 
-	printf("encode init\n");
-	printf("InitialGlobalPose[1]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
-		InitialGlobalPose[1].Translation.x,
-		InitialGlobalPose[1].Translation.y,
-		InitialGlobalPose[1].Translation.z,
-		InitialGlobalPose[1].Rotation.x,
-		InitialGlobalPose[1].Rotation.y,
-		InitialGlobalPose[1].Rotation.z,
-		InitialGlobalPose[1].Rotation.w
-	);
-	printf("InitialGlobalPose[2]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
-		InitialGlobalPose[2].Translation.x, 
-		InitialGlobalPose[2].Translation.y,
-		InitialGlobalPose[2].Translation.z,
-		InitialGlobalPose[2].Rotation.x,
-		InitialGlobalPose[2].Rotation.y,
-		InitialGlobalPose[2].Rotation.z,
-		InitialGlobalPose[2].Rotation.w
-	);
+	// printf("encode init\n");
+	// printf("InitialGlobalPose[1]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+	// 	InitialGlobalPose[1].Translation.x,
+	// 	InitialGlobalPose[1].Translation.y,
+	// 	InitialGlobalPose[1].Translation.z,
+	// 	InitialGlobalPose[1].Rotation.x,
+	// 	InitialGlobalPose[1].Rotation.y,
+	// 	InitialGlobalPose[1].Rotation.z,
+	// 	InitialGlobalPose[1].Rotation.w
+	// );
+	// printf("InitialGlobalPose[2]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+	// 	InitialGlobalPose[2].Translation.x, 
+	// 	InitialGlobalPose[2].Translation.y,
+	// 	InitialGlobalPose[2].Translation.z,
+	// 	InitialGlobalPose[2].Rotation.x,
+	// 	InitialGlobalPose[2].Rotation.y,
+	// 	InitialGlobalPose[2].Rotation.z,
+	// 	InitialGlobalPose[2].Rotation.w
+	// );
 
-	printf("InitialGlobalTransforms[0]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
-		InitialGlobalTransforms[0].Translation.x,
-		InitialGlobalTransforms[0].Translation.y,
-		InitialGlobalTransforms[0].Translation.z,
-		InitialGlobalTransforms[0].Rotation.x,
-		InitialGlobalTransforms[0].Rotation.y,
-		InitialGlobalTransforms[0].Rotation.z,
-		InitialGlobalTransforms[0].Rotation.w
-	);
-	printf("InitialGlobalTransforms[1]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
-		InitialGlobalTransforms[1].Translation.x, 
-		InitialGlobalTransforms[1].Translation.y,
-		InitialGlobalTransforms[1].Translation.z,
-		InitialGlobalTransforms[1].Rotation.x,
-		InitialGlobalTransforms[1].Rotation.y,
-		InitialGlobalTransforms[1].Rotation.z,
-		InitialGlobalTransforms[1].Rotation.w
-	);
+	// printf("InitialGlobalTransforms[0]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+	// 	InitialGlobalTransforms[0].Translation.x,
+	// 	InitialGlobalTransforms[0].Translation.y,
+	// 	InitialGlobalTransforms[0].Translation.z,
+	// 	InitialGlobalTransforms[0].Rotation.x,
+	// 	InitialGlobalTransforms[0].Rotation.y,
+	// 	InitialGlobalTransforms[0].Rotation.z,
+	// 	InitialGlobalTransforms[0].Rotation.w
+	// );
+	// printf("InitialGlobalTransforms[1]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+	// 	InitialGlobalTransforms[1].Translation.x, 
+	// 	InitialGlobalTransforms[1].Translation.y,
+	// 	InitialGlobalTransforms[1].Translation.z,
+	// 	InitialGlobalTransforms[1].Rotation.x,
+	// 	InitialGlobalTransforms[1].Rotation.y,
+	// 	InitialGlobalTransforms[1].Rotation.z,
+	// 	InitialGlobalTransforms[1].Rotation.w
+	// );
 
 	// calculate parameter of each bone, normalized by the length of the bone chain
 	return CalculateBoneParameters(Log);
@@ -580,25 +580,25 @@ void FChainEncoderFK::EncodePose(
 {
 	//check(SourceBoneIndices.Num() == CurrentGlobalTransforms.Num());
 
-	printf("encode\n");
-	printf("InSourceGlobalPose[1]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
-		InSourceGlobalPose[1].Translation.x, 
-		InSourceGlobalPose[1].Translation.y,
-		InSourceGlobalPose[1].Translation.z,
-		InSourceGlobalPose[1].Rotation.x,
-		InSourceGlobalPose[1].Rotation.y,
-		InSourceGlobalPose[1].Rotation.z,
-		InSourceGlobalPose[1].Rotation.w
-	);
-	printf("InSourceGlobalPose[2]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
-		InSourceGlobalPose[2].Translation.x, 
-		InSourceGlobalPose[2].Translation.y,
-		InSourceGlobalPose[2].Translation.z,
-		InSourceGlobalPose[2].Rotation.x,
-		InSourceGlobalPose[2].Rotation.y,
-		InSourceGlobalPose[2].Rotation.z,
-		InSourceGlobalPose[2].Rotation.w
-	);
+	// printf("encode\n");
+	// printf("InSourceGlobalPose[1]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+	// 	InSourceGlobalPose[1].Translation.x, 
+	// 	InSourceGlobalPose[1].Translation.y,
+	// 	InSourceGlobalPose[1].Translation.z,
+	// 	InSourceGlobalPose[1].Rotation.x,
+	// 	InSourceGlobalPose[1].Rotation.y,
+	// 	InSourceGlobalPose[1].Rotation.z,
+	// 	InSourceGlobalPose[1].Rotation.w
+	// );
+	// printf("InSourceGlobalPose[2]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+	// 	InSourceGlobalPose[2].Translation.x, 
+	// 	InSourceGlobalPose[2].Translation.y,
+	// 	InSourceGlobalPose[2].Translation.z,
+	// 	InSourceGlobalPose[2].Rotation.x,
+	// 	InSourceGlobalPose[2].Rotation.y,
+	// 	InSourceGlobalPose[2].Rotation.z,
+	// 	InSourceGlobalPose[2].Rotation.w
+	// );
 	
 	// copy the global input pose for the chain
 	for (int32 ChainIndex=0; ChainIndex<SourceBoneIndices.size(); ++ChainIndex)
@@ -748,25 +748,25 @@ void FChainDecoderFK::DecodePose(
 			break;
 		}
 
-		printf("ChainIndex:%d jointId:%d\n", ChainIndex, BoneIndex);
-		printf("SourceCurrentTransform:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
-			SourceCurrentTransform.Translation.x, 
-			SourceCurrentTransform.Translation.y,
-			SourceCurrentTransform.Translation.z,
-			SourceCurrentTransform.Rotation.x,
-			SourceCurrentTransform.Rotation.y,
-			SourceCurrentTransform.Rotation.z,
-			SourceCurrentTransform.Rotation.w
-		);
-		printf("SourceInitialTransform:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
-			SourceInitialTransform.Translation.x, 
-			SourceInitialTransform.Translation.y,
-			SourceInitialTransform.Translation.z,
-			SourceInitialTransform.Rotation.x,
-			SourceInitialTransform.Rotation.y,
-			SourceInitialTransform.Rotation.z,
-			SourceInitialTransform.Rotation.w
-		);
+		// printf("ChainIndex:%d jointId:%d\n", ChainIndex, BoneIndex);
+		// printf("SourceCurrentTransform:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+		// 	SourceCurrentTransform.Translation.x, 
+		// 	SourceCurrentTransform.Translation.y,
+		// 	SourceCurrentTransform.Translation.z,
+		// 	SourceCurrentTransform.Rotation.x,
+		// 	SourceCurrentTransform.Rotation.y,
+		// 	SourceCurrentTransform.Rotation.z,
+		// 	SourceCurrentTransform.Rotation.w
+		// );
+		// printf("SourceInitialTransform:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+		// 	SourceInitialTransform.Translation.x, 
+		// 	SourceInitialTransform.Translation.y,
+		// 	SourceInitialTransform.Translation.z,
+		// 	SourceInitialTransform.Rotation.x,
+		// 	SourceInitialTransform.Rotation.y,
+		// 	SourceInitialTransform.Rotation.z,
+		// 	SourceInitialTransform.Rotation.w
+		// );
 		
 		// apply rotation offset to the initial target rotation
 		const FQuat SourceCurrentRotation = SourceCurrentTransform.GetRotation();

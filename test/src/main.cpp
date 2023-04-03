@@ -315,12 +315,11 @@ bool USkeleton2RigSkeletonI(SoulIK::USkeleton& sk, FIKRigSkeleton& rigsk) {
     return true;
 }
 
-std::shared_ptr<UIKRetargeter> buildIKRigRetargetAsset(SoulIK::USkeleton& srcusk, SoulIK::USkeleton& tgtusk) {
+std::shared_ptr<UIKRetargeter> buildIKRigRetargetAsset_config1_1chain_lleg(SoulIK::SoulSkeleton& srcsk, SoulIK::SoulSkeleton& tgtsk, SoulIK::USkeleton& srcusk, SoulIK::USkeleton& tgtusk) {
 
     std::shared_ptr<UIKRetargeter> InRetargeterAsset = std::make_shared<UIKRetargeter>();
 
     // ikrig1 asset
-    
     InRetargeterAsset->SourceIKRigAsset = std::make_shared<UIKRigDefinition>();
     FIKRigSkeleton rigsk;
     USkeleton2RigSkeletonI(srcusk, rigsk);
@@ -329,13 +328,13 @@ std::shared_ptr<UIKRetargeter> buildIKRigRetargetAsset(SoulIK::USkeleton& srcusk
     InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.GroundBone = "RightAnkle_end";
     InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains.resize(1);
     InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneName = "RightHip";
-    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneIndex = 1;
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneIndex = srcsk.getJointIdByName("RightHip");
     //InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneName = "RightKnee";
-    //InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneIndex = 2;
+    //InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneIndex = srcsk.getJointIdByName("RightKnee");
     //InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneName = "RightAnkle";
-    //InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneIndex = 3;
+    //InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneIndex = srcsk.getJointIdByName("RightAnkle");
     InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneName = "RightKnee";
-    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneIndex = 2;
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneIndex = srcsk.getJointIdByName("RightKnee");
     InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].ChainName = "lleg";
 
     // ikrig2 asset
@@ -347,13 +346,13 @@ std::shared_ptr<UIKRetargeter> buildIKRigRetargetAsset(SoulIK::USkeleton& srcusk
     InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.GroundBone = "RightAnkle_end";
     InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains.resize(1);
     //InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneName = "RightKnee";
-    //InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneIndex = 2;
+    //InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneIndex = tgtsk.getJointIdByName("RightKnee");
     InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneName = "RightHip";
-    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneIndex = 1;
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneIndex = tgtsk.getJointIdByName("RightHip");
     //InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneName = "RightAnkle";
-    //InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneIndex = 3;
+    //InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneIndex = tgtsk.getJointIdByName("RightAnkle");
     InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneName = "RightKnee";
-    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneIndex = 2;
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneIndex = tgtsk.getJointIdByName("RightKnee");
     InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].ChainName = "lleg";
 
     // ik rig retarget asset
@@ -363,6 +362,148 @@ std::shared_ptr<UIKRetargeter> buildIKRigRetargetAsset(SoulIK::USkeleton& srcusk
     chainSetting->SourceChain = "lleg";
     chainSetting->TargetChain = "lleg";
     InRetargeterAsset->ChainSettings.push_back(chainSetting);
+
+    return InRetargeterAsset;
+}
+
+std::shared_ptr<UIKRetargeter> buildIKRigRetargetAsset_config2_6chain(SoulIK::SoulSkeleton& srcsk, SoulIK::SoulSkeleton& tgtsk, SoulIK::USkeleton& srcusk, SoulIK::USkeleton& tgtusk) {
+
+    std::shared_ptr<UIKRetargeter> InRetargeterAsset = std::make_shared<UIKRetargeter>();
+
+    // ikrig1 asset
+    InRetargeterAsset->SourceIKRigAsset = std::make_shared<UIKRigDefinition>();
+    FIKRigSkeleton rigsk;
+    USkeleton2RigSkeletonI(srcusk, rigsk);
+    InRetargeterAsset->SourceIKRigAsset->Skeleton = rigsk;
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.RootBone = "Hip";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.GroundBone = "RightAnkle_end";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains.resize(6);
+
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneName = "Spine";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneIndex = srcsk.getJointIdByName("Spine");
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneName = "Thorax";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneIndex = srcsk.getJointIdByName("Thorax");
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[0].ChainName = "spine";
+
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[1].StartBone.BoneName = "RightHip";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[1].StartBone.BoneIndex = srcsk.getJointIdByName("RightHip");
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[1].EndBone.BoneName = "RightAnkle";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[1].EndBone.BoneIndex = srcsk.getJointIdByName("RightAnkle");;
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[1].ChainName = "lleg";
+
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[2].StartBone.BoneName = "LeftHip";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[2].StartBone.BoneIndex = srcsk.getJointIdByName("LeftHip");
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[2].EndBone.BoneName = "LeftAnkle";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[2].EndBone.BoneIndex = srcsk.getJointIdByName("LeftAnkle");
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[2].ChainName = "rleg";
+
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[3].StartBone.BoneName = "LeftShoulder";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[3].StartBone.BoneIndex = srcsk.getJointIdByName("LeftShoulder");
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[3].EndBone.BoneName = "LeftWrist";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[3].EndBone.BoneIndex = srcsk.getJointIdByName("LeftWrist");
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[3].ChainName = "larm";
+
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[4].StartBone.BoneName = "RightShoulder";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[4].StartBone.BoneIndex = srcsk.getJointIdByName("RightShoulder");
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[4].EndBone.BoneName = "RightWrist";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[4].EndBone.BoneIndex = srcsk.getJointIdByName("RightWrist");
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[4].ChainName = "rarm";
+
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[5].StartBone.BoneName = "Neck";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[5].StartBone.BoneIndex = srcsk.getJointIdByName("Neck");
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[5].EndBone.BoneName = "Head";
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[5].EndBone.BoneIndex = srcsk.getJointIdByName("Head");
+    InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.BoneChains[5].ChainName = "head";
+
+    // ikrig2 asset
+    InRetargeterAsset->TargetIKRigAsset = std::make_shared<UIKRigDefinition>();
+    FIKRigSkeleton rigsk2;
+    USkeleton2RigSkeletonI(tgtusk, rigsk2);
+    InRetargeterAsset->SourceIKRigAsset->Skeleton = rigsk2;
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.RootBone = "Hip";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.GroundBone = "RightAnkle_end";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains.resize(6);
+
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneName = "Spine";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].StartBone.BoneIndex = srcsk.getJointIdByName("Spine");
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneName = "Thorax";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].EndBone.BoneIndex = srcsk.getJointIdByName("Thorax");
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[0].ChainName = "spine";
+
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[1].StartBone.BoneName = "RightHip";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[1].StartBone.BoneIndex = srcsk.getJointIdByName("RightHip");
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[1].EndBone.BoneName = "RightAnkle";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[1].EndBone.BoneIndex = srcsk.getJointIdByName("RightAnkle");;
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[1].ChainName = "lleg";
+
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[2].StartBone.BoneName = "LeftHip";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[2].StartBone.BoneIndex = srcsk.getJointIdByName("LeftHip");
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[2].EndBone.BoneName = "LeftAnkle";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[2].EndBone.BoneIndex = srcsk.getJointIdByName("LeftAnkle");
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[2].ChainName = "rleg";
+
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[3].StartBone.BoneName = "LeftShoulder";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[3].StartBone.BoneIndex = srcsk.getJointIdByName("LeftShoulder");
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[3].EndBone.BoneName = "LeftWrist";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[3].EndBone.BoneIndex = srcsk.getJointIdByName("LeftWrist");
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[3].ChainName = "larm";
+
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[4].StartBone.BoneName = "RightShoulder";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[4].StartBone.BoneIndex = srcsk.getJointIdByName("RightShoulder");
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[4].EndBone.BoneName = "RightWrist";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[4].EndBone.BoneIndex = srcsk.getJointIdByName("RightWrist");
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[4].ChainName = "rarm";
+
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[5].StartBone.BoneName = "Neck";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[5].StartBone.BoneIndex = srcsk.getJointIdByName("Neck");
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[5].EndBone.BoneName = "Head";
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[5].EndBone.BoneIndex = srcsk.getJointIdByName("Head");
+    InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.BoneChains[5].ChainName = "head";
+    
+
+
+    // ik rig retarget asset
+    std::shared_ptr<URetargetChainSettings> chainSetting0 = std::make_shared<URetargetChainSettings>();
+    chainSetting0->Settings.FK.EnableFK = true;
+    chainSetting0->Settings.IK.EnableIK = false;
+    chainSetting0->SourceChain = "spine";
+    chainSetting0->TargetChain = "spine";
+    InRetargeterAsset->ChainSettings.push_back(chainSetting0);
+
+    std::shared_ptr<URetargetChainSettings> chainSetting1 = std::make_shared<URetargetChainSettings>();
+    chainSetting1->Settings.FK.EnableFK = true;
+    chainSetting1->Settings.IK.EnableIK = false;
+    chainSetting1->SourceChain = "lleg";
+    chainSetting1->TargetChain = "lleg";
+    InRetargeterAsset->ChainSettings.push_back(chainSetting1);
+
+    std::shared_ptr<URetargetChainSettings> chainSetting2 = std::make_shared<URetargetChainSettings>();
+    chainSetting2->Settings.FK.EnableFK = true;
+    chainSetting2->Settings.IK.EnableIK = false;
+    chainSetting2->SourceChain = "rleg";
+    chainSetting2->TargetChain = "rleg";
+    InRetargeterAsset->ChainSettings.push_back(chainSetting2);
+
+    std::shared_ptr<URetargetChainSettings> chainSetting3 = std::make_shared<URetargetChainSettings>();
+    chainSetting3->Settings.FK.EnableFK = true;
+    chainSetting3->Settings.IK.EnableIK = false;
+    chainSetting3->SourceChain = "larm";
+    chainSetting3->TargetChain = "larm";
+    InRetargeterAsset->ChainSettings.push_back(chainSetting3);
+
+    std::shared_ptr<URetargetChainSettings> chainSetting4 = std::make_shared<URetargetChainSettings>();
+    chainSetting4->Settings.FK.EnableFK = true;
+    chainSetting4->Settings.IK.EnableIK = false;
+    chainSetting4->SourceChain = "rarm";
+    chainSetting4->TargetChain = "rarm";
+    InRetargeterAsset->ChainSettings.push_back(chainSetting4);
+
+    std::shared_ptr<URetargetChainSettings> chainSetting5 = std::make_shared<URetargetChainSettings>();
+    chainSetting5->Settings.FK.EnableFK = true;
+    chainSetting5->Settings.IK.EnableIK = false;
+    chainSetting5->SourceChain = "head";
+    chainSetting5->TargetChain = "head";
+    InRetargeterAsset->ChainSettings.push_back(chainSetting5);
 
     return InRetargeterAsset;
 }
@@ -436,7 +577,7 @@ int main(int argc, char *argv[]) {
     
     // build retargetProcessor
     SoulIK::UIKRetargetProcessor ikretarget;
-	std::shared_ptr<UIKRetargeter> InRetargeterAsset = buildIKRigRetargetAsset(srcusk, tgtusk);
+	std::shared_ptr<UIKRetargeter> InRetargeterAsset = buildIKRigRetargetAsset_config2_6chain(srcskm.skeleton, tgtskm.skeleton, srcusk, tgtusk);
     ikretarget.Initialize(&srcusk, &tgtusk, InRetargeterAsset.get(), false);
 
     // run retarget
@@ -447,7 +588,6 @@ int main(int argc, char *argv[]) {
             inposeLocal = tgtusk.refpose;
         }
         
-
         // printf("%d: t(%f %f %f) t(%f %f %f) t(%f %f %f) %f %f %f\n", frame, 
         //     inpose[1].Translation.x, inpose[1].Translation.y, inpose[1].Translation.z,
         //     inpose[2].Translation.x, inpose[2].Translation.y, inpose[2].Translation.z,
