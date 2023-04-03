@@ -5,10 +5,22 @@
     2. linux
     3. windows
 
-# build and test c++
+# windows build and test c++
 
-    ./build.sh 
+    //./build.sh 
 
+    rm -rf build
+    mkdir build && cd build
+
+    cmake ..
+    
+    open ikrigretarget.sln with visual studio
+    set testikrigretarget as start project
+    
+    or
+    
+    cmake --build .
+    test/Debug/testikrigretarget.exe
 
 # release files
 
