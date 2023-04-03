@@ -9,6 +9,8 @@
 
 #include "SoulTransform.h"
 
+// coordinate system: right hand, z up, x left, y front
+
 //#region MARK: -Interfaces
 //#endregion
 // MARK: - retargeter

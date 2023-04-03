@@ -581,6 +581,8 @@ int main(int argc, char *argv[]) {
     ikretarget.Initialize(&srcusk, &tgtusk, InRetargeterAsset.get(), false);
 
     // run retarget
+    std::unordered_map<FName, float> SpeedValuesFromCurves;
+    float DeltaTime = 0;
     for(int frame = 0; frame < tempposes.size(); frame++) {
         std::vector<FTransform> inposeLocal;
         SoulPose2FPose(tempposes[frame], inposeLocal);
@@ -593,9 +595,6 @@ int main(int argc, char *argv[]) {
         //     inpose[2].Translation.x, inpose[2].Translation.y, inpose[2].Translation.z,
         //     inpose[3].Translation.x, inpose[3].Translation.y, inpose[3].Translation.z,
         //     inpose[1].Rotation.getAngleDegree(), inpose[2].Rotation.getAngleDegree(), inpose[3].Rotation.getAngleDegree());
-
-        std::unordered_map<FName, float> SpeedValuesFromCurves;
-        float DeltaTime = 0;
 
         // retarget
         std::vector<FTransform> inpose;
