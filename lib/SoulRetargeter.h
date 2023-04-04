@@ -1,5 +1,5 @@
 //
-//  SoulRetargetSkeleton.h
+//  SoulRetargeter.h
 //
 //
 //  Created by kai chen on 3/24/23.

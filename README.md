@@ -43,7 +43,7 @@ coordinate system:
     z up
 
     x left
-    
+
     y front
 
 example code:
@@ -78,3 +78,17 @@ example code:
         std::vector<FTransform> outposeLocal;
         outposeLocal = ...; //FPoseToLocal(outpose, outposeLocal);
     }
+
+# feature work
+
+develop maya plugin based on this lib
+
+# Acknowledgements
+
+this repo copy from   https://github.com/EpicGames/UnrealEngine
+
+path:  Engine/Plugins/Animation/IKRig
+
+I use glm to implement Unreal math, and keep coordinate system right hand, z up, y front
+
+this is different with Unreal, which is left hand, z up, y front

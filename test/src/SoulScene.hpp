@@ -1,5 +1,5 @@
 //
-//  SoulScene.h
+//  SoulScene.hpp
 //
 //
 //  Created by kai chen on 3/24/23.
@@ -74,7 +74,7 @@ namespace SoulIK {
     // skeleton
     struct SoulJoint {
         std::string             name;
-        uint32_t                parentId;
+        int32_t                 parentId;
 
         // transforms from mesh space to bone space in bind pose
         glm::mat4               inverseWorldMatrix{ 1.0 };
@@ -102,7 +102,7 @@ namespace SoulIK {
         glm::quat   value;
     };
     struct SoulAniChannel {
-        uint32_t                    jointId;
+        int32_t                     jointId;
         std::vector<SoulVec3Key>    PositionKeys;       // local
         std::vector<SoulVec3Key>    ScalingKeys;        // local
         std::vector<SoulQuatKey>    RotationKeys;       // local

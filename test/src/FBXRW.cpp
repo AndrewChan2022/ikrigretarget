@@ -73,15 +73,15 @@ static void traversalAllNodes(aiNode* node, std::vector<aiNode*>& nodes, std::ve
 }
 
 
-static inline uint32_t getJointIdByName(std::string& name, const std::vector<std::string>& jointNames) {
+static inline int32_t getJointIdByName(std::string& name, const std::vector<std::string>& jointNames) {
     auto pos = std::find(jointNames.begin(), jointNames.end(), name);
     if (pos != jointNames.end()) {
         return static_cast<uint32_t>(pos - jointNames.begin());
     } else {
-        return 0xffffffff;
+        return -1;
     }
 }
-static inline uint32_t getJointIdFromSkeleton(std::string& name, SoulSkeleton& skeleton) {
+static inline int32_t getJointIdFromSkeleton(std::string& name, SoulSkeleton& skeleton) {
 
     auto pos = std::find_if(skeleton.joints.begin(), skeleton.joints.end(), [&name](const auto& v) {
         return v.name == name;
@@ -90,12 +90,12 @@ static inline uint32_t getJointIdFromSkeleton(std::string& name, SoulSkeleton& s
     if (pos != skeleton.joints.end()) {
         return static_cast<uint32_t>(pos - skeleton.joints.begin());
     } else {
-        return 0xffffffff;
+        return -1;
     }
 }
 
 // search parent.name or parent.parent.name
-static uint32_t getJointIdByNode(aiNode* parentNode, const std::vector<std::string>& jointNames) {
+static int32_t getJointIdByNode(aiNode* parentNode, const std::vector<std::string>& jointNames) {
     if (parentNode) {
         std::string name = parentNode->mName.data;
         auto parentPos = std::find(jointNames.begin(), jointNames.end(), name);
@@ -106,7 +106,7 @@ static uint32_t getJointIdByNode(aiNode* parentNode, const std::vector<std::stri
             return getJointIdByNode(parentNode->mParent, jointNames);
         }
     } else {
-        return 0xffffffff;
+        return -1;
     }
 }
 

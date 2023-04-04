@@ -7,15 +7,13 @@
 
 //#include    <stdio.h>
 //#include    <stdlib.h>
-#include    "assimp/Importer.hpp"
-//#include    "assimp/scene.h"
-//#include    "assimp/postprocess.h"
 #include <stdio.h>
 #include "SoulTransform.h"
 #include "SoulRetargeter.h"
 #include "SoulIKRetargetProcessor.h"
 
 #include "FBXRW.h"
+#include "IKRigUtils.hpp"
 
 
 using namespace SoulIK;
@@ -253,23 +251,6 @@ void buildSoulPoseAnimation(SoulIK::SoulScene& scene,
     }
 }
 
-void SoulPose2FPose(SoulIK::SoulPose& soulpose, std::vector<FTransform>& pose) {
-    pose.resize(soulpose.transforms.size());
-    for(int i = 0; i < soulpose.transforms.size(); i++) {
-        pose[i].Translation = FVector(soulpose.transforms[i].translation);
-        pose[i].Rotation = FQuat(soulpose.transforms[i].rotation);
-        pose[i].Scale3D = FVector(soulpose.transforms[i].scale);
-    }
-}
-
-void FPose2SoulPose(std::vector<FTransform>& pose, SoulIK::SoulPose& soulpose) {
-    soulpose.transforms.resize(pose.size());
-    for(int i = 0; i < soulpose.transforms.size(); i++) {
-        soulpose.transforms[i].translation = pose[i].Translation;
-        soulpose.transforms[i].rotation = pose[i].Rotation;
-        soulpose.transforms[i].scale = pose[i].Scale3D;
-    }
-}
 
 void writeSoulPosesToAnimation(std::vector<SoulIK::SoulPose>& tempoutposes, SoulIK::SoulSkeletonMesh& tgtskm) {
     tgtskm.animation.channels.clear();
@@ -298,7 +279,7 @@ void writeSoulPosesToAnimation(std::vector<SoulIK::SoulPose>& tempoutposes, Soul
     }
 }
 
-bool USkeleton2RigSkeletonI(SoulIK::USkeleton& sk, FIKRigSkeleton& rigsk) {
+bool USkeleton2RigSkeleton(SoulIK::USkeleton& sk, FIKRigSkeleton& rigsk) {
     for (size_t i = 0; i < sk.boneTree.size(); i++) {
         rigsk.BoneNames.push_back(sk.boneTree[i].name);
         rigsk.ParentIndices.push_back(sk.boneTree[i].parent);
@@ -322,7 +303,7 @@ std::shared_ptr<UIKRetargeter> buildIKRigRetargetAsset_config1_1chain_lleg(SoulI
     // ikrig1 asset
     InRetargeterAsset->SourceIKRigAsset = std::make_shared<UIKRigDefinition>();
     FIKRigSkeleton rigsk;
-    USkeleton2RigSkeletonI(srcusk, rigsk);
+    USkeleton2RigSkeleton(srcusk, rigsk);
     InRetargeterAsset->SourceIKRigAsset->Skeleton = rigsk;
     InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.RootBone = "Hip";
     InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.GroundBone = "RightAnkle_end";
@@ -340,7 +321,7 @@ std::shared_ptr<UIKRetargeter> buildIKRigRetargetAsset_config1_1chain_lleg(SoulI
     // ikrig2 asset
     InRetargeterAsset->TargetIKRigAsset = std::make_shared<UIKRigDefinition>();
     FIKRigSkeleton rigsk2;
-    USkeleton2RigSkeletonI(tgtusk, rigsk2);
+    USkeleton2RigSkeleton(tgtusk, rigsk2);
     InRetargeterAsset->SourceIKRigAsset->Skeleton = rigsk2;
     InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.RootBone = "Hip";
     InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.GroundBone = "RightAnkle_end";
@@ -373,7 +354,7 @@ std::shared_ptr<UIKRetargeter> buildIKRigRetargetAsset_config2_6chain(SoulIK::So
     // ikrig1 asset
     InRetargeterAsset->SourceIKRigAsset = std::make_shared<UIKRigDefinition>();
     FIKRigSkeleton rigsk;
-    USkeleton2RigSkeletonI(srcusk, rigsk);
+    USkeleton2RigSkeleton(srcusk, rigsk);
     InRetargeterAsset->SourceIKRigAsset->Skeleton = rigsk;
     InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.RootBone = "Hip";
     InRetargeterAsset->SourceIKRigAsset->RetargetDefinition.GroundBone = "RightAnkle_end";
@@ -418,7 +399,7 @@ std::shared_ptr<UIKRetargeter> buildIKRigRetargetAsset_config2_6chain(SoulIK::So
     // ikrig2 asset
     InRetargeterAsset->TargetIKRigAsset = std::make_shared<UIKRigDefinition>();
     FIKRigSkeleton rigsk2;
-    USkeleton2RigSkeletonI(tgtusk, rigsk2);
+    USkeleton2RigSkeleton(tgtusk, rigsk2);
     InRetargeterAsset->SourceIKRigAsset->Skeleton = rigsk2;
     InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.RootBone = "Hip";
     InRetargeterAsset->TargetIKRigAsset->RetargetDefinition.GroundBone = "RightAnkle_end";
@@ -508,28 +489,6 @@ std::shared_ptr<UIKRetargeter> buildIKRigRetargetAsset_config2_6chain(SoulIK::So
     return InRetargeterAsset;
 }
 
-void FPoseToLocal(SoulSkeleton& sk, std::vector<FTransform>& globalpose, std::vector<FTransform>& localpose) {
-    assert(sk.joints.size() == globalpose.size());
-    localpose.resize(globalpose.size());
-    
-    localpose[0] = globalpose[0];
-    for(int jointId = 1; jointId < globalpose.size(); jointId++) {
-        int parentId = sk.joints[jointId].parentId;
-        localpose[jointId] = globalpose[jointId].GetRelativeTransform(globalpose[parentId]);
-    }
-}
-
-void FPoseToGlobal(SoulSkeleton& sk, std::vector<FTransform>& localpose, std::vector<FTransform>& globalpose) {
-    assert(sk.joints.size() == localpose.size());
-    globalpose.resize(localpose.size());
-    
-    globalpose[0] = localpose[0];
-    for(int jointId = 1; jointId < localpose.size(); jointId++) {
-        int parentId = sk.joints[jointId].parentId;
-        globalpose[jointId] = localpose[jointId] * globalpose[parentId];
-    }
-}
-
 int main(int argc, char *argv[]) {
 
     std::string file_path = __FILE__;
@@ -581,32 +540,35 @@ int main(int argc, char *argv[]) {
     ikretarget.Initialize(&srcusk, &tgtusk, InRetargeterAsset.get(), false);
 
     // run retarget
+    CoordType srccoord = CoordType::RightHandYupZfront;
+    CoordType selfcoord = CoordType::RightHandZupYfront;
+    CoordType tgtcoord = CoordType::RightHandYupZfront;
     std::unordered_map<FName, float> SpeedValuesFromCurves;
     float DeltaTime = 0;
+
+    std::vector<FTransform> inpose;
+    std::vector<FTransform> inposeLocal;
+    std::vector<FTransform> outposeLocal;
     for(int frame = 0; frame < tempposes.size(); frame++) {
-        std::vector<FTransform> inposeLocal;
-        SoulPose2FPose(tempposes[frame], inposeLocal);
-        if (frame == 0) {
-            inposeLocal = tgtusk.refpose;
-        }
         
+        // if (frame == 0) { inposeLocal = tgtusk.refpose;}
         // printf("%d: t(%f %f %f) t(%f %f %f) t(%f %f %f) %f %f %f\n", frame, 
         //     inpose[1].Translation.x, inpose[1].Translation.y, inpose[1].Translation.z,
         //     inpose[2].Translation.x, inpose[2].Translation.y, inpose[2].Translation.z,
         //     inpose[3].Translation.x, inpose[3].Translation.y, inpose[3].Translation.z,
         //     inpose[1].Rotation.getAngleDegree(), inpose[2].Rotation.getAngleDegree(), inpose[3].Rotation.getAngleDegree());
 
-        // retarget
-        std::vector<FTransform> inpose;
-        FPoseToGlobal(tgtskm.skeleton, inposeLocal, inpose);
-        std::vector<FTransform>& outpose = ikretarget.RunRetargeter(inpose, SpeedValuesFromCurves, DeltaTime);
-        std::vector<FTransform> outposeLocal;
-        FPoseToLocal(tgtskm.skeleton, outpose, outposeLocal);
+        IKRigUtils::SoulPose2FPose(tempposes[frame], inposeLocal);
 
-        // inpose
-        //std::vector<FTransform>& outposeLocal = inpose;
-        
-        FPose2SoulPose(outposeLocal, tempoutposes[frame]);
+        // retarget
+        IKRigUtils::LocalPoseCoordConvert(srccoord, selfcoord, inposeLocal);
+        IKRigUtils::FPoseToGlobal(tgtskm.skeleton, inposeLocal, inpose);
+        std::vector<FTransform>& outpose = ikretarget.RunRetargeter(inpose, SpeedValuesFromCurves, DeltaTime);
+        IKRigUtils::FPoseToLocal(tgtskm.skeleton, outpose, outposeLocal);
+        IKRigUtils::LocalPoseCoordConvert(selfcoord, tgtcoord, outposeLocal);
+
+        //
+        IKRigUtils::FPose2SoulPose(outposeLocal, tempoutposes[frame]);
     }
 
     // output to mesh 0
@@ -617,4 +579,3 @@ int main(int argc, char *argv[]) {
     
     return 0;
 }
-
