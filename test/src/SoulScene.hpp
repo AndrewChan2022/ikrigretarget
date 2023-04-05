@@ -77,11 +77,19 @@ namespace SoulIK {
         int32_t                 parentId;
 
         // transforms from mesh space to bone space in bind pose
-        glm::mat4               inverseWorldMatrix{ 1.0 };
+        glm::mat4               inverseBindposeMatrix{ 1.0 };  // ibm
     };
     struct SoulSkeleton {
         std::vector<SoulJoint>  joints;
         inline int32_t getJointIdByName(std::string name);
+    };
+    struct SoulJointNode { // with child
+        std::string             name;
+        int32_t                 parentId;
+
+        // transforms from mesh space to bone space in bind pose
+        glm::mat4               inverseBindposeMatrix{ 1.0 };
+        std::vector<int32_t>    children;
     };
 
     // skeleton animation
@@ -89,6 +97,9 @@ namespace SoulIK {
         glm::vec3 translation;
         glm::quat rotation;
         glm::vec3 scale;
+
+        SoulTransform() = default;
+        explicit SoulTransform(glm::mat4& m);
     };
     struct SoulPose {
         std::vector<SoulTransform> transforms;

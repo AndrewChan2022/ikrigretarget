@@ -144,10 +144,13 @@ void FBXRW::readSkeketonMesh(std::string inPath, float scale) {
     Importer& importer = pimpl->importer;
     
     // import as centi-meter by set GlobalScale = 100, which is default
-    importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 100.0); 
+    importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 100.0 * scale);
+    // prevent 1 joint split to 3 joints prerotation/rotation/joint
+    importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
+    
     //importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
-    importer.SetPropertyBool(AI_CONFIG_IMPORT_NO_SKELETON_MESHES, true);
-    importer.SetPropertyBool(AI_CONFIG_FBX_USE_SKELETON_BONE_CONTAINER, true);
+    //importer.SetPropertyBool(AI_CONFIG_IMPORT_NO_SKELETON_MESHES, true);
+    //importer.SetPropertyBool(AI_CONFIG_FBX_USE_SKELETON_BONE_CONTAINER, true);
     
     const aiScene* scene = importer.ReadFile(m_path, aiProcess_Triangulate 
                                                    | aiProcess_JoinIdenticalVertices 
@@ -169,7 +172,7 @@ void FBXRW::readSkeketonMesh(std::string inPath, float scale) {
     std::vector<std::string> materialNames;
     for (uint32_t i = 0; i < scene->mNumMaterials; ++i) {
         auto material = scene->mMaterials[i];
-        printf("\nmat:%d name:%s\n", i, material->GetName().data);
+        /*printf("\nmat:%d name:%s\n", i, material->GetName().data);
         for (uint32_t j = 0; j < material->mNumProperties; j++) {
             aiMaterialProperty& p = *material->mProperties[j];
             printf("key:%s semantic:%d index:%d len:%d type:%d data:\n", p.mKey.data, p.mSemantic, p.mIndex, p.mDataLength, p.mType);
@@ -223,7 +226,7 @@ void FBXRW::readSkeketonMesh(std::string inPath, float scale) {
                     break;
                 }
             }
-        }
+        }*/
         materialNames.emplace_back(material->GetName().data);
     }
 
@@ -239,9 +242,9 @@ void FBXRW::readSkeketonMesh(std::string inPath, float scale) {
     pimpl->processNode(scene->mRootNode, scene, *m_soulScene, nullptr, materialNames, nodes, nodeNames, m_soulScene->skmeshes);
 
 
-    for (auto& name : nodeNames) {
-        printf("name:%s\n", name.c_str());
-    }
+    // for (auto& name : nodeNames) {
+    //     printf("name:%s\n", name.c_str());
+    // }
     printf("process done\n");
 }
 
@@ -273,13 +276,13 @@ void FBXRWImpl::processNode(aiNode *node, const aiScene* scene,  SoulScene& fbxS
     
     // metadata
     if (node->mMetaData != nullptr) {
-        printf("*** meta of %s\n", curNode->name.c_str());
-        if (curNode->name == "Rol01_Torso01HipCtrlJnt_M") {
-            printf("*** meta of %s\n", curNode->name.c_str());
-        }
-        if (curNode->name == "Hip") {
-            printf("Hip\n");
-        }
+        // printf("*** meta of %s\n", curNode->name.c_str());
+        // if (curNode->name == "Rol01_Torso01HipCtrlJnt_M") {
+        //     printf("*** meta of %s\n", curNode->name.c_str());
+        // }
+        // if (curNode->name == "Hip") {
+        //     printf("Hip\n");
+        // }
         processMetaData(curNode->metaData, node->mMetaData);
         //aiProcess_PopulateArmatureData
     }
@@ -370,7 +373,7 @@ void FBXRWImpl::processMetaData(std::vector<SoulMetaData>& fbxMetadata, aiMetada
         auto& fbxMetaDataItem = fbxMetadata[i];
 
         fbxMetaDataItem.key = key.data;
-        printf("meta key:%s\n", fbxMetaDataItem.key.c_str());
+        //printf("meta key:%s\n", fbxMetaDataItem.key.c_str());
         if (aitype == AI_AIMETADATA) {
             fbxMetaDataItem.type = SoulMetadataType::METADATA;
             aiMetadata* v = static_cast<aiMetadata*>(aimetadataBuf);
@@ -407,9 +410,9 @@ std::shared_ptr<SoulSkeletonMesh> FBXRWImpl::processMesh(aiMesh* mesh, const aiS
 
         // position, normal, tangent, uv 
         vertex.x = mesh->mVertices[i].x; vertex.y = mesh->mVertices[i].y; vertex.z = mesh->mVertices[i].z;
-        if (i == 0) {
-            printf("position: %s, v.y:%f\n", mesh->mName.data, vertex.y);
-        }
+        // if (i == 0) {
+        //     printf("position: %s, v.y:%f\n", mesh->mName.data, vertex.y);
+        // }
         if(mesh->HasNormals()){
             normal.x = mesh->mNormals[i].x; normal.y = mesh->mNormals[i].y; normal.z = mesh->mNormals[i].z;
         }
@@ -503,7 +506,7 @@ void FBXRWImpl::processSkeleton(aiMesh *mesh, SoulSkeletonMesh &fbxMesh,
         joint.name = std::string(mesh->mBones[i]->mName.data);
         const auto& mat = mesh->mBones[i]->mOffsetMatrix;
         // assimp row major, glm column major
-        joint.inverseWorldMatrix = glm::transpose(glm::mat4(
+        joint.inverseBindposeMatrix = glm::transpose(glm::mat4(
             mat[0][0], mat[0][1], mat[0][2], mat[0][3],
             mat[1][0], mat[1][1], mat[1][2], mat[1][3],
             mat[2][0], mat[2][1], mat[2][2], mat[2][3],
@@ -590,7 +593,7 @@ void FBXRWImpl::sortJointsByNodeTree(std::vector<SoulJoint> &joints,
 
         // find parent
         aiNode* node = getNodeByName(joints[i].name, nodes, nodeNames);
-        auto parentId = getJointIdByNode(node, jointNames);
+        auto parentId = getJointIdByNode(node->mParent, jointNames);
 
         // insert before i
         auto j  = parentId;
@@ -912,7 +915,7 @@ void FBXRWImpl::createSkeleton(SoulSkeletonMesh &fbxMesh, aiMesh* mesh) {
         
         // both column major
         aiMatrix4x4& mat = mesh->mBones[i]->mOffsetMatrix;
-        auto& jm = joint.inverseWorldMatrix;
+        auto& jm = joint.inverseBindposeMatrix;
         // assimp row major, glm column major
         mat = aiMatrix4x4(
             jm[0][0], jm[1][0], jm[2][0], jm[3][0],
@@ -960,74 +963,74 @@ void FBXRWImpl::createSkeleton(SoulSkeletonMesh &fbxMesh, aiMesh* mesh) {
 void FBXRWImpl::createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeletonMesh>>& skeletonMeshes, aiScene* scene) {
     
     // find animation count
-    int aniCount = 0;
-    for(auto& sk : skeletonMeshes) {
+    int index = -1;
+    for(size_t i = 0; i < skeletonMeshes.size(); i++) {
+        auto& sk = skeletonMeshes[i];
         if (sk->animation.channels.size() != 0) {
-            aniCount++;
-        }
-    }
-    if (aniCount == 0) {
-        return;
-    }
-
-    // 
-    scene->mNumAnimations = 1;
-    scene->mAnimations = new aiAnimation* [1];
-    scene->mAnimations[0] = new aiAnimation;
-    auto& animation = *(scene->mAnimations[0]);
-    for(auto& psk : skeletonMeshes) {
-        auto& sk = *psk;
-        if (sk.animation.channels.size() != 0) {
-            
-            auto& ani = sk.animation;
-            auto& joints = sk.skeleton.joints;
-            auto& channels = ani.channels;
-
-            animation.mName = ani.name;
-            animation.mDuration = ani.duration;
-            animation.mTicksPerSecond = ani.ticksPerSecond;
-            animation.mNumChannels = (uint32_t)channels.size();
-            animation.mChannels = new aiNodeAnim* [animation.mNumChannels];
-
-            for(uint32_t j = 0; j < animation.mNumChannels; j++) {
-                animation.mChannels[j] = new aiNodeAnim;
-                
-                auto& nodeAnimation = animation.mChannels[j];
-                auto& channel = channels[j];
-                auto jointId = channel.jointId;
-
-                nodeAnimation->mNodeName =  joints[jointId].name;
-
-                nodeAnimation->mNumPositionKeys = (uint32_t)channel.PositionKeys.size();
-                nodeAnimation->mPositionKeys = new aiVectorKey[nodeAnimation->mNumPositionKeys];
-                for (uint32_t k = 0; k < nodeAnimation->mNumPositionKeys; k++) {
-                    auto& element = nodeAnimation->mPositionKeys[k];
-                    auto& e = channel.PositionKeys[k];
-                    element.mTime = e.time / animation.mTicksPerSecond;
-                    element.mValue = aiVector3D(e.value.x, e.value.y, e.value.z);
-                }
-
-                nodeAnimation->mNumRotationKeys = (uint32_t)channel.RotationKeys.size();
-                nodeAnimation->mRotationKeys = new aiQuatKey[nodeAnimation->mNumRotationKeys];
-                for (uint32_t k = 0; k < nodeAnimation->mNumRotationKeys; k++) {
-                    auto& element = nodeAnimation->mRotationKeys[k];
-                    auto& e = channel.RotationKeys[k];
-                    element.mTime = e.time / animation.mTicksPerSecond;
-                    element.mValue = aiQuaterniont(e.value.w, e.value.x, e.value.y, e.value.z);
-                }
-
-                nodeAnimation->mNumScalingKeys = (uint32_t)channel.ScalingKeys.size();
-                nodeAnimation->mScalingKeys = new aiVectorKey[nodeAnimation->mNumScalingKeys];
-                for (uint32_t k = 0; k < nodeAnimation->mNumScalingKeys; k++) {
-                    auto& element = nodeAnimation->mScalingKeys[k];
-                    auto& e = channel.ScalingKeys[k];
-                    element.mTime = e.time / animation.mTicksPerSecond;
-                    element.mValue = aiVector3D(e.value.x, e.value.y, e.value.z);
-                }
-            }
+            index = i;
             break;
         }
     }
+    if (index != -1) {
+        return;
+    }
+    
+
+    // write
+    auto& sk = *skeletonMeshes[index];
+    auto& ani = sk.animation;
+    auto& joints = sk.skeleton.joints;
+    auto& channels = ani.channels;
+
+    scene->mNumAnimations = 1;
+    scene->mAnimations = new aiAnimation* [1];
+    scene->mAnimations[0] = new aiAnimation;
+    aiAnimation& animation = *(scene->mAnimations[0]);
+
+    animation.mName = ani.name;
+    animation.mDuration = ani.duration;
+    animation.mTicksPerSecond = ani.ticksPerSecond;
+    animation.mNumChannels = (uint32_t)channels.size();
+    animation.mChannels = new aiNodeAnim* [animation.mNumChannels];
+
+    for(uint32_t j = 0; j < animation.mNumChannels; j++) {
+        animation.mChannels[j] = new aiNodeAnim;
+        
+        auto& nodeAnimation = animation.mChannels[j];
+        auto& channel = channels[j];
+        auto jointId = channel.jointId;
+
+        nodeAnimation->mNodeName =  joints[jointId].name;
+
+        nodeAnimation->mNumPositionKeys = (uint32_t)channel.PositionKeys.size();
+        nodeAnimation->mPositionKeys = new aiVectorKey[nodeAnimation->mNumPositionKeys];
+        for (uint32_t k = 0; k < nodeAnimation->mNumPositionKeys; k++) {
+            auto& element = nodeAnimation->mPositionKeys[k];
+            auto& e = channel.PositionKeys[k];
+            element.mTime = e.time / animation.mTicksPerSecond;
+            element.mValue = aiVector3D(e.value.x, e.value.y, e.value.z);
+        }
+
+        nodeAnimation->mNumRotationKeys = (uint32_t)channel.RotationKeys.size();
+        nodeAnimation->mRotationKeys = new aiQuatKey[nodeAnimation->mNumRotationKeys];
+        for (uint32_t k = 0; k < nodeAnimation->mNumRotationKeys; k++) {
+            auto& element = nodeAnimation->mRotationKeys[k];
+            auto& e = channel.RotationKeys[k];
+            element.mTime = e.time / animation.mTicksPerSecond;
+            element.mValue = aiQuaterniont(e.value.w, e.value.x, e.value.y, e.value.z);
+        }
+
+        nodeAnimation->mNumScalingKeys = (uint32_t)channel.ScalingKeys.size();
+        nodeAnimation->mScalingKeys = new aiVectorKey[nodeAnimation->mNumScalingKeys];
+        for (uint32_t k = 0; k < nodeAnimation->mNumScalingKeys; k++) {
+            auto& element = nodeAnimation->mScalingKeys[k];
+            auto& e = channel.ScalingKeys[k];
+            element.mTime = e.time / animation.mTicksPerSecond;
+            element.mValue = aiVector3D(e.value.x, e.value.y, e.value.z);
+        }
+    }
+            
+    
 }
 
 

@@ -388,7 +388,10 @@ namespace SoulIK
 		Scale3D(InScale3D)
 	    {
         }
-
+        explicit FTransform(const glm::mat4 InMatrix)
+	    {
+		    SetFromMatrix(InMatrix);
+        }
         explicit FTransform(const glm::dmat4 InMatrix)
 	    {
 		    SetFromMatrix(InMatrix);
@@ -418,7 +421,19 @@ namespace SoulIK
             Scale3D = FVector(scale.x, scale.y, scale.z);
             Translation = FVector(translation.x, translation.y, translation.z);
         }
+        void SetFromMatrix(const glm::mat4& m) {
+            glm::vec3 scale;
+            glm::vec3 translation;
+            glm::vec3 skew;
+            glm::vec4 perspective;
+            glm::quat q;
 
+            glm::decompose(m, scale, q, translation, skew, perspective);
+            Rotation = FQuat(q.x, q.y, q.z, q.w);
+            Scale3D = FVector(scale.x, scale.y, scale.z);
+            Translation = FVector(translation.x, translation.y, translation.z);
+        }
+        
         FTransform Inverse() const
         {
             FQuat   InvRotation = Rotation.Inverse();
