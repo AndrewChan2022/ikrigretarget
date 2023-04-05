@@ -971,7 +971,7 @@ void FBXRWImpl::createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeleton
             break;
         }
     }
-    if (index != -1) {
+    if (index == -1) {
         return;
     }
     
@@ -987,6 +987,7 @@ void FBXRWImpl::createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeleton
     scene->mAnimations[0] = new aiAnimation;
     aiAnimation& animation = *(scene->mAnimations[0]);
 
+    assert(ani.name != "");  // warning: cannot save if no name
     animation.mName = ani.name;
     animation.mDuration = ani.duration;
     animation.mTicksPerSecond = ani.ticksPerSecond;

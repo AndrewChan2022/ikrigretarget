@@ -165,6 +165,7 @@ static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh
 
 static void writePoseAnimationToMesh(std::vector<SoulIK::SoulPose>& tempoutposes, SoulIK::SoulSkeletonMesh& tgtskm, double duration, double ticksPerSecond) {
 
+    // cannot save if no name
     tgtskm.animation.name = "mesh0";
     tgtskm.animation.duration = duration;
     tgtskm.animation.ticksPerSecond = ticksPerSecond;
@@ -195,7 +196,7 @@ static void writePoseAnimationToMesh(std::vector<SoulIK::SoulPose>& tempoutposes
     }
 }
 
-static std::shared_ptr<UIKRetargeter> createIKRigAsset(IKRigRetargetConfig& config,
+static std::shared_ptr<UIKRetargeter> createIKRigAsset(SoulIKRigRetargetConfig& config,
         SoulSkeleton& srcsk, SoulSkeleton& tgtsk, USkeleton& srcusk, USkeleton& tgtusk) {
 
     std::shared_ptr<UIKRetargeter> pInRetargeterAsset = std::make_shared<UIKRetargeter>();
@@ -268,8 +269,8 @@ static std::shared_ptr<UIKRetargeter> createIKRigAsset(IKRigRetargetConfig& conf
     return pInRetargeterAsset;
 }
 
-static IKRigRetargetConfig config1_1chain_lleg() {
-    IKRigRetargetConfig config;
+static SoulIKRigRetargetConfig config1_1chain_lleg() {
+    SoulIKRigRetargetConfig config;
     config.SourceCoord  = CoordType::RightHandZupYfront;
     config.WorkCoord    = CoordType::RightHandZupYfront;
     config.TargetCoord  = CoordType::RightHandZupYfront;
@@ -293,11 +294,13 @@ static IKRigRetargetConfig config1_1chain_lleg() {
         // fk   ik      sourceChain     targetChain
         {true,  false,  "lleg",         "lleg"}
     };
+
+    return config;
 }
 
-static IKRigRetargetConfig config2_6chain() {
+static SoulIKRigRetargetConfig config2_6chain() {
 
-    IKRigRetargetConfig config;
+    SoulIKRigRetargetConfig config;
 
     config.SourceCoord      = CoordType::RightHandZupYfront;
     config.WorkCoord        = CoordType::RightHandZupYfront;
@@ -337,10 +340,12 @@ static IKRigRetargetConfig config2_6chain() {
         {true,  false,  "rram",         "rram"},
         {true,  false,  "head",         "head"},
     };
+
+    return config;
 }
 
-static IKRigRetargetConfig config_to_meta() {
-    IKRigRetargetConfig config;
+static SoulIKRigRetargetConfig config_to_meta() {
+    SoulIKRigRetargetConfig config;
     config.SourceCoord      = CoordType::RightHandZupYfront;
     config.WorkCoord        = CoordType::RightHandZupYfront;
     config.TargetCoord      = CoordType::RightHandYupZfront;
@@ -379,9 +384,11 @@ static IKRigRetargetConfig config_to_meta() {
         {true,  false,  "rram",         "rram"},
         {true,  false,  "head",         "head"},
     };
+
+    return config;
 }
 
-static void getFilePaths(std::string& inputfile, std::string& inputfile2, std::string& outfile) {
+static void getFilePaths(std::string& inputfile, std::string& inputfile2, std::string& outfile, SoulIKRigRetargetConfig& config) {
     std::string file_path = __FILE__;
 #ifdef _WIN64
     std::string dir_path = file_path.substr(0, file_path.rfind("\\"));
@@ -389,8 +396,14 @@ static void getFilePaths(std::string& inputfile, std::string& inputfile2, std::s
     //std::string outfile = dir_path + "\\..\\..\\model\\3D_Avatar2_Rig_0723_out.fbx";
     // std::string inputfile = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts.fbx";
     // std::string outfile = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts_tiny_out.fbx";
+
     inputfile = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts_tiny_ball.fbx";
-    inputfile2 = dir_path + "\\..\\..\\model\\3D_Avatar2_Rig_0723.fbx";
+    if (config.TargetCoord == CoordType::RightHandZupYfront) {
+        inputfile2 = dir_path + "\\..\\..\\model\\S1_SittingDown_3d_17kpts_tiny_ball.fbx";
+    } else if (config.TargetCoord == CoordType::RightHandYupZfront) {
+        inputfile2 = dir_path + "\\..\\..\\model\\3D_Avatar2_Rig_0723.fbx";
+    }
+    
     outfile = dir_path + "\\..\\..\\model\\out.fbx";
     
 #else
@@ -405,18 +418,20 @@ int main(int argc, char *argv[]) {
 
     /////////////////////////////////////////////
     // setting of coord
-    IKRigRetargetConfig config  = config_to_meta();
-    CoordType srccoord          = config.SourceCoord;
-    CoordType workcoord         = config.WorkCoord;
-    CoordType tgtcoord          = config.TargetCoord;
-    FTransform tsrc2work        = IKRigUtils::getTransformFromCoord(srccoord, workcoord);
-    FTransform twork2tgt        = IKRigUtils::getTransformFromCoord(workcoord, tgtcoord);
+    //auto config             =  config1_1chain_lleg();
+    //auto config             =  config_to_meta();
+    auto config             =  config2_6chain();
+    CoordType srccoord      = config.SourceCoord;
+    CoordType workcoord     = config.WorkCoord;
+    CoordType tgtcoord      = config.TargetCoord;
+    FTransform tsrc2work    = IKRigUtils::getTransformFromCoord(srccoord, workcoord);
+    FTransform twork2tgt    = IKRigUtils::getTransformFromCoord(workcoord, tgtcoord);
 
     /////////////////////////////////////////////
     // read fbx
     std::string inputfile, inputfile2, outfile;
     SoulIK::FBXRW fbxrw, fbxrw2;
-    getFilePaths(inputfile, inputfile2, outfile);
+    getFilePaths(inputfile, inputfile2, outfile, config);
     fbxrw.readSkeketonMesh(inputfile);
     fbxrw2.readSkeketonMesh(inputfile2);
 
@@ -425,19 +440,12 @@ int main(int argc, char *argv[]) {
     SoulIK::SoulSkeletonMesh& srcskm = *srcscene.skmeshes[0];
     SoulIK::SoulSkeletonMesh& tgtskm = *tgtscene.skmeshes[0];
 
-    // IKRigUtils::debugPrintSkeletonTree(srcskm.skeleton);
-    // IKRigUtils::debugPrintNodePose(srcscene.rootNode.get());
-    // IKRigUtils::debugPrintSkeletonTree(tgtskm.skeleton);
-    // IKRigUtils::debugPrintNodePose(tgtscene.rootNode.get());
-    //return 0;
-
     /////////////////////////////////////////////
     // init
     SoulIK::USkeleton srcusk;
     SoulIK::USkeleton tgtusk;
     IKRigUtils::getUSkeletonFromMesh(srcscene, srcskm, srcusk, srccoord, workcoord);
     IKRigUtils::getUSkeletonFromMesh(tgtscene, tgtskm, tgtusk, tgtcoord, workcoord);
-    //IKRigUtils::debugPrintLocalFPose(tgtskm.skeleton, tgtusk.refpose);
 
     SoulIK::UIKRetargetProcessor ikretarget;
 	std::shared_ptr<UIKRetargeter> InRetargeterAsset = createIKRigAsset(config, srcskm.skeleton, tgtskm.skeleton, srcusk, tgtusk);
@@ -484,10 +492,12 @@ int main(int argc, char *argv[]) {
         // cast and output
         IKRigUtils::FPose2SoulPose(outposeLocal, tempoutposes[frame]);
 
+        //tempoutposes[frame].transforms[0].translation.x += frame;
+
         // test
-        SoulIK::SoulPose tgtsoulpose;
-        IKRigUtils::getSoulPoseFromMesh(tgtscene, tgtskm, tgtsoulpose);
-        tempoutposes[frame] = tgtsoulpose;
+        //SoulIK::SoulPose tgtsoulpose;
+        //IKRigUtils::getSoulPoseFromMesh(tgtscene, tgtskm, tgtsoulpose);
+        //tempoutposes[frame] = tgtsoulpose;
     }
 
     /////////////////////////////////////////////

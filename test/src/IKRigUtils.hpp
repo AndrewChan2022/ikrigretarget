@@ -22,13 +22,13 @@ namespace SoulIK {
         //LeftHandZupYfront       // unreal
     };
 
-    struct IKRigRetargetConfig {
-        struct IKRigChain {
+    struct SoulIKRigRetargetConfig {
+        struct SoulIKRigChain {
             std::string chainName;
             std::string startBone;
             std::string endBone;
         };
-        struct IKRigChainMapping {
+        struct SoulIKRigChainMapping {
             bool EnableFK{true};
             bool EnableIK{false};
             std::string SourceChain;
@@ -46,9 +46,9 @@ namespace SoulIK {
         std::string TargetRootBone;
         std::string TargetGroundBone;
 
-        std::vector<IKRigChain> SourceChains;
-        std::vector<IKRigChain> TargetChains;
-        std::vector<IKRigChainMapping> ChainMapping;
+        std::vector<SoulIKRigChain> SourceChains;
+        std::vector<SoulIKRigChain> TargetChains;
+        std::vector<SoulIKRigChainMapping> ChainMapping;
     };
 
 
