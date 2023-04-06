@@ -36,7 +36,7 @@
 
 # usage:
 
-coordinate system: 
+## working coordinate system: 
 
     right hand
 
@@ -46,42 +46,189 @@ coordinate system:
 
     y front
 
-example code:
+## source files:
+
+    lib         // retarget implement
+    lib/glm     // thirdParty files, need remove if already exist in your project
+    test        // test project, including fbx file read write
+
+## header files:
+
+    SoulRetargeter.h                // define retarget asset
+    SoulIKRetargetProcessor.h       // retarget processor
+    IKRigUtils.h                    // config define, utils for pose convert, coord system convert...
+    SoulScene.h                     // scene, mesh, skeleton, animation define
+
+## init of uskeleton:
+
+    class USkeleton {
+        std::string name;
+        std::vector<FBoneNode> boneTree;    // each item name and parentId
+        std::vector<FTransform> refpose;    // coord: Right Hand Z up Y front
+        ...
+    };
+    struct FBoneNode {
+        std::string name;
+        int32_t parent;
+        ...
+    };
+
+## init of IKRigRetargetAsset
+
+    // define retarget config
+    struct SoulIKRigRetargetConfig {
+        struct SoulIKRigChain {
+            std::string chainName;
+            std::string startBone;
+            std::string endBone;
+        };
+        struct SoulIKRigChainMapping {
+            bool EnableFK{true};
+            bool EnableIK{false};
+            std::string SourceChain;
+            std::string TargetChain;
+        };
+
+        // coordinate system
+        CoordType SourceCoord;
+        CoordType WorkCoord{CoordType::RightHandZupYfront};
+        CoordType TargetCoord;
+
+        // root
+        bool SkipRoot{false};       // todo
+        bool UseGroundBone{true};   // todo
+        std::string SourceRootBone;
+        std::string SourceGroundBone;
+        std::string TargetRootBone;
+        std::string TargetGroundBone;
+
+        std::vector<SoulIKRigChain> SourceChains;
+        std::vector<SoulIKRigChain> TargetChains;
+        std::vector<SoulIKRigChainMapping> ChainMapping;
+    };
+
+    // then create Asset with config
+    asset = createIKRigAsset(SoulIKRigRetargetConfig& config,
+                    SoulSkeleton& srcsk, SoulSkeleton& tgtsk,
+                    USkeleton& srcusk, USkeleton& tgtusk);
 
 
-    // init skeleton
-    SoulIK::USkeleton srcusk = ...;
-    SoulIK::USkeleton tgtusk = ...;
+## fix to tpose
 
-    // init IKRigAsset and IKRigRetargetAsset
-    std::shared_ptr<UIKRetargeter> InRetargeterAsset;
-    InRetargeterAsset  = buildIKRigRetargetAsset(srcskm.skeleton, tgtskm.skeleton, srcusk, tgtusk);
+for test model, its rest pose is A pose, so need fix it to tpose
 
-    // init ikretarget with Skeleton, IKRigAsset and IKRigRetargetAsset
-    SoulIK::UIKRetargetProcessor ikretarget;
-    ikretarget.Initialize(&srcusk, &tgtusk, InRetargeterAsset.get(), false);
-
-    // run retargeting every frame
-    std::unordered_map<FName, float> SpeedValuesFromCurves;
-    float DeltaTime = 0;
-    for(int frame = 0; frame < frameCount; frame++) {
-
-        // inpose is global
-        std::vector<FTransform> inposeLocal = ...; // get local pose from animation;
-        std::vector<FTransform> inposeGlobal;
-        inposeGlobal = ...; // LocalToGlobal(inposeLocal, inposeGlobal);
-
-        // run retarget
-        std::vector<FTransform>& outpose = ikretarget.RunRetargeter(inposeGlobal, SpeedValuesFromCurves, DeltaTime);
-
-        // out pose to local
-        std::vector<FTransform> outposeLocal;
-        outposeLocal = ...; //FPoseToLocal(outpose, outposeLocal);
+    if (isTargetMetaAndAPose) {
+        // fix to tpose
+        tgtusk.refpose = getMetaTPoseFPose(...);
     }
+
+## run retarget:
+
+        // type cast
+        IKRigUtils::SoulPose2FPose(inposes[frame], inposeLocal);
+
+        // coord convert
+        IKRigUtils::LocalPoseCoordConvert(tsrc2work, inposeLocal, srccoord, workcoord);
+
+        // to global pose
+        IKRigUtils::FPoseToGlobal(srcskm.skeleton, inposeLocal, inpose);
+
+        // retarget
+        std::vector<FTransform>& outpose = ikretarget.RunRetargeter(inpose, SpeedValuesFromCurves, DeltaTime);
+        
+        // to local pose
+        IKRigUtils::FPoseToLocal(tgtskm.skeleton, outpose, outposeLocal);
+        
+        // coord convert
+        IKRigUtils::LocalPoseCoordConvert(twork2tgt, outposeLocal, workcoord, tgtcoord);
+
+        // type cast
+        IKRigUtils::FPose2SoulPose(outposeLocal, outposes[frame]);
+
+## full example:
+
+main.cpp
+
+    #include "SoulScene.h"
+    #include "SoulRetargeter.h"
+    #include "SoulIKRetargetProcessor.h"
+    #include "IKRigUtils.hpp"
+    #include "FBXRW.h"
+
+    /////////////////////////////////////////////
+    // config
+    auto config             = config_to_meta();
+    CoordType srccoord      = config.SourceCoord;
+    CoordType workcoord     = config.WorkCoord;
+    CoordType tgtcoord      = config.TargetCoord;
+    bool isModelAPose       = true;
+
+    /////////////////////////////////////////////
+    // read fbx
+    SoulIK::FBXRW fbxrw, fbxrw2;
+    fbxrw.readSkeketonMesh(inputfile);
+    fbxrw2.readSkeketonMesh(inputfile2);
+
+    SoulIK::SoulScene& srcscene = *fbxrw.getSoulScene();
+    SoulIK::SoulScene& tgtscene = *fbxrw2.getSoulScene();
+    SoulIK::SoulSkeletonMesh& srcskm = *srcscene.skmeshes[0];
+    SoulIK::SoulSkeletonMesh& tgtskm = *tgtscene.skmeshes[0];
+
+    /////////////////////////////////////////////
+    // init
+    SoulIK::USkeleton srcusk;
+    SoulIK::USkeleton tgtusk;
+    IKRigUtils::getUSkeletonFromMesh(srcscene, srcskm, srcusk, srccoord, workcoord);
+    IKRigUtils::getUSkeletonFromMesh(tgtscene, tgtskm, tgtusk, tgtcoord, workcoord);
+    if (isModelAPose) { 
+        // fix to tpose
+        tgtusk.refpose = getMetaTPoseFPose(tgtskm.skeleton, tgtcoord, workcoord);
+    }
+
+    SoulIK::UIKRetargetProcessor ikretarget;
+	auto InRetargeterAsset = createIKRigAsset(config, srcskm.skeleton, tgtskm.skeleton, srcusk, tgtusk);
+    ikretarget.Initialize(&srcusk, &tgtusk, InRetargeterAsset.get(), false);
+    
+    /////////////////////////////////////////////
+    // build pose animation
+    std::vector<SoulIK::SoulPose> inposes;
+    std::vector<SoulIK::SoulPose> outposes;
+    ... 
+
+    /////////////////////////////////////////////
+    // run retarget
+    for(int frame = 0; frame < inposes.size(); frame++) {
+        // type cast
+        IKRigUtils::SoulPose2FPose(inposes[frame], inposeLocal);
+
+        // coord convert
+        IKRigUtils::LocalPoseCoordConvert(tsrc2work, inposeLocal, srccoord, workcoord);
+
+        // to global pose
+        IKRigUtils::FPoseToGlobal(srcskm.skeleton, inposeLocal, inpose);
+
+        // retarget
+        std::vector<FTransform>& outpose = ikretarget.RunRetargeter(inpose, SpeedValuesFromCurves, DeltaTime);
+        
+        // to local pose
+        IKRigUtils::FPoseToLocal(tgtskm.skeleton, outpose, outposeLocal);
+        
+        // coord convert
+        IKRigUtils::LocalPoseCoordConvert(twork2tgt, outposeLocal, workcoord, tgtcoord);
+
+        // type cast
+        IKRigUtils::FPose2SoulPose(outposeLocal, outposes[frame]);
+    }
+
+    /////////////////////////////////////////////
+    // write animation to fbx
+    ...
 
 # feature work
 
 develop maya plugin based on this lib
+
+render the skeleton and animation
 
 # Acknowledgements
 

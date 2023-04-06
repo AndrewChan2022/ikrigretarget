@@ -144,6 +144,7 @@ void FBXRW::readSkeketonMesh(std::string inPath, float scale) {
     Importer& importer = pimpl->importer;
     
     // import as centi-meter by set GlobalScale = 100, which is default
+    // maya export setting:  centi-meter
     importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 100.0 * scale);
     // prevent 1 joint split to 3 joints prerotation/rotation/joint
     importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);

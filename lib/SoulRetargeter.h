@@ -25,7 +25,7 @@ namespace SoulIK
     {
         std::string name;
         int32_t parent;
-        int32_t mode{-1};       // not ignore it
+        int32_t mode{-1};       // now ignore it
     };
 
     ////////////////////////////////////////////////////////////////////////

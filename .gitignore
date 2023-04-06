@@ -4,4 +4,4 @@ build*
 /.vs
 /.vscode
 .DS_Store
-out.fbx
+model/out*

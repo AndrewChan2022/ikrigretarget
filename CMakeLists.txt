@@ -23,7 +23,7 @@ include_directories(./lib)
 ################## src
 
 file(GLOB APP_HEADER_FILES
-    ./lib/*.h
+    ./lib/*.h ./lib/*.hpp
 )
 file(GLOB APP_SOURCE_FILES
     ./lib/*.cpp
