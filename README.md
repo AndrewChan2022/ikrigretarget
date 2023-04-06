@@ -1,4 +1,12 @@
 
+# todo
+
+1. fix meta retarget error pose
+2. read model with only skeleton
+3. generate meta model of tpose
+4. skip root retarget
+
+
 # platform
 
     1. mac 
