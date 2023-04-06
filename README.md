@@ -59,92 +59,6 @@
     IKRigUtils.h                    // config define, utils for pose convert, coord system convert...
     SoulScene.h                     // scene, mesh, skeleton, animation define
 
-## init of uskeleton:
-
-    class USkeleton {
-        std::string name;
-        std::vector<FBoneNode> boneTree;    // each item name and parentId
-        std::vector<FTransform> refpose;    // coord: Right Hand Z up Y front
-        ...
-    };
-    struct FBoneNode {
-        std::string name;
-        int32_t parent;
-        ...
-    };
-
-## init of IKRigRetargetAsset
-
-    // define retarget config
-    struct SoulIKRigRetargetConfig {
-        struct SoulIKRigChain {
-            std::string chainName;
-            std::string startBone;
-            std::string endBone;
-        };
-        struct SoulIKRigChainMapping {
-            bool EnableFK{true};
-            bool EnableIK{false};
-            std::string SourceChain;
-            std::string TargetChain;
-        };
-
-        // coordinate system
-        CoordType SourceCoord;
-        CoordType WorkCoord{CoordType::RightHandZupYfront};
-        CoordType TargetCoord;
-
-        // root
-        bool SkipRoot{false};       // todo
-        bool UseGroundBone{true};   // todo
-        std::string SourceRootBone;
-        std::string SourceGroundBone;
-        std::string TargetRootBone;
-        std::string TargetGroundBone;
-
-        std::vector<SoulIKRigChain> SourceChains;
-        std::vector<SoulIKRigChain> TargetChains;
-        std::vector<SoulIKRigChainMapping> ChainMapping;
-    };
-
-    // then create Asset with config
-    asset = createIKRigAsset(SoulIKRigRetargetConfig& config,
-                    SoulSkeleton& srcsk, SoulSkeleton& tgtsk,
-                    USkeleton& srcusk, USkeleton& tgtusk);
-
-
-## fix to tpose
-
-for test model, its rest pose is A pose, so need fix it to tpose
-
-    if (isTargetMetaAndAPose) {
-        // fix to tpose
-        tgtusk.refpose = getMetaTPoseFPose(...);
-    }
-
-## run retarget:
-
-        // type cast
-        IKRigUtils::SoulPose2FPose(inposes[frame], inposeLocal);
-
-        // coord convert
-        IKRigUtils::LocalPoseCoordConvert(tsrc2work, inposeLocal, srccoord, workcoord);
-
-        // to global pose
-        IKRigUtils::FPoseToGlobal(srcskm.skeleton, inposeLocal, inpose);
-
-        // retarget
-        std::vector<FTransform>& outpose = ikretarget.RunRetargeter(inpose, SpeedValuesFromCurves, DeltaTime);
-        
-        // to local pose
-        IKRigUtils::FPoseToLocal(tgtskm.skeleton, outpose, outposeLocal);
-        
-        // coord convert
-        IKRigUtils::LocalPoseCoordConvert(twork2tgt, outposeLocal, workcoord, tgtcoord);
-
-        // type cast
-        IKRigUtils::FPose2SoulPose(outposeLocal, outposes[frame]);
-
 ## full example:
 
 main.cpp
@@ -223,6 +137,99 @@ main.cpp
     /////////////////////////////////////////////
     // write animation to fbx
     ...
+
+## init of uskeleton:
+
+    class USkeleton {
+        std::string name;
+        std::vector<FBoneNode> boneTree;    // each item name and parentId
+        std::vector<FTransform> refpose;    // coord: Right Hand Z up Y front
+        ...
+    };
+    struct FBoneNode {
+        std::string name;
+        int32_t parent;
+        ...
+    };
+
+## init of IKRigRetargetAsset
+
+    // define retarget config
+    struct SoulIKRigRetargetConfig {
+        struct SoulIKRigChain {
+            std::string chainName;
+            std::string startBone;
+            std::string endBone;
+        };
+        struct SoulIKRigChainMapping {
+            bool EnableFK{true};
+            bool EnableIK{false};
+            std::string SourceChain;
+            std::string TargetChain;
+        };
+
+        // coordinate system
+        CoordType SourceCoord;
+        CoordType WorkCoord{CoordType::RightHandZupYfront};
+        CoordType TargetCoord;
+
+        // root
+        bool SkipRoot{false};       // todo
+        bool UseGroundBone{true};   // todo
+        std::string SourceRootBone;
+        std::string SourceGroundBone;
+        std::string TargetRootBone;
+        std::string TargetGroundBone;
+
+        std::vector<SoulIKRigChain> SourceChains;
+        std::vector<SoulIKRigChain> TargetChains;
+        std::vector<SoulIKRigChainMapping> ChainMapping;
+    };
+
+    // then create Asset with config
+    asset = createIKRigAsset(SoulIKRigRetargetConfig& config,
+                    SoulSkeleton& srcsk, SoulSkeleton& tgtsk,
+                    USkeleton& srcusk, USkeleton& tgtusk);
+
+
+## fix to tpose
+
+for test model, its rest pose is A pose, so need fix it to tpose
+
+    if (isTargetMetaAndAPose) {
+        // fix to tpose
+        tgtusk.refpose = getMetaTPoseFPose(...);
+    }
+
+## init of processor
+
+    SoulIK::UIKRetargetProcessor ikretarget;
+    ikretarget.Initialize(&srcusk, &tgtusk, asset, false);    
+
+## run retarget:
+
+    // type cast
+    IKRigUtils::SoulPose2FPose(inposes[frame], inposeLocal);
+
+    // coord convert
+    IKRigUtils::LocalPoseCoordConvert(tsrc2work, inposeLocal, srccoord, workcoord);
+
+    // to global pose
+    IKRigUtils::FPoseToGlobal(srcskm.skeleton, inposeLocal, inpose);
+
+    // retarget
+    std::vector<FTransform>& outpose = ikretarget.RunRetargeter(inpose, SpeedValuesFromCurves, DeltaTime);
+    
+    // to local pose
+    IKRigUtils::FPoseToLocal(tgtskm.skeleton, outpose, outposeLocal);
+    
+    // coord convert
+    IKRigUtils::LocalPoseCoordConvert(twork2tgt, outposeLocal, workcoord, tgtcoord);
+
+    // type cast
+    IKRigUtils::FPose2SoulPose(outposeLocal, outposes[frame]);
+
+
 
 # feature work
 
