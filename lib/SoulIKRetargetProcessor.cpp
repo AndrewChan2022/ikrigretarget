@@ -9,7 +9,9 @@
 #include <algorithm>
 #include <tuple>
 
-//#define DEBUG_POSE_LOG
+// #define DEBUG_POSE_LOG
+// #define DEBUG_POSE_LOG_CHAINFK
+// #define DEBUG_POSE_LOG_ROOT
 
 #define RETARGETSKELETON_INVALID_BRANCH_INDEX -2
 
@@ -636,6 +638,98 @@ void FChainEncoderFK::TransformCurrentChainTransforms(const FTransform& NewParen
 	}
 }
 
+static void printTargetNodeTransform(
+	TArray<FTransform> &InOutGlobalPose, 				// curG
+	const FTargetSkeleton& TargetSkeleton, 				// init
+	FQuat const& RotationDelta,
+	int ChainIndex, int BoneIndex, int ParentIndex) {
+
+	// each node: 
+    //		init TRS len/angle/L len/angle/G deltaR
+    //		cur  TRS len/angle/L len/angle/G deltaR
+	
+	float len = -1;
+
+	printf("decode target ChainIndex: %d, boneIndex:%d name:%s\n", 
+		ChainIndex, BoneIndex, TargetSkeleton.BoneNames[BoneIndex].c_str()
+	);
+
+	printf("init L len:%.2f angle:%.2f t(%.2f %.2f %.2f) r.xyzwd(%.2f %.2f %.2f %.2f)%.2f\n",
+		TargetSkeleton.RetargetLocalPose[BoneIndex].GetTranslation().Length(),
+		TargetSkeleton.RetargetLocalPose[BoneIndex].GetRotation().AngleDegree(),
+		TargetSkeleton.RetargetLocalPose[BoneIndex].GetTranslation().x,
+		TargetSkeleton.RetargetLocalPose[BoneIndex].GetTranslation().y,
+		TargetSkeleton.RetargetLocalPose[BoneIndex].GetTranslation().z,
+		TargetSkeleton.RetargetLocalPose[BoneIndex].GetRotation().x,
+		TargetSkeleton.RetargetLocalPose[BoneIndex].GetRotation().y,
+		TargetSkeleton.RetargetLocalPose[BoneIndex].GetRotation().z,
+		TargetSkeleton.RetargetLocalPose[BoneIndex].GetRotation().w,
+		TargetSkeleton.RetargetLocalPose[BoneIndex].GetRotation().Size()
+	);
+
+	if (ParentIndex != -1) {
+		len = (TargetSkeleton.RetargetGlobalPose[ParentIndex].GetTranslation() 
+			-  TargetSkeleton.RetargetGlobalPose[BoneIndex].GetTranslation()).Length();
+	}
+	printf("init G len:%.2f angle:%.2f t(%.2f %.2f %.2f) r.xyzwd(%.2f %.2f %.2f %.2f)%.2f\n",
+		len,
+		TargetSkeleton.RetargetGlobalPose[BoneIndex].GetRotation().AngleDegree(),
+		TargetSkeleton.RetargetGlobalPose[BoneIndex].GetTranslation().x,
+		TargetSkeleton.RetargetGlobalPose[BoneIndex].GetTranslation().y,
+		TargetSkeleton.RetargetGlobalPose[BoneIndex].GetTranslation().z,
+		TargetSkeleton.RetargetGlobalPose[BoneIndex].GetRotation().x,
+		TargetSkeleton.RetargetGlobalPose[BoneIndex].GetRotation().y,
+		TargetSkeleton.RetargetGlobalPose[BoneIndex].GetRotation().z,
+		TargetSkeleton.RetargetGlobalPose[BoneIndex].GetRotation().w,
+		TargetSkeleton.RetargetGlobalPose[BoneIndex].GetRotation().Size()
+	);
+
+	printf("RotationDelta r.xyzwd:(%.2f %.2f %.2f %.2f)%.2f alpha:%.2f\n",
+		RotationDelta.x,
+		RotationDelta.y,
+		RotationDelta.z,
+		RotationDelta.w,
+		RotationDelta.Size(),
+		RotationDelta.AngleDegree()
+	);
+
+	FTransform curL;
+	if (ParentIndex != -1) {
+		curL = InOutGlobalPose[BoneIndex].GetRelativeTransform(InOutGlobalPose[ParentIndex]);
+	} else {
+		curL = InOutGlobalPose[BoneIndex];
+	}
+	printf("cur L len:%.2f angle:%.2f t(%.2f %.2f %.2f) r.xyzwd(%.2f %.2f %.2f %.2f)%.2f\n",
+		curL.GetTranslation().Length(),
+		curL.GetRotation().AngleDegree(),
+		curL.GetTranslation().x,
+		curL.GetTranslation().y,
+		curL.GetTranslation().z,
+		curL.GetRotation().x,
+		curL.GetRotation().y,
+		curL.GetRotation().z,
+		curL.GetRotation().w,
+		curL.GetRotation().Size()
+	);
+
+	if (ParentIndex != -1) {
+		len = (InOutGlobalPose[ParentIndex].GetTranslation() 
+			-  InOutGlobalPose[BoneIndex].GetTranslation()).Length();
+	}
+	printf("cur G len:%.2f angle:%.2f t(%.2f %.2f %.2f) r.xyzwd(%.2f %.2f %.2f %.2f)%.2f\n",
+		len,
+		InOutGlobalPose[BoneIndex].GetRotation().AngleDegree(),
+		InOutGlobalPose[BoneIndex].GetTranslation().x,
+		InOutGlobalPose[BoneIndex].GetTranslation().y,
+		InOutGlobalPose[BoneIndex].GetTranslation().z,
+		InOutGlobalPose[BoneIndex].GetRotation().x,
+		InOutGlobalPose[BoneIndex].GetRotation().y,
+		InOutGlobalPose[BoneIndex].GetRotation().z,
+		InOutGlobalPose[BoneIndex].GetRotation().w,
+		InOutGlobalPose[BoneIndex].GetRotation().Size()
+	);
+}
+
 void FChainDecoderFK::DecodePose(
 	const FRootRetargeter& RootRetargeter,
 	const FTargetChainSettings& Settings,
@@ -753,17 +847,9 @@ void FChainDecoderFK::DecodePose(
 			break;
 		}
 
-		#if 1 //#ifdef DEBUG_POSE_LOG
-		printf("decode ChainIndex:%d jointId:%d jointName:%s\n", ChainIndex, BoneIndex, 
-			TargetSkeleton.BoneNames[BoneIndex].c_str());
-		printf("SourceCurrentTransform: t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
-			SourceCurrentTransform.Translation.x, 
-			SourceCurrentTransform.Translation.y,
-			SourceCurrentTransform.Translation.z,
-			SourceCurrentTransform.Rotation.x,
-			SourceCurrentTransform.Rotation.y,
-			SourceCurrentTransform.Rotation.z,
-			SourceCurrentTransform.Rotation.w
+		#ifdef DEBUG_POSE_LOG_CHAINFK
+		printf("decode source ChainIndex:%d jointId:%d jointName:%s\n", ChainIndex, BoneIndex, 
+			TargetSkeleton.BoneNames[BoneIndex].c_str()
 		);
 		printf("SourceInitialTransform: t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
 			SourceInitialTransform.Translation.x, 
@@ -774,15 +860,53 @@ void FChainDecoderFK::DecodePose(
 			SourceInitialTransform.Rotation.z,
 			SourceInitialTransform.Rotation.w
 		);
+		printf("SourceCurrentTransform: t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
+			SourceCurrentTransform.Translation.x, 
+			SourceCurrentTransform.Translation.y,
+			SourceCurrentTransform.Translation.z,
+			SourceCurrentTransform.Rotation.x,
+			SourceCurrentTransform.Rotation.y,
+			SourceCurrentTransform.Rotation.z,
+			SourceCurrentTransform.Rotation.w
+		);
 		#endif
 		
 		// apply rotation offset to the initial target rotation
 		const FQuat SourceCurrentRotation = SourceCurrentTransform.GetRotation();
 		const FQuat SourceInitialRotation = SourceInitialTransform.GetRotation();
-		const FQuat RotationDelta = SourceCurrentRotation * SourceInitialRotation.Inverse();
+		FQuat RotationDelta = SourceCurrentRotation * SourceInitialRotation.Inverse();
+		RotationDelta.Normalize(); // chenkai bugfix
 		//printf("rot0:%f rotnow:%f rotationDelta:%f\n", SourceInitialRotation.getAngleDegree(), SourceCurrentRotation.getAngleDegree(), RotationDelta.getAngleDegree());
 		const FQuat TargetInitialRotation = TargetInitialTransform.GetRotation();
-		const FQuat OutRotation = RotationDelta * TargetInitialRotation;
+		FQuat OutRotation = RotationDelta * TargetInitialRotation; // copy Global rotation
+		OutRotation.Normalize(); // chenkai bugfix
+
+		#ifdef DEBUG_POSE_LOG_CHAINFK
+		printf("TargetInitialRotation.xyzwd:(%.2f %.2f %.2f %.2f)%.2f angle:%.2f\n", 
+			TargetInitialRotation.x,
+			TargetInitialRotation.y,
+			TargetInitialRotation.z,
+			TargetInitialRotation.w,
+			TargetInitialRotation.Size(),
+			TargetInitialRotation.AngleDegree()
+		);
+		printf("RotationDelta.xyzwd:(%.2f %.2f %.2f %.2f)%.2f angle:%.2f\n", 
+			RotationDelta.x,
+			RotationDelta.y,
+			RotationDelta.z,
+			RotationDelta.w,
+			RotationDelta.Size(),
+			RotationDelta.AngleDegree()
+		);
+		printf("OutRotation.xyzwd:(%.2f %.2f %.2f %.2f)%.2f angle:%.2f\n", 
+			OutRotation.x,
+			OutRotation.y,
+			OutRotation.z,
+			OutRotation.w,
+			OutRotation.Size(),
+			OutRotation.AngleDegree()
+		);
+		#endif
 
 		// calculate output POSITION based on translation mode setting
 		FTransform ParentGlobalTransform = FTransform::Identity;
@@ -818,65 +942,18 @@ void FChainDecoderFK::DecodePose(
 		const FVector SourceInitialScale = SourceInitialTransform.GetScale3D();
 		const FVector TargetInitialScale = TargetInitialTransform.GetScale3D();
 		const FVector OutScale = SourceCurrentScale + (TargetInitialScale - SourceInitialScale);
-
-		#if 1 //#ifdef DEBUG_POSE_LOG
-
-		printf("target init: len:%.2f t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f) alpha:%.2f\n",
-			(TargetInitialTransform.GetTranslation() -  TargetSkeleton.RetargetGlobalPose[ParentIndex].GetTranslation()).Length(),
-			TargetInitialTransform.GetTranslation().x,
-			TargetInitialTransform.GetTranslation().y,
-			TargetInitialTransform.GetTranslation().z,
-			TargetInitialTransform.GetRotation().x,
-			TargetInitialTransform.GetRotation().y,
-			TargetInitialTransform.GetRotation().z,
-			TargetInitialTransform.GetRotation().w,
-			TargetInitialTransform.GetRotation().AngleDegree()
-		);
-		printf("parent: t.xyz:(%.2f %.2f %.2f) r.xyzw(%.2f %.2f %.2f %.2f) alpha:%.2f\n",
-			InOutGlobalPose[ParentIndex].GetTranslation().x,
-			InOutGlobalPose[ParentIndex].GetTranslation().y,
-			InOutGlobalPose[ParentIndex].GetTranslation().z,
-			InOutGlobalPose[ParentIndex].GetRotation().x,
-			InOutGlobalPose[ParentIndex].GetRotation().y,
-			InOutGlobalPose[ParentIndex].GetRotation().z,
-			InOutGlobalPose[ParentIndex].GetRotation().w,
-			InOutGlobalPose[ParentIndex].GetRotation().AngleDegree()
-		);
-		{
-			const FVector aInitialLocalOffset = TargetSkeleton.RetargetLocalPose[BoneIndex].GetTranslation();
-			FVector aOutPosition = ParentGlobalTransform.TransformPosition(aInitialLocalOffset);
-			FVector aParentPosition = InOutGlobalPose[ParentIndex].GetTranslation();
-			printf("target after parent: offset:%.2f len:%.2f t.xyz:(%.2f %.2f %.2f)\n",
-				aInitialLocalOffset.Length(),
-				(aOutPosition - aParentPosition).Length(),
-				aOutPosition.x,
-				aOutPosition.y,
-				aOutPosition.z
-			);
-		}
-		printf("output: RotationDelta r.xyzw:(%.2f %.2f %.2f %.2f) alpha:%.2f\n",
-			RotationDelta.x,
-			RotationDelta.y,
-			RotationDelta.z,
-			RotationDelta.w,
-			RotationDelta.AngleDegree()
-		);
-		printf("output: len:%.2f t.xyz:(%.2f %.2f %.2f)  r.xyzw:(%.2f %.2f %.2f %.2f) alpha:%.2f\n",
-			(OutPosition -  InOutGlobalPose[ParentIndex].GetTranslation()).Length(),
-			OutPosition.x,
-			OutPosition.y,
-			OutPosition.z,
-			OutRotation.x,
-			OutRotation.y,
-			OutRotation.z,
-			OutRotation.w,
-			OutRotation.AngleDegree()
-		);
-		#endif
 		
 		// apply output transform
 		CurrentGlobalTransforms[ChainIndex] = FTransform(OutRotation, OutPosition, OutScale);
 		InOutGlobalPose[BoneIndex] = CurrentGlobalTransforms[ChainIndex];
+
+		#ifdef DEBUG_POSE_LOG_CHAINFK
+		if (ChainIndex == 0) {
+			int ParentParentIndex = TargetSkeleton.ParentIndices[ParentIndex];
+			printTargetNodeTransform(InOutGlobalPose, TargetSkeleton, FQuat(), -1, ParentIndex, ParentParentIndex);
+		}
+		printTargetNodeTransform(InOutGlobalPose, TargetSkeleton, RotationDelta, ChainIndex, BoneIndex, ParentIndex);
+		#endif
 	}
 
 	// apply final blending between retarget pose of chain and newly retargeted pose
@@ -948,19 +1025,25 @@ FTransform FChainDecoderFK::GetTransformAtParam(
 {
 	if (InParams.size() == 1)
 	{
+		#ifdef DEBUG_POSE_LOG_CHAINFK
 		printf("get front chain:%d\n", 0);
+		#endif
 		return Transforms[0];
 	}
 	
 	if (Param < KINDA_SMALL_NUMBER)
 	{
+		#ifdef DEBUG_POSE_LOG_CHAINFK
 		printf("get front chain:%d\n", 0);
+		#endif
 		return Transforms[0];
 	}
 
 	if (Param > 1.0f - KINDA_SMALL_NUMBER)
 	{
+		#ifdef DEBUG_POSE_LOG_CHAINFK
 		printf("get back chain:%d\n", Transforms.size()-1);
+		#endif
 		return Transforms.back();
 	}
 
@@ -977,10 +1060,17 @@ FTransform FChainDecoderFK::GetTransformAtParam(
 		const FTransform& Prev = Transforms[ChainIndex-1];
 		const FTransform& Next = Transforms[ChainIndex];
 		const FVector Position = FVector::lerp(Prev.GetTranslation(), Next.GetTranslation(), PercentBetweenParams);
-		const FQuat Rotation = FQuat::FastLerp(Prev.GetRotation(), Next.GetRotation(), PercentBetweenParams).GetNormalized();
+		FQuat Rotation = FQuat::FastLerp(Prev.GetRotation(), Next.GetRotation(), PercentBetweenParams).GetNormalized();
 		const FVector Scale = FVector::lerp(Prev.GetScale3D(), Next.GetScale3D(), PercentBetweenParams);
 		
-		printf("get blend chain:%d %d %.2f\n", ChainIndex-1, ChainIndex, PercentBetweenParams);
+		#ifdef DEBUG_POSE_LOG_CHAINFK
+		//Rotation = FQuat::Identity;
+		printf("get blend chain:%d %d %.2f t:(%.2f %.2f %.2f) r.xyzw(%.2f %.2f %.2f %.2f)\n", 
+				ChainIndex-1, ChainIndex, PercentBetweenParams,
+				Position.x, Position.y, Position.z,
+				Rotation.x, Rotation.y, Rotation.z, Rotation.w
+			);
+		#endif
 		return FTransform(Rotation,Position, Scale);
 	}
 
@@ -1190,10 +1280,12 @@ bool FRootRetargeter::InitializeSource(
 	float InitialHeight = InitialTransform.GetTranslation().z - InitialTransformGround.GetTranslation().z;
 	Source.InitialRotation = InitialTransform.GetRotation();
 
+	#ifdef DEBUG_POSE_LOG_ROOT
 	printf("init srcroot: root.t(%.2f %.2f %.2f) ground.t(%.2f %.2f %.2f)\n",
 		InitialTransform.GetTranslation().x, InitialTransform.GetTranslation().y, InitialTransform.GetTranslation().z, 
 		InitialTransformGround.GetTranslation().x, InitialTransformGround.GetTranslation().y, InitialTransformGround.GetTranslation().z
 	);
+	#endif
 
 	// ensure root height is not at origin, this happens if user sets root to ACTUAL skeleton root and not pelvis
 	if (InitialHeight < KINDA_SMALL_NUMBER)
@@ -1237,10 +1329,12 @@ bool FRootRetargeter::InitializeTarget(
 	Target.InitialRotation = TargetInitialTransform.GetRotation();
 	Target.InitialPosition = TargetInitialTransform.GetTranslation();
 
+	#ifdef DEBUG_POSE_LOG_ROOT
 	printf("init tgtroot: root.t(%.2f %.2f %.2f) ground.t(%.2f %.2f %.2f)\n",
 		TargetInitialTransform.GetTranslation().x, TargetInitialTransform.GetTranslation().y, TargetInitialTransform.GetTranslation().z, 
 		TargetTransformGround.GetTranslation().x, TargetTransformGround.GetTranslation().y, TargetTransformGround.GetTranslation().z
 	);
+	#endif
 
 	// initialize the global scale factor
 	const float ScaleFactor = Source.InitialHeightInverse * Target.InitialHeight;
@@ -1262,8 +1356,11 @@ void FRootRetargeter::EncodePose(const TArray<FTransform>& SourceGlobalPose)
 	Source.CurrentPositionNormalized = Source.CurrentPosition * Source.InitialHeightInverse;
 	Source.CurrentRotation = SourceTransform.GetRotation();	
 
+	#ifdef DEBUG_POSE_LOG_ROOT
 	printf("root encode: t(%.2f %.2f %.2f) inverseHeight:%.2f\n", 
-		Source.CurrentPosition.x, Source.CurrentPosition.y, Source.CurrentPosition.z, Source.InitialHeightInverse);
+		Source.CurrentPosition.x, Source.CurrentPosition.y, Source.CurrentPosition.z, Source.InitialHeightInverse
+	);
+	#endif
 }
 
 void FRootRetargeter::DecodePose(TArray<FTransform>& OutTargetGlobalPose)
@@ -1274,8 +1371,11 @@ void FRootRetargeter::DecodePose(TArray<FTransform>& OutTargetGlobalPose)
 		// generate basic retarget root position by scaling the normalized position by root height
 		const FVector RetargetedPosition = Source.CurrentPositionNormalized * Target.InitialHeight;
 
+		#ifdef DEBUG_POSE_LOG_ROOT
 		printf("root decode RetargetedPosition: t(%.2f %.2f %.2f) height:%.2f\n", 
-		RetargetedPosition.x, RetargetedPosition.y, RetargetedPosition.z, Target.InitialHeight);
+			RetargetedPosition.x, RetargetedPosition.y, RetargetedPosition.z, Target.InitialHeight
+		);
+		#endif
 		
 		// blend the retarget root position towards the source retarget root position
 		Position = FVector::lerp(RetargetedPosition, Source.CurrentPosition, Settings.BlendToSource*Settings.BlendToSourceWeights);

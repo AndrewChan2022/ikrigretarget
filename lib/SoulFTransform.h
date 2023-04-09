@@ -17,6 +17,7 @@
 #include "glm/vec3.hpp" // glm::vec3
 #include "glm/vec4.hpp" // glm::vec4
 #include "glm/gtc/quaternion.hpp"   // glm::quat
+#include "glm/gtx/quaternion.hpp"
 #include "glm/mat4x4.hpp" // glm::mat4
 #include "glm/ext/matrix_transform.hpp" // glm::translate, glm::rotate, glm::scale
 #include "glm/ext/matrix_clip_space.hpp" // glm::perspective
@@ -257,7 +258,7 @@ namespace SoulIK
                 const double Scale = 1.0 / std::sqrt(SquareSum);
 
                 x *= Scale; 
-                x *= Scale; 
+                y *= Scale; 
                 z *= Scale;
                 w *= Scale;
             }
@@ -280,6 +281,10 @@ namespace SoulIK
             const FVector TT = 2.f * FVector::CrossProduct(Q, V);
             const FVector Result = V + (w * TT) + FVector::CrossProduct(Q, TT);
             return Result;
+            // glm::dquat q(w, x, y, z);
+            // glm::dvec3 v(V.x, V.y, V.z);
+            // v = glm::rotate(q, v);
+            // return FVector(v);
         }
 
         double operator|(const FQuat& Q) const
@@ -869,7 +874,13 @@ namespace SoulIK
 
         FVector TransformPosition(const FVector& V) const
         {
-            return Rotation.RotateVector(Scale3D*V) + Translation;
+            FVector rv = Rotation.RotateVector(Scale3D * V);
+            double len = Rotation.Size();
+            if (std::abs(len - 1.0) > 0.1) {
+                printf("not normalize\n");
+                assert(false);
+            }
+            return  rv + Translation;
         }
         
 

@@ -15,6 +15,8 @@
 
 using namespace SoulIK;
 
+//#define DEBUG_POSE_PRINT
+
 // generate pose of every joint and every frame
 static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh& skmesh,
                         SoulJointAnimation& animation, std::vector<SoulIK::SoulPose>& poses) {
@@ -511,8 +513,17 @@ static SoulIKRigRetargetConfig config_to_meta() {
     config.SourceChains = {
         // name     start               end
         {"spine",   "Spine",            "Thorax"},
-        {"lleg",    "LeftHip",          "LeftAnkle"},
-        {"rleg",    "RightHip",         "RightAnkle"},
+
+        //{"lleg",    "LeftHip",          "LeftAnkle"},
+        {"lleg1",    "LeftHip",          "LeftHip"},
+        {"lleg2",    "LeftKnee",          "LeftKnee"},
+        {"lleg3",    "LeftAnkle",          "LeftAnkle"},
+
+        //{"rleg",    "RightHip",         "RightAnkle"},
+        {"rleg1",    "RightHip",         "RightHip"},
+        {"rleg2",    "RightKnee",         "RightKnee"},
+        {"rleg3",    "RightAnkle",         "RightAnkle"},
+
         {"larm",    "LeftShoulder",     "LeftWrist"},
         {"rram",    "RightShoulder",    "RightWrist"},
         {"head",    "Neck",             "Head"},
@@ -521,8 +532,17 @@ static SoulIKRigRetargetConfig config_to_meta() {
     config.TargetChains = {
         // name    start        end
         {"spine",   "Rol01_Torso0102Jnt_M",           "Rol01_Neck0101Jnt_M"},
-        {"lleg",    "Rol01_Leg01Up01Jnt_L",          "Rol01_Leg01AnkleJnt_L"},
-        {"rleg",    "Rol01_Leg01Up01Jnt_R",         "Rol01_Leg01AnkleJnt_R"},
+
+        //{"lleg",    "Rol01_Leg01Up01Jnt_L",          "Rol01_Leg01AnkleJnt_L"},
+        {"lleg1",    "Rol01_Leg01Up01Jnt_L",          "Rol01_Leg01Up01Jnt_L"},
+        {"lleg2",    "Rol01_Leg01Low01Jnt_L",          "Rol01_Leg01Low01Jnt_L"},
+        {"lleg3",    "Rol01_Leg01AnkleJnt_L",         "Rol01_Leg01AnkleJnt_L"},
+
+        //{"rleg",    "Rol01_Leg01Up01Jnt_R",         "Rol01_Leg01AnkleJnt_R"},
+        {"rleg1",    "Rol01_Leg01Up01Jnt_R",         "Rol01_Leg01Up01Jnt_R"},
+        {"rleg2",    "Rol01_Leg01Low01Jnt_R",         "Rol01_Leg01Low01Jnt_R"},
+        {"rleg3",    "Rol01_Leg01AnkleJnt_R",         "Rol01_Leg01AnkleJnt_R"},
+
         {"larm",    "Rol01_Arm01Up01Jnt_L",     "Rol01_Arm01Low03Jnt_L"},
         {"rram",    "Rol01_Arm01Up01Jnt_R",    "Rol01_Arm01Low03Jnt_R"},
         {"head",    "Rol01_Neck0102Jnt_M",             "Head_M"},
@@ -530,12 +550,21 @@ static SoulIKRigRetargetConfig config_to_meta() {
 
     config.ChainMapping = {
         // fk   ik      sourceChain     targetChain
-        // {true,  false,  "spine",         "spine"},
-        {true,  false,  "lleg",         "lleg"},
-        // {true,  false,  "rleg",         "rleg"},
-        // {true,  false,  "larm",         "larm"},
-        // {true,  false,  "rram",         "rram"},
-        // {true,  false,  "head",         "head"},
+        {true,  false,  "spine",         "spine"},
+
+        //{true,  false,  "lleg",         "lleg"},
+        {true,  false,  "lleg1",         "lleg1"},
+        {true,  false,  "lleg2",         "lleg2"},
+        {true,  false,  "lleg3",         "lleg3"},
+        
+        //{true,  false,  "rleg",         "rleg"},
+        {true,  false,  "rleg1",         "rleg1"},
+        {true,  false,  "rleg2",         "rleg2"},
+        {true,  false,  "rleg3",         "rleg3"},
+
+        {true,  false,  "larm",         "larm"},
+        {true,  false,  "rram",         "rram"},
+        {true,  false,  "head",         "head"},
     };
 
     return config;
@@ -640,12 +669,12 @@ int main(int argc, char *argv[]) {
     SoulIK::SoulSkeletonMesh& srcskm = *srcscene.skmeshes[0];
     SoulIK::SoulSkeletonMesh& tgtskm = *tgtscene.skmeshes[0];
 
+    #ifdef DEBUG_POSE_PRINT
     // printf("skeleton tree1L\n");
     // IKRigUtils::debugPrintSkeletonTreeTransform(srcscene, srcskm);
     // printf("skeleton tree1G\n");
     // IKRigUtils::debugPrintSkeletonTreeGTransform(srcscene, srcskm);
     // printf("skeleton tree1L\n");
-
     SoulPose temppose1, temppose2;
     IKRigUtils::getSoulPoseFromMesh(tgtscene, tgtskm, temppose1);
     IKRigUtils::LocalSoulPoseCoordConvert(tgtcoord, workcoord, temppose1.transforms);
@@ -657,13 +686,13 @@ int main(int argc, char *argv[]) {
     printf("skeleton tree1L\n");
     IKRigUtils::SoulPoseToLocal(tgtskm.skeleton, temppose2.transforms, temppose1.transforms);
     IKRigUtils::debugPrintSoulPose(tgtskm.skeleton, temppose1.transforms);
-
     // printf("skeleton tree2\n");
     // IKRigUtils::debugPrintSkeletonTreeTransform(tgtscene, tgtskm);
     // printf("skeleton tree2G\n");
     // IKRigUtils::debugPrintSkeletonTreeGTransform(tgtscene, tgtskm);
 
     //IKRigUtils::debugPrintNodePose(tgtscene.rootNode.get());
+    #endif
 
     /////////////////////////////////////////////
     // init
@@ -679,6 +708,7 @@ int main(int argc, char *argv[]) {
     //tgtusk.refpose[0].Rotation = FQuat(); // debug
 
 
+    #ifdef DEBUG_POSE_PRINT
     // printf("uskeleton tree1G\n");
     // IKRigUtils::debugPrintUSkeletonTreeGTransform(srcskm.skeleton, srcusk);
     // printf("uskeleton tree2G\n");
@@ -691,10 +721,10 @@ int main(int argc, char *argv[]) {
     printf("uskeleton tree1G\n");
     IKRigUtils::FPoseToGlobal(tgtskm.skeleton, tempfpose1, tempfpose2);
     IKRigUtils::debugPrintFPose(tgtskm.skeleton, tempfpose2);
-    // printf("uskeleton tree1L\n");
-    // IKRigUtils::FPoseToLocal(srcskm.skeleton, tempfpose2, tempfpose1);
-    // IKRigUtils::debugPrintFPose(srcskm.skeleton, tempfpose1);
-
+    printf("uskeleton tree1L\n");
+    IKRigUtils::FPoseToLocal(tgtskm.skeleton, tempfpose2, tempfpose1);
+    IKRigUtils::debugPrintFPose(tgtskm.skeleton, tempfpose1);
+    #endif
 
     SoulIK::UIKRetargetProcessor ikretarget;
 	std::shared_ptr<UIKRetargeter> InRetargeterAsset = createIKRigAsset(config, srcskm.skeleton, tgtskm.skeleton, srcusk, tgtusk);
@@ -702,11 +732,13 @@ int main(int argc, char *argv[]) {
     
     /////////////////////////////////////////////
     // build pose animation form mesh0
+    int debugFrameCount = 24 * 10;
     std::vector<SoulIK::SoulPose> tempposes;
     std::vector<SoulIK::SoulPose> tempoutposes;
     buildPoseAnimationByInterpolation(srcscene, srcskm, srcskm.animation, tempposes);
     int frameCount = tempposes.size();
     tempoutposes.resize(tempposes.size());
+    tempoutposes.resize(debugFrameCount);
 
     /////////////////////////////////////////////
     // run retarget
@@ -720,16 +752,19 @@ int main(int argc, char *argv[]) {
     std::vector<FTransform> inpose;
     std::vector<FTransform> inposeLocal;
     std::vector<FTransform> outposeLocal;
-    for(int frame = 0; frame < tempposes.size(); frame++) {
+    for(int frame = 0; frame < debugFrameCount/*tempposes.size()*/; frame++) {
 
+        #ifdef DEBUG_POSE_PRINT
+        printf("frame:%d\n", frame);
+        #endif
         //printf("skeleton tree1L: %d\n", frame);
         //IKRigUtils::debugPrintSoulPose(srcskm.skeleton, tempposes[frame].transforms);
-        if(frame < 2) {
-            printf("source skeleton tree1G: %d\n", frame);
-            SoulPose tempposeG;
-            IKRigUtils::SoulPoseToGlobal(srcskm.skeleton, tempposes[frame].transforms, tempposeG.transforms);
-            IKRigUtils::debugPrintSoulPose(srcskm.skeleton, tempposeG.transforms);
-        }
+        // if(frame < 20000) {
+        //     printf("source skeleton tree1G: %d\n", frame);
+        //     SoulPose tempposeG;
+        //     IKRigUtils::SoulPoseToGlobal(srcskm.skeleton, tempposes[frame].transforms, tempposeG.transforms);
+        //     IKRigUtils::debugPrintSoulPose(srcskm.skeleton, tempposeG.transforms);
+        // }
         
         //if (frame == 0) { inposeLocal = tgtusk.refpose;}
         // printf("%d: t(%f %f %f) t(%f %f %f) t(%f %f %f) %f %f %f\n", frame, 
@@ -756,12 +791,16 @@ int main(int argc, char *argv[]) {
         // if (frame == 0) { outposeLocal = tgtusk.refpose;}
         // outposeLocal = tgtusk.refpose; // debug
 
-         if(frame < 2) {
-            printf("target skeleton tree1G: %d\n", frame);
-            std::vector<FTransform> tempposeG;
-            IKRigUtils::FPoseToGlobal(tgtskm.skeleton, outposeLocal, tempposeG);
-            IKRigUtils::debugPrintFPose(tgtskm.skeleton, tempposeG);
+        #ifdef DEBUG_POSE_PRINT
+        if(frame < 20000) {
+            // printf("target skeleton tree1G: %d\n", frame);
+            // std::vector<FTransform> tempposeG;
+            // IKRigUtils::FPoseToGlobal(tgtskm.skeleton, outposeLocal, tempposeG);
+            // IKRigUtils::debugPrintFPose(tgtskm.skeleton, tempposeG);
+            IKRigUtils::debugPrintFPose(tgtskm.skeleton, outpose);
+            IKRigUtils::debugPrintFPose(tgtskm.skeleton, outposeLocal);
         }
+        #endif
 
         IKRigUtils::LocalFPoseCoordConvert(twork2tgt, workcoord, tgtcoord, outposeLocal);
 
@@ -787,7 +826,7 @@ int main(int argc, char *argv[]) {
 
     /////////////////////////////////////////////
     // output pose animation to mesh0
-    writePoseAnimationToMesh(tempoutposes, tgtskm, srcskm.animation.duration, srcskm.animation.ticksPerSecond);
+    writePoseAnimationToMesh(tempoutposes, tgtskm, debugFrameCount/*srcskm.animation.duration*/, srcskm.animation.ticksPerSecond);
     fbxrw2.writeSkeletonMesh(outfile);
 
     return 0;
