@@ -524,8 +524,17 @@ static SoulIKRigRetargetConfig config_to_meta() {
         {"rleg2",    "RightKnee",         "RightKnee"},
         {"rleg3",    "RightAnkle",         "RightAnkle"},
 
-        {"larm",    "LeftShoulder",     "LeftWrist"},
-        {"rram",    "RightShoulder",    "RightWrist"},
+        //{"larm",    "LeftShoulder",     "LeftWrist"},
+        {"larm1",    "LeftShoulder",     "LeftShoulder"},
+        {"larm2",    "LeftElbow",     "LeftElbow"},
+        {"larm3",    "LeftWrist",     "LeftWrist"},
+        
+        
+        //{"rram",    "RightShoulder",    "RightWrist"},
+        {"rram1",    "RightShoulder",    "RightWrist"},
+        {"rram2",    "RightElbow",    "RightElbow"},
+        {"rram3",    "RightWrist",    "RightWrist"},
+
         {"head",    "Neck",             "Head"},
     };
 
@@ -543,8 +552,17 @@ static SoulIKRigRetargetConfig config_to_meta() {
         {"rleg2",    "Rol01_Leg01Low01Jnt_R",         "Rol01_Leg01Low01Jnt_R"},
         {"rleg3",    "Rol01_Leg01AnkleJnt_R",         "Rol01_Leg01AnkleJnt_R"},
 
-        {"larm",    "Rol01_Arm01Up01Jnt_L",     "Rol01_Arm01Low03Jnt_L"},
-        {"rram",    "Rol01_Arm01Up01Jnt_R",    "Rol01_Arm01Low03Jnt_R"},
+        //{"larm",    "Rol01_Arm01Up01Jnt_L",     "Rol01_Arm01Low03Jnt_L"},
+        {"larm1",    "Rol01_Arm01Up01Jnt_L",     "Rol01_Arm01Up01Jnt_L"},
+        {"larm2",    "Rol01_Arm01Low01Jnt_L",     "Rol01_Arm01Low01Jnt_L"},
+        {"larm3",    "Rol01_Arm01Low03Jnt_L",     "Rol01_Arm01Low03Jnt_L"},
+
+        //{"rram",    "Rol01_Arm01Up01Jnt_R",    "Rol01_Arm01Low03Jnt_R"},
+        {"rram1",    "Rol01_Arm01Up01Jnt_R",    "Rol01_Arm01Up01Jnt_R"},
+        {"rram2",    "Rol01_Arm01Low01Jnt_R",    "Rol01_Arm01Low01Jnt_R"},
+        {"rram3",    "Rol01_Arm01Low03Jnt_R",    "Rol01_Arm01Low03Jnt_R"},
+
+
         {"head",    "Rol01_Neck0102Jnt_M",             "Head_M"},
     };
 
@@ -562,8 +580,16 @@ static SoulIKRigRetargetConfig config_to_meta() {
         {true,  false,  "rleg2",         "rleg2"},
         {true,  false,  "rleg3",         "rleg3"},
 
-        {true,  false,  "larm",         "larm"},
-        {true,  false,  "rram",         "rram"},
+        //{true,  false,  "larm",         "larm"},
+        {true,  false,  "larm1",         "larm1"},
+        {true,  false,  "larm2",         "larm2"},
+        {true,  false,  "larm3",         "larm3"},
+        
+        //{true,  false,  "rram",         "rram"},
+        {true,  false,  "rram1",         "rram1"},
+        {true,  false,  "rram2",         "rram2"},
+        {true,  false,  "rram3",         "rram3"},
+
         {true,  false,  "head",         "head"},
     };
 
