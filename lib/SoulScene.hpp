@@ -98,8 +98,16 @@ namespace SoulIK {
         glm::quat rotation;
         glm::vec3 scale;
 
-        SoulTransform() = default;
-        explicit SoulTransform(glm::mat4& m);
+        SoulTransform(): translation(glm::vec3(0.0)), rotation(glm::quat(1.0, 0.0, 0.0, 0.0)), scale(glm::vec3(1.0)) {}
+        explicit SoulTransform(glm::mat4 const& m);
+        explicit SoulTransform(glm::quat const& q): translation(glm::vec3(0.0)), rotation(q), scale(glm::vec3(1.0)){}
+        SoulTransform operator*(const SoulTransform& Other) const;
+        SoulTransform operator/(const SoulTransform& Other) const;
+        SoulTransform GetRelativeTransform(SoulTransform const& Other) const;
+        void Divide(SoulTransform* OutTransform, const SoulTransform* A, const SoulTransform* B) const;
+        void LeftDivide(SoulTransform* OutTransform, const SoulTransform* A, const SoulTransform* B) const;
+        SoulTransform Inverse();
+        glm::mat4 toMatrix() const;
     };
     struct SoulPose {
         std::vector<SoulTransform> transforms;

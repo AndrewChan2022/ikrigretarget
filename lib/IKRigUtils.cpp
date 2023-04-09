@@ -11,91 +11,7 @@
 
 using namespace SoulIK;
 
-bool IKRigUtils::LocalPoseCoordConvert(CoordType srcCoord, CoordType tgtCoord, std::vector<FTransform>& pose) {  
-            
-    if (srcCoord == tgtCoord) {
-        return true;
-    }
-
-    // generate transform
-    FTransform t = getTransformFromCoord(srcCoord, tgtCoord);
-
-    // transform root
-    pose[0] = t * pose[0];
-    return true;
-}
-
-bool IKRigUtils::GlobalPoseCoordConvert(CoordType srcCoord, CoordType tgtCoord, std::vector<FTransform>& pose) {
-
-    if (srcCoord == tgtCoord) {
-        return true;
-    }
-    
-    // generate transform
-    FTransform t = getTransformFromCoord(srcCoord, tgtCoord);
-
-    // transform all
-    for(auto& posei : pose) {
-        posei = t * posei;
-    }
-
-    return true;
-}
-
-void IKRigUtils::USkeletonCoordConvert(CoordType srcCoord, CoordType tgtCoord, USkeleton& sk) {
-    if (srcCoord == tgtCoord) {
-        return;
-    }
-
-    // generate transform
-    FTransform t = getTransformFromCoord(srcCoord, tgtCoord);
-
-    // transform
-    sk.refpose[0] = t * sk.refpose[0];
-}
-
-bool IKRigUtils::LocalPoseCoordConvert(FTransform& t, std::vector<FTransform>& pose, CoordType srcCoord, CoordType tgtCoord) {
-    if (srcCoord == tgtCoord) {
-        return true;
-    }
-
-    pose[0] = t * pose[0];
-    return true;
-}
-bool IKRigUtils::GlobalPoseCoordConvert(FTransform& t, std::vector<FTransform>& pose, CoordType srcCoord, CoordType tgtCoord) {
-    if (srcCoord == tgtCoord) {
-        return true;
-    }
-
-    for(auto& posei : pose) {
-        posei = t * posei;
-    }
-    return true;
-}
-
-void IKRigUtils::FPoseToLocal(SoulSkeleton& sk, std::vector<FTransform>& globalpose, std::vector<FTransform>& localpose) {
-    assert(sk.joints.size() == globalpose.size());
-    localpose.resize(globalpose.size());
-    
-    localpose[0] = globalpose[0];
-    for(int jointId = 1; jointId < globalpose.size(); jointId++) {
-        int parentId = sk.joints[jointId].parentId;
-        localpose[jointId] = globalpose[jointId].GetRelativeTransform(globalpose[parentId]);
-    }
-}
-
-void IKRigUtils::FPoseToGlobal(SoulSkeleton& sk, std::vector<FTransform>& localpose, std::vector<FTransform>& globalpose) {
-    assert(sk.joints.size() == localpose.size());
-    globalpose.resize(localpose.size());
-    
-    globalpose[0] = localpose[0];
-    for(int jointId = 1; jointId < localpose.size(); jointId++) {
-        int parentId = sk.joints[jointId].parentId;
-        globalpose[jointId] = localpose[jointId] * globalpose[parentId];
-    }
-}
-
-FTransform IKRigUtils::getTransformFromCoord(CoordType srcCoord, CoordType tgtCoord) {
+FTransform IKRigUtils::getFTransformFromCoord(CoordType srcCoord, CoordType tgtCoord) {
     FTransform t = FTransform::Identity;
 
     // same
@@ -146,6 +62,238 @@ FTransform IKRigUtils::getTransformFromCoord(CoordType srcCoord, CoordType tgtCo
     }
     return t;
 }
+
+bool IKRigUtils::LocalFPoseCoordConvert(CoordType srcCoord, CoordType tgtCoord, std::vector<FTransform>& pose) {  
+            
+    if (srcCoord == tgtCoord) {
+        return true;
+    }
+
+    // generate transform
+    FTransform t = getFTransformFromCoord(srcCoord, tgtCoord);
+
+    // transform root
+    pose[0] = pose[0] * t;
+    return true;
+}
+
+bool IKRigUtils::GlobalFPoseCoordConvert(CoordType srcCoord, CoordType tgtCoord, std::vector<FTransform>& pose) {
+
+    if (srcCoord == tgtCoord) {
+        return true;
+    }
+    
+    // generate transform
+    FTransform t = getFTransformFromCoord(srcCoord, tgtCoord);
+
+    // transform all
+    for(auto& posei : pose) {
+        posei = posei * t;
+    }
+
+    return true;
+}
+
+void IKRigUtils::USkeletonCoordConvert(CoordType srcCoord, CoordType tgtCoord, USkeleton& sk) {
+    if (srcCoord == tgtCoord) {
+        return;
+    }
+
+    // generate transform
+    FTransform t = getFTransformFromCoord(srcCoord, tgtCoord);
+
+    // transform
+    sk.refpose[0] = sk.refpose[0] * t;
+}
+
+bool IKRigUtils::LocalFPoseCoordConvert(FTransform& t, CoordType srcCoord, CoordType tgtCoord, std::vector<FTransform>& pose) {
+    if (srcCoord == tgtCoord) {
+        return true;
+    }
+
+    pose[0] = pose[0] * t;
+    return true;
+}
+bool IKRigUtils::GlobalFPoseCoordConvert(FTransform& t, CoordType srcCoord, CoordType tgtCoord, std::vector<FTransform>& pose) {
+    if (srcCoord == tgtCoord) {
+        return true;
+    }
+
+    for(auto& posei : pose) {
+        posei = posei * t;
+    }
+    return true;
+}
+
+
+SoulTransform IKRigUtils::getSoulTransformFromCoord(CoordType srcCoord, CoordType tgtCoord) {
+    SoulTransform t = SoulTransform();
+
+    // same
+    if (srcCoord == tgtCoord) {
+        return t;
+    }
+
+    // diff
+    if (srcCoord == CoordType::RightHandYupZfront && tgtCoord == CoordType::RightHandZupYfront) {
+        // maya to 3dsmax  (x,y,z)->(-x,z,y)
+        // x 90 then z 180
+        float pi = glm::pi<float>();
+        float pi_2 = glm::pi<float>() / 2.0;
+        glm::quat q1 = glm::angleAxis(pi_2, glm::vec3(1.0, 0.0, 0.0));
+        glm::quat q2 = glm::angleAxis(pi, glm::vec3(0.0, 0.0, 1.0));
+        glm::quat q = q2 * q1;
+        q = glm::normalize(q);
+        t = SoulTransform(q);
+
+        // double coshalf1 = std::cos(M_PI_4);
+        // double sinhalf1 = std::sin(M_PI_4);
+        // double coshalf2 = 0.0;
+        // double sinhalf2 = 1.0;
+        // FQuat q1 = FQuat(sinhalf1, 0.0, 0.0, coshalf1);
+        // FQuat q2 = FQuat(0.0, 0.0, sinhalf2, coshalf2);
+        // FQuat q = q2 * q1;
+        // q.Normalize();
+        // t = FTransform(q);
+    } else if (srcCoord == CoordType::RightHandZupYfront && tgtCoord == CoordType::RightHandYupZfront) {
+        // 3dsmax to maya   (x,y,z)->(-x,z,y)
+        // z -180 then x -90
+
+        // double coshalf1 = 0.0;
+        // double sinhalf1 = 1.0;
+        // double coshalf2 = std::cos(-M_PI_4);
+        // double sinhalf2 = std::sin(-M_PI_4);
+        // FQuat q1 = FQuat(sinhalf1, 0.0, 0.0, coshalf1);
+        // FQuat q2 = FQuat(0.0, 0.0, sinhalf2, coshalf2);
+        // FQuat q = q2 * q1;
+        // q.Normalize();
+        // t = FTransform(q);
+
+        // double coshalf1 = std::cos(M_PI_4);
+        // double sinhalf1 = std::sin(M_PI_4);
+        // double coshalf2 = 0.0;
+        // double sinhalf2 = 1.0;
+        // FQuat q1 = FQuat(sinhalf1, 0.0, 0.0, coshalf1);
+        // FQuat q2 = FQuat(0.0, 0.0, sinhalf2, coshalf2);
+        // FQuat q = q2 * q1;
+        // q = q.Inverse();
+        // q.Normalize();
+        // t = FTransform(q);
+
+        float pi = glm::pi<float>();
+        float pi_2 = glm::pi<float>() / 2.0;
+        glm::quat q1 = glm::angleAxis(pi_2, glm::vec3(1.0, 0.0, 0.0));
+        glm::quat q2 = glm::angleAxis(pi, glm::vec3(0.0, 0.0, 1.0));
+        glm::quat q = q2 * q1;
+        q = glm::inverse(q);
+        q = glm::normalize(q);
+        t = SoulTransform(q);
+    } else {
+        printf("not support\n");
+        assert(false);
+    }
+    return t;
+}
+
+bool IKRigUtils::LocalSoulPoseCoordConvert(SoulTransform& t, CoordType srcCoord, CoordType tgtCoord, std::vector<SoulTransform>& pose) {
+    if (srcCoord == tgtCoord) {
+        return true;
+    }
+
+    pose[0] = t * pose[0];
+    return true;
+}
+
+bool IKRigUtils::GlobalSoulPoseCoordConvert(SoulTransform& t, CoordType srcCoord, CoordType tgtCoord, std::vector<SoulTransform>& pose) {
+    if (srcCoord == tgtCoord) {
+        return true;
+    }
+
+    for(auto& posei : pose) {
+        posei = t * posei;
+    }
+    return true;
+}
+
+bool IKRigUtils::LocalSoulPoseCoordConvert(CoordType srcCoord, CoordType tgtCoord, std::vector<SoulTransform>& pose) {
+    if (srcCoord == tgtCoord) {
+        return true;
+    }
+    
+    // generate transform
+    SoulTransform t = getSoulTransformFromCoord(srcCoord, tgtCoord);
+
+    // transform all
+    for(auto& posei : pose) {
+        posei = t * posei;
+    }
+
+    return true;
+}
+
+bool IKRigUtils::GlobalSoulPoseCoordConvert(CoordType srcCoord, CoordType tgtCoord, std::vector<SoulTransform>& pose) {
+    if (srcCoord == tgtCoord) {
+        return true;
+    }
+    
+    // generate transform
+    SoulTransform t = getSoulTransformFromCoord(srcCoord, tgtCoord);
+
+    // transform all
+    for(auto& posei : pose) {
+        posei = t * posei;
+    }
+
+    return true;
+}
+
+void IKRigUtils::FPoseToLocal(SoulSkeleton& sk, std::vector<FTransform>& globalpose, std::vector<FTransform>& localpose) {
+    assert(sk.joints.size() == globalpose.size());
+    localpose.resize(globalpose.size());
+    
+    localpose[0] = globalpose[0];
+    for(int jointId = 1; jointId < globalpose.size(); jointId++) {
+        int parentId = sk.joints[jointId].parentId;
+        localpose[jointId] = globalpose[jointId].GetRelativeTransform(globalpose[parentId]);
+    }
+}
+
+void IKRigUtils::FPoseToGlobal(SoulSkeleton& sk, std::vector<FTransform>& localpose, std::vector<FTransform>& globalpose) {
+    assert(sk.joints.size() == localpose.size());
+    globalpose.resize(localpose.size());
+    
+    globalpose[0] = localpose[0];
+    for(int jointId = 1; jointId < localpose.size(); jointId++) {
+        int parentId = sk.joints[jointId].parentId;
+        globalpose[jointId] = localpose[jointId] * globalpose[parentId];
+    }
+}
+
+void IKRigUtils::SoulPoseToLocal(SoulSkeleton& sk, std::vector<SoulTransform>& globalpose, std::vector<SoulTransform>& localpose) {
+    assert(sk.joints.size() == globalpose.size());
+    localpose.resize(globalpose.size());
+    
+    localpose[0] = globalpose[0];
+    for(int jointId = 1; jointId < globalpose.size(); jointId++) {
+        int parentId = sk.joints[jointId].parentId;
+        // gchild = gparent * lchild => lchild = gparent.inv * gchild
+        localpose[jointId] =  globalpose[jointId].GetRelativeTransform(globalpose[parentId]);
+        //SoulTransform(glm::inverse(globalpose[parentId].toMatrix()) * globalpose[jointId].toMatrix());
+    }
+}
+
+void IKRigUtils::SoulPoseToGlobal(SoulSkeleton& sk, std::vector<SoulTransform>& localpose, std::vector<SoulTransform>& globalpose) {
+    assert(sk.joints.size() == localpose.size());
+    globalpose.resize(localpose.size());
+    
+    globalpose[0] = localpose[0];
+    for(int jointId = 1; jointId < localpose.size(); jointId++) {
+        int parentId = sk.joints[jointId].parentId;
+        globalpose[jointId] = globalpose[parentId] * localpose[jointId];
+    }
+}
+
+
 
 
 void IKRigUtils::SoulPose2FPose(SoulIK::SoulPose& soulpose, std::vector<FTransform>& pose) {
@@ -199,6 +347,7 @@ bool IKRigUtils::getUSkeletonFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh
     usk.name = scene.skmeshes[0]->name;
 
     // bone tree
+    usk.boneTree.clear();
     for(uint64_t i = 0; i < joints.size(); i++) {
         SoulJoint& joint = joints[i];
         FBoneNode node;
@@ -208,6 +357,7 @@ bool IKRigUtils::getUSkeletonFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh
     }
 
     // refpose is local
+    usk.refpose.clear();
     for(uint64_t i = 0; i < joints.size(); i++) {
         std::string name = joints[i].name;
 
@@ -227,8 +377,10 @@ bool IKRigUtils::getUSkeletonFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh
     }
 
     if (srcCoord != tgtCoord && usk.refpose.size() != 0) {
-        FTransform t = getTransformFromCoord(srcCoord, tgtCoord);
+        FTransform t = getFTransformFromCoord(srcCoord, tgtCoord);
         usk.refpose[0] = t * usk.refpose[0];
+    } else if (srcCoord == tgtCoord) {
+        // do nothing
     } else {
         printf("no skeleton\n");
     }
@@ -237,6 +389,10 @@ bool IKRigUtils::getUSkeletonFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh
 }
 
 bool IKRigUtils::USkeleton2RigSkeleton(USkeleton& sk, FIKRigSkeleton& rigsk) {
+    rigsk.BoneNames.clear();
+    rigsk.ParentIndices.clear();
+    rigsk.CurrentPoseLocal.clear();
+    rigsk.CurrentPoseLocal.clear();
     for (size_t i = 0; i < sk.boneTree.size(); i++) {
         rigsk.BoneNames.push_back(sk.boneTree[i].name);
         rigsk.ParentIndices.push_back(sk.boneTree[i].parent);
@@ -257,8 +413,9 @@ bool IKRigUtils::getSoulPoseFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh,
 
     SoulSkeleton& sk = skmesh.skeleton;
     std::vector<SoulJoint>&  joints = sk.joints;
-
+    
     // refpose
+    pose.clear();
     for(uint64_t i = 0; i < joints.size(); i++) {
         std::string name = joints[i].name;
 
@@ -286,6 +443,7 @@ bool IKRigUtils::getSoulPoseFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh,
     std::vector<SoulJoint>&  joints = sk.joints;
     
     // refpose is local
+    outpose.transforms.clear();
     for(uint64_t i = 0; i < joints.size(); i++) {
         std::string name = joints[i].name;
 
@@ -307,7 +465,29 @@ bool IKRigUtils::getSoulPoseFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh,
     return true;
 }
 
+void IKRigUtils::debugPrintFPose(SoulSkeleton& sk, std::vector<FTransform>& pose) {
+    for (size_t i = 0; i < pose.size(); i++) {
+        printf("%d %s t(%.2f, %.2f, %.2f) s(%.2f, %.2f, %.2f) rw(%.2f, %.2f, %.2f, %.2f)\n",
+            i, 
+            sk.joints[i].name.c_str(), 
+            pose[i].Translation.x, pose[i].Translation.y, pose[i].Translation.z,
+            pose[i].Scale3D.x, pose[i].Scale3D.y, pose[i].Scale3D.z,
+            pose[i].Rotation.w, pose[i].Rotation.x, pose[i].Rotation.y, pose[i].Rotation.z
+        );
+    }
+}
 
+void IKRigUtils::debugPrintSoulPose(SoulSkeleton& sk, std::vector<SoulTransform>& pose) {
+    for (size_t i = 0; i < pose.size(); i++) {
+        printf("%d %s t(%.2f, %.2f, %.2f) s(%.2f, %.2f, %.2f) rw(%.2f, %.2f, %.2f, %.2f)\n",
+            i, 
+            sk.joints[i].name.c_str(), 
+            pose[i].translation.x, pose[i].translation.y, pose[i].translation.z,
+            pose[i].scale.x, pose[i].scale.y, pose[i].scale.z,
+            pose[i].rotation.w, pose[i].rotation.x, pose[i].rotation.y, pose[i].rotation.z
+        );
+    }
+}
 
 void IKRigUtils::debugPrintLocalFPose(SoulSkeleton& sk, std::vector<FTransform>& pose) {
 
@@ -468,10 +648,10 @@ void IKRigUtils::debugPrintPoseJoints(const std::string& prefix, SoulSkeleton& s
 
 void IKRigUtils::debugPrintSkeletonTreeTransform(SoulScene& scene, SoulSkeletonMesh& skmesh) {
 
-    std::vector<SoulJointNode> tree;
-    std::vector<SoulTransform> pose;
+    //std::vector<SoulJointNode> tree;
+    //tree = buildJointTree(skmesh.skeleton);
 
-    tree = buildJointTree(skmesh.skeleton);
+    std::vector<SoulTransform> pose;
     getSoulPoseFromMesh(scene, skmesh, pose);
 
     // name t.x, t.y t.z s.x s.y s.z q.x q.y q.z q.w
@@ -481,6 +661,42 @@ void IKRigUtils::debugPrintSkeletonTreeTransform(SoulScene& scene, SoulSkeletonM
             pose[i].translation.x, pose[i].translation.y, pose[i].translation.z,
             pose[i].scale.x, pose[i].scale.y, pose[i].scale.z,
             pose[i].rotation.w, pose[i].rotation.x, pose[i].rotation.y, pose[i].rotation.z
+        );
+    }
+}
+
+void IKRigUtils::debugPrintSkeletonTreeGTransform(SoulScene& scene, SoulSkeletonMesh& skmesh) {
+    std::vector<SoulTransform> localpose;
+    std::vector<SoulTransform> pose;
+
+    getSoulPoseFromMesh(scene, skmesh, localpose);
+    SoulPoseToGlobal(skmesh.skeleton, localpose, pose);
+
+    // name t.x, t.y t.z s.x s.y s.z q.x q.y q.z q.w
+    for(size_t i = 0; i < skmesh.skeleton.joints.size(); i++) {
+        printf("{\"%s\", {{%f, %f, %f}, {%f, %f, %f}, {%f, %f, %f, %f}}},\n",
+            skmesh.skeleton.joints[i].name.c_str(),
+            pose[i].translation.x, pose[i].translation.y, pose[i].translation.z,
+            pose[i].scale.x, pose[i].scale.y, pose[i].scale.z,
+            pose[i].rotation.w, pose[i].rotation.x, pose[i].rotation.y, pose[i].rotation.z
+        );
+    }
+}
+
+
+void IKRigUtils::debugPrintUSkeletonTreeGTransform(SoulSkeleton& sk, USkeleton& usk) {
+    
+    std::vector<FTransform> pose;
+    FPoseToGlobal(sk, usk.refpose, pose);
+
+    // name t.x, t.y t.z s.x s.y s.z q.x q.y q.z q.w
+    for(size_t i = 0; i < usk.boneTree.size(); i++) {
+
+        printf("{\"%s\", {{%f, %f, %f}, {%f, %f, %f}, {%f, %f, %f, %f}}},\n",
+            usk.boneTree[i].name.c_str(),
+            pose[i].Translation.x, pose[i].Translation.y, pose[i].Translation.z,
+            pose[i].Scale3D.x, pose[i].Scale3D.y, pose[i].Scale3D.z,
+            pose[i].Rotation.w, pose[i].Rotation.x, pose[i].Rotation.y, pose[i].Rotation.z
         );
     }
 }

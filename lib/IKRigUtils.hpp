@@ -58,16 +58,26 @@ namespace SoulIK {
     private:
     public:
         // coord convert
-        static FTransform getTransformFromCoord(CoordType srcCoord, CoordType tgtCoord);
-        static bool LocalPoseCoordConvert(CoordType srcCoord, CoordType tgtCoord, std::vector<FTransform>& pose);
-        static bool GlobalPoseCoordConvert(CoordType srcCoord, CoordType tgtCoord, std::vector<FTransform>& pose);
+        
         static void USkeletonCoordConvert(CoordType srcCoord, CoordType tgtCoord, USkeleton& sk);
-        static bool LocalPoseCoordConvert(FTransform& t, std::vector<FTransform>& pose, CoordType srcCoord, CoordType tgtCoord);
-        static bool GlobalPoseCoordConvert(FTransform& t, std::vector<FTransform>& pose, CoordType srcCoord, CoordType tgtCoord);
+        
+        static FTransform getFTransformFromCoord(CoordType srcCoord, CoordType tgtCoord);
+        static bool LocalFPoseCoordConvert(CoordType srcCoord, CoordType tgtCoord, std::vector<FTransform>& pose);
+        static bool GlobalFPoseCoordConvert(CoordType srcCoord, CoordType tgtCoord, std::vector<FTransform>& pose);
+        static bool LocalFPoseCoordConvert(FTransform& t, CoordType srcCoord, CoordType tgtCoord, std::vector<FTransform>& pose);
+        static bool GlobalFPoseCoordConvert(FTransform& t, CoordType srcCoord, CoordType tgtCoord,  std::vector<FTransform>& pose);
+
+        static SoulTransform getSoulTransformFromCoord(CoordType srcCoord, CoordType tgtCoord);
+        static bool LocalSoulPoseCoordConvert(CoordType srcCoord, CoordType tgtCoord, std::vector<SoulTransform>& pose);
+        static bool GlobalSoulPoseCoordConvert(CoordType srcCoord, CoordType tgtCoord, std::vector<SoulTransform>& pose);
+        static bool LocalSoulPoseCoordConvert(SoulTransform& t, CoordType srcCoord, CoordType tgtCoord, std::vector<SoulTransform>& pose);
+        static bool GlobalSoulPoseCoordConvert(SoulTransform& t, CoordType srcCoord, CoordType tgtCoord, std::vector<SoulTransform>& pose);
 
         // pose local/global
         static void FPoseToLocal(SoulSkeleton& sk, std::vector<FTransform>& globalpose, std::vector<FTransform>& localpose);
         static void FPoseToGlobal(SoulSkeleton& sk, std::vector<FTransform>& localpose, std::vector<FTransform>& globalpose);
+        static void SoulPoseToLocal(SoulSkeleton& sk, std::vector<SoulTransform>& globalpose, std::vector<SoulTransform>& localpose);
+        static void SoulPoseToGlobal(SoulSkeleton& sk, std::vector<SoulTransform>& localpose, std::vector<SoulTransform>& globalpose);
 
         // pose struct cast
         static void SoulPose2FPose(SoulPose& soulpose, std::vector<FTransform>& pose);
@@ -90,12 +100,16 @@ namespace SoulIK {
         static bool getSoulPoseFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh, SoulPose& outpose);
 
         // debug
+        static void debugPrintFPose(SoulSkeleton& sk, std::vector<FTransform>& pose);
+        static void debugPrintSoulPose(SoulSkeleton& sk, std::vector<SoulTransform>& pose);
         static void debugPrintLocalFPose(SoulSkeleton& sk, std::vector<FTransform>& pose);
         static void debugPrintNodePose(SoulNode* rootNode);
         // name tree
         static void debugPrintSkeletonTree(SoulSkeleton& sk);
         static void debugPrintSkeletonTreeIBM(SoulSkeleton& sk);
         static void debugPrintSkeletonTreeTransform(SoulScene& scene, SoulSkeletonMesh& skmesh);
+        static void debugPrintSkeletonTreeGTransform(SoulScene& scene, SoulSkeletonMesh& skmesh);
+        static void debugPrintUSkeletonTreeGTransform(SoulSkeleton& sk, USkeleton& usk);
         // TRS of some joints
         static void debugPrintPoseJoints(const std::string& prefix, SoulSkeleton& sk, std::vector<FTransform>& inpose, std::vector<std::string> jointNames);
     };

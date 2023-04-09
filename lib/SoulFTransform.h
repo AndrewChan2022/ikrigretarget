@@ -1,5 +1,5 @@
 //
-//  SoulRetargetSkeleton.h
+//  SoulFTransform.h
 //
 //
 //  Created by kai chen on 3/24/23.
@@ -23,6 +23,16 @@
 #include "glm/ext/scalar_constants.hpp" // glm::pi
 #include "glm/gtx/matrix_decompose.hpp"
 
+
+// this file is adpater to glm
+// multiply order   : FTransform left * right == glm right * left
+// glm::dmat4       : child_global = parent_global * child_local
+// FTransform       : child_global = child_local * parent_global
+// quat order       :  FQuat left * right == glm left * right
+
+#define FTRANSFORM_GLM_ADAPTER
+#define QUAT_GLM_ADAPTER
+//#define USE_FAST_QUAT_MUL 1
 
 namespace SoulIK
 {
@@ -117,7 +127,9 @@ namespace SoulIK
         }
 
 
-
+        // double Distance(FVector const& Other) {
+        //     return (*this - Other).length();
+        // }
         double Size() const
         {
             return std::sqrt(x*x + y*y + z*z);
@@ -201,7 +213,12 @@ namespace SoulIK
             glm::dvec3 euler = glm::eulerAngles(q2);
             return FRotator(euler.x, euler.y, euler.z);
 	    }
-
+        double Angle() const {
+            return glm::angle(glm::dquat(w, x, y, z));
+        }
+        double AngleDegree() const {
+            return glm::angle(glm::dquat(w, x, y, z)) * 180.0 / glm::pi<double>();
+        }
         FQuat Inverse() const {
             return FQuat(-x, -y, -z, w);
         }
@@ -269,6 +286,45 @@ namespace SoulIK
         {
             return x * Q.x + y * Q.y + z * Q.z + w * Q.w;
         }
+
+        // https://en.wikipedia.org/wiki/Quaternion#Hamilton_product
+        void VectorQuaternionMultiply(FQuat* Result, const FQuat* Quat1, const FQuat* Quat2) const {
+            typedef double Double4[4];
+            const Double4& A = *((const Double4*)Quat1);
+            const Double4& B = *((const Double4*)Quat2);
+            Double4& R = *((Double4*)Result);
+        #if USE_FAST_QUAT_MUL  // 27+ 8*
+            const double T0 = (A[3] - A[2]) * (B[2] - B[3]);
+            const double T1 = (A[0] + A[1]) * (B[0] + B[1]);
+            const double T2 = (A[0] - A[1]) * (B[2] + B[3]);
+            const double T3 = (A[2] + A[3]) * (B[0] - B[1]);
+            const double T4 = (A[3] - A[1]) * (B[1] - B[2]);
+            const double T5 = (A[3] + A[1]) * (B[1] + B[2]);
+            const double T6 = (A[0] + A[2]) * (B[0] - B[3]);
+            const double T7 = (A[0] - A[2]) * (B[0] + B[3]);
+            const double T8 = T5 + T6 + T7;
+            const double T9 = 0.5 * (T4 + T8);
+
+            R[1] = T1 + T9 - T8;
+            R[2] = T2 + T9 - T7;
+            R[3] = T3 + T9 - T6;
+            R[0] = T0 + T9 - T5;
+        #else  // 12+  16*
+            // store intermediate results in temporaries
+            const double TX = A[0] * B[1] + A[1] * B[0] + A[2] * B[3] - A[3] * B[2];
+            const double TY = A[0] * B[2] - A[1] * B[3] + A[2] * B[0] + A[3] * B[1];
+            const double TZ = A[0] * B[3] + A[1] * B[2] - A[2] * B[1] + A[3] * B[0];
+            const double TW = A[0] * B[0] - A[1] * B[1] - A[2] * B[2] - A[3] * B[3];
+
+            // copy intermediate result to *this
+            R[1] = TX;
+            R[2] = TY;
+            R[3] = TZ;
+            R[0] = TW;
+        #endif
+        }
+
+        #if 0
         void VectorQuaternionMultiply(FQuat* Result, const FQuat* Quat1, const FQuat* Quat2) const {
             // input wxyz, but need store:  xyzw
             typedef double Double4[4];
@@ -315,18 +371,22 @@ namespace SoulIK
             Result->y = R[1];
             Result->z = R[2];
         }
-        // use parent multiply
-        //FQuat operator*(const FQuat& Q) const {
-	        //FQuat Result;
-            //VectorQuaternionMultiply(&Result, this, &Q);
-            //return Result;
-        //}
+        #endif
+
+        #ifndef QUAT_GLM_ADAPTER  // use parent multiply
+        FQuat operator*(const FQuat& Q) const {
+	        FQuat Result;
+            VectorQuaternionMultiply(&Result, this, &Q);
+            return Result;
+        }
+        #endif
         
         static float FloatSelect(const float Comparand, const float ValueGEZero, const float ValueLTZero )
         {
             return Comparand >= 0.f ? ValueGEZero : ValueLTZero;
         }
 
+        // https://en.wikipedia.org/wiki/Slerp
         static FQuat FastLerp(const FQuat& A, const FQuat& B, const double Alpha)
         {
             // To ensure the 'shortest route', we make sure the dot product between the both rotations is positive.
@@ -466,6 +526,18 @@ namespace SoulIK
 
         void Multiply(FTransform* OutTransform, const FTransform* A, const FTransform* B) const
         {
+            // TODO: adapter
+            #if 1 //#ifdef FTRANSFORM_GLM_ADAPTER
+            glm::dmat4 ma = A->ToMatrixWithScale();
+            glm::dmat4 mb = B->ToMatrixWithScale();
+            glm::dmat4 mc = mb * ma;
+            *OutTransform = FTransform(mc);
+
+            if(AnyHasNegativeScale(A->Scale3D, OutTransform->Scale3D)) {
+                printf("error\n");
+            }
+            
+            #else
 
             //	When Q = quaternion, S = single scalar scale, and T = translation
             //	QST(A) = Q(A), S(A), T(A), and QST(B) = Q(B), S(B), T(B)
@@ -500,6 +572,7 @@ namespace SoulIK
 
             // we do not support matrix transform when non-uniform
             // that was removed at rev 21 with UE4
+            #endif
         }
 
         FTransform operator*(const FTransform& Other) const
@@ -587,6 +660,20 @@ namespace SoulIK
         
         
         FTransform GetRelativeTransform(const FTransform& Other) const {
+
+            // TODO: adapter
+            #if 0 // #ifdef FTRANSFORM_GLM_ADAPTER
+            glm::dmat4 m1 = this->ToMatrixWithScale();
+            glm::dmat4 m2 = Other.Inverse().ToMatrixWithScale();
+            // glm: gchild = gparent * lchild => lchild = gparent.inv * gchild 
+            // => ue: gchild * gparent.inv
+            // glm::dmat4 m3 = m1 * m2;
+            glm::dmat4 m3 = m2 * m1;
+            FTransform Result = FTransform(m3);
+            return Result;
+
+            #else
+            
             // A * B(-1) = VQS(B)(-1) (VQS (A))
             // 
             // Scale = S(A)/S(B)
@@ -599,6 +686,7 @@ namespace SoulIK
             {
                 // @note, if you have 0 scale with negative, you're going to lose rotation as it can't convert back to quat
                 GetRelativeTransformUsingMatrixWithScale(&Result, this, &Other);
+                printf("AnyHasNegativeScale\n");
             }
             else
             {
@@ -617,6 +705,7 @@ namespace SoulIK
             }
 
             return Result;
+            #endif
         }
         bool AnyHasNegativeScale(const FVector& InScale3D, const  FVector& InOtherScale3D) const
         {
@@ -625,26 +714,42 @@ namespace SoulIK
         }
         void GetRelativeTransformUsingMatrixWithScale(FTransform* OutTransform, const FTransform* Base, const FTransform* Relative) const
         {
-
+            #if 1 // #ifdef FTRANSFORM_GLM_ADAPTER
             glm::dmat4 m1 = Base->ToMatrixWithScale();
-            glm::dmat4 m2 = Relative->ToMatrixWithScale();
-            glm::dmat4 m3 = m1 / m2;
+            glm::dmat4 m2 = Relative->Inverse().ToMatrixWithScale();
+            // glm: gchild = gparent * lchild => lchild = gparent.inv * gchild 
+            // => ue: gchild * gparent.inv
+            glm::dmat4 m3 = m1 * m2;
             *OutTransform = FTransform(m3);
 
-            // // the goal of using M is to get the correct orientation
-            // // but for translation, we still need scale
-            // glm::dmat4 AM = Base->ToMatrixWithScale();
-            // glm::dmat4 BM = Relative->ToMatrixWithScale();
-            // // get combined scale
-            // FVector SafeRecipScale3D = GetSafeScaleReciprocal(Relative->Scale3D, UE_SMALL_NUMBER);
-            // FVector DesiredScale3D = Base->Scale3D*SafeRecipScale3D;
-            // ConstructTransformFromMatrixWithDesiredScale(AM, glm::inverse(BM), DesiredScale3D, *OutTransform);
+            #else
+            // the goal of using M is to get the correct orientation
+            // but for translation, we still need scale
+            glm::dmat4 AM = Base->ToMatrixWithScale();
+	        glm::dmat4 BM = Relative->ToMatrixWithScale();
+            // get combined scale
+            FVector SafeRecipScale3D = GetSafeScaleReciprocal(Relative->Scale3D, UE_SMALL_NUMBER);
+            FVector DesiredScale3D = Base->Scale3D*SafeRecipScale3D;
+            ConstructTransformFromMatrixWithDesiredScale(AM, glm::inverse(BM), DesiredScale3D, *OutTransform);
+            #endif
         }
 
 
         // Convert this Transform to a transformation matrix, ignoring its scaling
         glm::dmat4 ToMatrixNoScale() const
         {
+            #if 0  //FTRANSFORM_GLM_ADAPTER
+            // TODO: adapter, should have better approach
+            glm::dquat q(Rotation.w, Rotation.x, Rotation.y, Rotation.z);
+            glm::dvec3 t(Translation.x, Translation.y, Translation.z);
+
+            glm::dmat4 identity(1.0);
+            glm::dmat4 mt = glm::translate(identity, t);
+            glm::dmat4 mr = glm::mat4_cast(q);
+            glm::dmat4 OutMatrix = mt * mr;
+            return OutMatrix;
+            
+            #else
             glm::dmat4 OutMatrix;
 
             OutMatrix[3][0] = Translation.x;
@@ -691,11 +796,27 @@ namespace SoulIK
             OutMatrix[3][3] = 1.0f;
 
             return OutMatrix;
+            #endif
         }
 
         // Convert this Transform to a transformation matrix, with its scaling
         glm::dmat4 ToMatrixWithScale() const
         {
+            #if 0  // FTRANSFORM_GLM_ADAPTER
+            // TODO: adapter, should have better approach
+            glm::dquat q(Rotation.w, Rotation.x, Rotation.y, Rotation.z);
+            glm::dvec3 t(Translation.x, Translation.y, Translation.z);
+            glm::dvec3 s(Scale3D.x, Scale3D.y, Scale3D.z);
+
+            glm::dmat4 identity(1.0);
+            glm::dmat4 mt = glm::translate(identity, t);
+            glm::dmat4 ms = glm::scale(identity, s);
+            glm::dmat4 mr = glm::mat4_cast(q);
+            glm::dmat4 OutMatrix = mt * mr * ms;
+            return OutMatrix;
+
+            #else 
+
             glm::dmat4 OutMatrix;
 
             // col major
@@ -743,6 +864,7 @@ namespace SoulIK
             OutMatrix[3][3] = 1.0f;
 
             return OutMatrix;
+            #endif
         }
 
         FVector TransformPosition(const FVector& V) const
@@ -751,41 +873,42 @@ namespace SoulIK
         }
         
 
-        // void ConstructTransformFromMatrixWithDesiredScale(const glm::dmat4& AMatrix, const glm::dmat4& BMatrix, const FVector& DesiredScale, FTransform& OutTransform) const
-        // {
-        //     // todo
+        void ConstructTransformFromMatrixWithDesiredScale(const glm::dmat4& AMatrix, const glm::dmat4& BMatrix, const FVector& DesiredScale, FTransform& OutTransform) const
+        {
+            // todo
+            #if 1 // #ifdef FTRANSFORM_GLM_ADAPTER
+            // glm: gchild = gparent * lchild => lchild = gparent.inv * gchild 
+            // => ue: gchild * gparent.inv
+            glm::dmat4 m3 = AMatrix * BMatrix;
+            OutTransform = FTransform(m3);
 
-        //     // the goal of using M is to get the correct orientation
-        //     // but for translation, we still need scale
-        //     glm::dmat4 M = AMatrix * BMatrix;
-        //     M.RemoveScaling();
+            #else
+            // the goal of using M is to get the correct orientation
+            // but for translation, we still need scale
+            glm::dmat4 M = AMatrix * BMatrix;
+            M.RemoveScaling();
 
-        //     // apply negative scale back to axes
-        //     FVector SignedScale = DesiredScale.GetSignVector();
+            // apply negative scale back to axes
+            FVector SignedScale = DesiredScale.GetSignVector();
 
-        //     M.SetAxis(0, SignedScale.X * M.GetScaledAxis(EAxis::X));
-        //     M.SetAxis(1, SignedScale.Y * M.GetScaledAxis(EAxis::Y));
-        //     M.SetAxis(2, SignedScale.Z * M.GetScaledAxis(EAxis::Z));
+            M.SetAxis(0, SignedScale.X * M.GetScaledAxis(EAxis::X));
+            M.SetAxis(1, SignedScale.Y * M.GetScaledAxis(EAxis::Y));
+            M.SetAxis(2, SignedScale.Z * M.GetScaledAxis(EAxis::Z));
 
-        //     // @note: if you have negative with 0 scale, this will return rotation that is identity
-        //     // since matrix loses that axes
-        //     TQuat<T> Rotation = TQuat<T>(M);
-        //     Rotation.Normalize();
+            // @note: if you have negative with 0 scale, this will return rotation that is identity
+            // since matrix loses that axes
+            FQuat Rotation =FQuat(glm::quat_cast(M));
+            Rotation.Normalize();
 
-        //     // set values back to output
-        //     OutTransform.Scale3D = DesiredScale;
-        //     OutTransform.Rotation = Rotation;
+            // set values back to output
+            OutTransform.Scale3D = DesiredScale;
+            OutTransform.Rotation = Rotation;
 
-        //     // technically I could calculate this using TTransform<T> but then it does more quat multiplication 
-        //     // instead of using Scale in matrix multiplication
-        //     // it's a question of between RemoveScaling vs using TTransform<T> to move translation
-        //     OutTransform.Translation = M.GetOrigin();
-        // }
-
-        //*
-        //quat.GetNormalized
-        //lerpquat
-
-
+            // technically I could calculate this using TTransform<T> but then it does more quat multiplication 
+            // instead of using Scale in matrix multiplication
+            // it's a question of between RemoveScaling vs using TTransform<T> to move translation
+            OutTransform.Translation = M.GetOrigin();
+            #endif
+        }
     };
 }
