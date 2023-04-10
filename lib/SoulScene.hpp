@@ -78,6 +78,7 @@ namespace SoulIK {
 
         // transforms from mesh space to bone space in bind pose
         glm::mat4               inverseBindposeMatrix{ 1.0 };  // ibm
+        glm::mat4               debugMatrixGlobal;
     };
     struct SoulSkeleton {
         std::vector<SoulJoint>  joints;
@@ -89,6 +90,8 @@ namespace SoulIK {
 
         // transforms from mesh space to bone space in bind pose
         glm::mat4               inverseBindposeMatrix{ 1.0 };
+        glm::mat4               debugMatrixGlobal;
+
         std::vector<int32_t>    children;
     };
 
@@ -98,6 +101,7 @@ namespace SoulIK {
         glm::quat rotation;
         glm::vec3 scale;
 
+        static const SoulTransform identity;
         SoulTransform(): translation(glm::vec3(0.0)), rotation(glm::quat(1.0, 0.0, 0.0, 0.0)), scale(glm::vec3(1.0)) {}
         explicit SoulTransform(glm::mat4 const& m);
         explicit SoulTransform(glm::quat const& q): translation(glm::vec3(0.0)), rotation(q), scale(glm::vec3(1.0)){}
@@ -161,6 +165,8 @@ namespace SoulIK {
 
         // material
         int32_t                 materialIndex{0};
+
+        void calcNormal();
     };
 
     // node
@@ -180,6 +186,8 @@ namespace SoulIK {
 
         // node type
         SoulNodeType nodeType{SoulNodeType::None};
+
+        glm::mat4 debugTransformGlobal;
     };
 
     // material
@@ -214,6 +222,10 @@ namespace SoulIK {
 
         // meta
         std::vector<SoulMetaData> metaData;
+
+
+        // member function
+        std::shared_ptr<SoulNode> findNodeByName(std::string const& name) const;
     };
 }
 

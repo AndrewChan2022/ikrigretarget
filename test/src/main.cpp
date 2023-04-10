@@ -6,12 +6,15 @@
 //
 
 #include <stdio.h>
+
+#include "SoulScene.hpp"
 #include "SoulRetargeter.h"
+#include "IKRigUtils.hpp"
 #include "SoulIKRetargetProcessor.h"
 
 #include "FBXRW.h"
 #include "ObjRW.h"
-#include "IKRigUtils.hpp"
+#include "InitPoseConvert.h"
 
 using namespace SoulIK;
 
@@ -271,151 +274,11 @@ static std::shared_ptr<UIKRetargeter> createIKRigAsset(SoulIKRigRetargetConfig& 
     return pInRetargeterAsset;
 }
 
-static SoulPose getMetaTPoseSoulPose(SoulSkeleton& sk) {
-
-    struct PoseItem {
-        glm::vec3 t;
-        glm::vec3 s;
-        glm::quat q;
-    };
-    std::unordered_map<std::string, PoseItem> posedict = {
-        //{"Rol01_Torso01HipCtrlJnt_M", {{0.000000, -11.151259, 692.766296}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Torso01HipCtrlJnt_M", {{0.000000, 692.766296, -11.151259}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Torso01HipCtrlJnt_M_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Torso0101Jnt_M", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {-0.018845, 0.706856, 0.706856, 0.018845}}},
-        {"Torso0101Jnt_M_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Torso0102Jnt_M", {{34.375542, -0.000000, 0.383953}, {1.000000, 1.000000, 1.000000}, {0.999944, 0.000000, -0.010605, 0.000000}}},
-        {"Torso0102Jnt_M_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Torso0103Jnt_M", {{34.376987, -0.000000, 0.267512}, {1.000000, 1.000000, 1.000000}, {0.999974, 0.000000, -0.007215, 0.000000}}},
-        {"Torso0103Jnt_M_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Torso0104Jnt_M", {{34.377270, -0.000000, 0.228687}, {1.000000, 1.000000, 1.000000}, {0.999974, 0.000000, -0.007220, 0.000000}}},
-        {"Torso0104Jnt_M_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Torso0105Jnt_M", {{34.375942, -0.000000, 0.345904}, {1.000000, 1.000000, 1.000000}, {0.999943, 0.000000, -0.010631, 0.000000}}},
-        {"Torso0105Jnt_M_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Leg01Up01Jnt_L", {{-70.755814, 65.134995, 6.021814}, {1.000000, 1.000000, 1.000000}, {-0.006912, -0.006912, -0.707073, 0.707073}}},
-        {"Leg01Up01Jnt_L_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, -0.000000}}},
-        {"Rol01_Leg01Up02Jnt_L", {{139.477142, -0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Leg01Up02Jnt_L_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Leg01Up03Jnt_L", {{139.477142, -0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Leg01Up03Jnt_L_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Leg01Low01Jnt_L", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {0.999703, 0.000000, 0.000000, -0.024377}}},
-        {"Leg01Low01Jnt_L_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Leg01Low02Jnt_L", {{126.577507, -0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Leg01Low02Jnt_L_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Leg01Low03Jnt_L", {{126.577507, -0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Leg01Low03Jnt_L_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Leg01AnkleJnt_L", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {0.706506, -0.706506, -0.029137, 0.029137}}},
-        {"Rol01_Leg01FootJnt_L", {{64.388062, 10.310209, 112.016861}, {1.000000, 1.000000, 1.000000}, {0.706362, -0.032439, -0.706362, 0.032439}}},
-        {"Rol01_Neck0101Jnt_M", {{130.601349, 0.000000, 29.095982}, {1.000000, 1.000000, 1.000000}, {0.996415, -0.000000, 0.084602, 0.000000}}},
-        {"Neck0101Jnt_M_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Neck0102Jnt_M", {{27.701897, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Neck0102Jnt_M_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Neck0103Jnt_M", {{27.701897, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Head_M", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {0.053466, 0.705083, 0.705083, 0.053466}}},
-        {"Neck0103Jnt_M_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {-0.053466, 0.705082, 0.705083, 0.053466}}},
-        {"Eye_L", {{37.007999, 78.077209, 51.198513}, {1.000000, 1.000000, 1.000000}, {0.995089, 0.047223, 0.086901, -0.004124}}},
-        {"Rol01_Arm01ClavicleStartJnt_L", {{100.361694, 11.303822, -14.647395}, {1.000000, 1.000000, 1.000000}, {-0.176047, 0.618006, 0.740107, 0.198288}}},
-        {"Rol01_Arm01Up01Jnt_L", {{87.926872, -0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {0.654214, 0.707379, -0.096248, 0.249711}}},
-        {"Arm01Up01Jnt_L_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, -0.000000, -0.000000, 0.000000}}},
-        {"Rol01_Arm01Up02Jnt_L", {{89.262054, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Arm01Up02Jnt_L_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Arm01Up03Jnt_L", {{89.262054, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Arm01Up03Jnt_L_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Arm01Low01Jnt_L", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {0.991170, -0.003312, 0.025363, 0.130109}}},
-        {"Arm01Low01Jnt_L_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, -0.000000}}},
-        {"Rol01_Arm01Low02Jnt_L", {{79.556503, -0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, -0.000079, 0.000000, 0.000000}}},
-        {"Arm01Low02Jnt_L_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Arm01Low03Jnt_L", {{79.556503, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, -0.000079, 0.000000, 0.000000}}},
-        {"Arm01Low03Jnt_L_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Arm01ClavicleStartJnt_L_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Arm01ClavicleStartJnt_R", {{100.361694, -11.303822, -14.647395}, {1.000000, 1.000000, 1.000000}, {0.198288, 0.740107, 0.618006, -0.176047}}},
-        {"Rol01_Arm01Up01Jnt_R", {{-87.926872, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {0.712401, -0.652079, 0.235001, 0.109783}}},
-        {"Arm01Up01Jnt_R_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Arm01Up02Jnt_R", {{-89.262054, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Arm01Up02Jnt_R_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Arm01ClavicleStartJnt_R_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, -0.000000, -0.000000, -0.000000}}},
-        {"Rol01_Arm01Up03Jnt_R", {{-89.262054, -0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Arm01Low01Jnt_R", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {0.991070, -0.003791, 0.029015, 0.130096}}},
-        {"Rol01_Arm01Low02Jnt_R", {{-79.556503, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, -0.000079, 0.000000, 0.000000}}},
-        {"Arm01Low02Jnt_R_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Arm01Up03Jnt_R_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Arm01Low01Jnt_R_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, -0.000000}}},
-        {"Rol01_Arm01Low03Jnt_R", {{-79.556503, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, -0.000079, 0.000000, 0.000000}}},
-        {"Arm01Low03Jnt_R_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Leg01Up01Jnt_R", {{-70.755814, -65.134995, 6.021814}, {1.000000, 1.000000, 1.000000}, {0.707073, 0.707073, -0.006912, 0.006912}}},
-        {"Rol01_Leg01Up02Jnt_R", {{-139.477142, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Leg01Up03Jnt_R", {{-139.477142, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Leg01Low01Jnt_R", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {0.999703, 0.000000, 0.000000, -0.024377}}},
-        {"Rol01_Leg01Low02Jnt_R", {{-126.577507, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Leg01Low02Jnt_R_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Leg01Low03Jnt_R", {{-126.577507, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Leg01AnkleJnt_R", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {0.706506, 0.706506, 0.029137, 0.029137}}},
-        {"Leg01Low01Jnt_R_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Leg01Up01Jnt_R_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, -0.000000, 0.000000, -0.000000}}},
-        {"Leg01Up02Jnt_R_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Leg01Up03Jnt_R_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Leg01Low03Jnt_R_Scale", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Leg01FootJnt_R", {{-64.388062, 10.310209, 112.016861}, {1.000000, 1.000000, 1.000000}, {0.706362, -0.032439, 0.706362, -0.032439}}},
-        {"Rol01_Hand01MasterJnt_R", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {0.706517, 0.696987, -0.119843, -0.026085}}},
-        {"Rol01_Hand01Thumb01FKCtrlJnt_R", {{-16.920595, -5.850204, 25.255711}, {1.000000, 1.000000, 1.000000}, {-0.401013, 0.826006, -0.090787, -0.385566}}},
-        {"Rol01_Hand01Thumb02FKCtrlJnt_R", {{-20.364660, -0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {0.995840, -0.030879, 0.035645, -0.077959}}},
-        {"Rol01_Hand01Thumb03FKCtrlJnt_R", {{-24.680334, -0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Hand01Little02FKCtrlJnt_R", {{-58.057373, -2.451173, -20.710228}, {1.000000, 1.000000, 1.000000}, {0.127064, 0.991454, -0.027657, -0.010459}}},
-        {"Rol01_Hand01Little03FKCtrlJnt_R", {{-20.926340, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Hand01Little04FKCtrlJnt_R", {{-18.014015, -0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {0.999347, 0.000000, 0.000000, 0.036137}}},
-        {"Rol01_Hand01Middle02FKCtrlJnt_R", {{-61.846611, 3.868438, 5.959052}, {1.000000, 1.000000, 1.000000}, {0.082454, 0.995782, -0.039721, 0.006401}}},
-        {"Rol01_Hand01Middle03FKCtrlJnt_R", {{-31.543697, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Eye_R", {{-37.007999, 78.077209, 51.198513}, {1.000000, 1.000000, 1.000000}, {0.995089, 0.047223, -0.086901, 0.004124}}},
-        {"Breast01RT101FKCtrlJnt_M_Scale", {{26.904409, -36.319008, -44.162155}, {1.000000, 1.000000, 1.000000}, {0.120786, 0.705796, 0.696714, -0.043040}}},
-        {"Neck01HeadUpCtrlJnt_M_Scale", {{0.000000, 123.910492, 9.489252}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Hand01MasterJnt_L", {{0.000000, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {0.696987, -0.706517, 0.026085, -0.119843}}},
-        {"Rol01_Hand01Thumb01FKCtrlJnt_L", {{16.920595, -5.850204, 25.255711}, {1.000000, 1.000000, 1.000000}, {0.826005, 0.401014, -0.385566, 0.090787}}},
-        {"Rol01_Hand01Middle04FKCtrlJnt_R", {{-20.268305, -0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Breast01LF101FKCtrlJnt_M_Scale", {{26.904409, 36.319008, -44.162155}, {1.000000, 1.000000, 1.000000}, {-0.043042, 0.696714, 0.705796, 0.120788}}},
-        {"Rol01_Hand01Index02FKCtrlJnt_R", {{-62.060173, 5.828954, 20.878521}, {1.000000, 1.000000, 1.000000}, {0.017047, 0.999431, -0.019288, 0.021814}}},
-        {"Rol01_Hand01Index03FKCtrlJnt_R", {{-28.276159, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Hand01Index04FKCtrlJnt_R", {{-18.842459, -0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Hand01Ring02FKCtrlJnt_R", {{-60.190514, 0.354814, -7.404934}, {1.000000, 1.000000, 1.000000}, {0.091191, 0.994891, -0.043322, -0.000418}}},
-        {"Rol01_Hand01Ring03FKCtrlJnt_R", {{-29.537693, -0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Hand01Ring04FKCtrlJnt_R", {{-19.117027, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Hand01Ring02FKCtrlJnt_L", {{60.190514, 0.354814, -7.404934}, {1.000000, 1.000000, 1.000000}, {0.994891, -0.091191, -0.000418, 0.043322}}},
-        {"Rol01_Hand01Ring03FKCtrlJnt_L", {{29.537693, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Hand01Ring04FKCtrlJnt_L", {{19.117027, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Hand01Thumb02FKCtrlJnt_L", {{20.364660, -0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {0.995840, -0.030879, 0.035645, -0.077959}}},
-        {"Rol01_Hand01Middle02FKCtrlJnt_L", {{61.846611, 3.868438, 5.959052}, {1.000000, 1.000000, 1.000000}, {0.995782, -0.082454, 0.006401, 0.039721}}},
-        {"Rol01_Hand01Middle03FKCtrlJnt_L", {{31.543697, -0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Hand01Middle04FKCtrlJnt_L", {{20.268305, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Hand01Thumb03FKCtrlJnt_L", {{24.680334, -0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Hand01Index02FKCtrlJnt_L", {{62.060173, 5.828954, 20.878521}, {1.000000, 1.000000, 1.000000}, {0.999431, -0.017047, 0.021814, 0.019288}}},
-        {"Rol01_Hand01Little02FKCtrlJnt_L", {{58.057373, -2.451173, -20.710228}, {1.000000, 1.000000, 1.000000}, {0.991454, -0.127064, -0.010459, 0.027657}}},
-        {"Rol01_Hand01Little03FKCtrlJnt_L", {{20.926340, -0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Hand01Little04FKCtrlJnt_L", {{18.014015, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {0.999347, 0.000000, 0.000000, 0.036137}}},
-        {"Rol01_Hand01Index03FKCtrlJnt_L", {{28.276159, 0.000000, 0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-        {"Rol01_Hand01Index04FKCtrlJnt_L", {{18.842459, 0.000000, -0.000000}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},
-    };
-
-    SoulPose soulpose;
-    soulpose.transforms.resize(sk.joints.size());
-    for(size_t i = 0; i < sk.joints.size(); i++) {
-        auto it = posedict.find(sk.joints[i].name);
-        
-        assert(it != posedict.end());
-
-        if(it != posedict.end()) {
-            auto& item = it->second;
-            soulpose.transforms[i].translation = item.t;
-            soulpose.transforms[i].scale = item.s;
-            soulpose.transforms[i].rotation = item.q;
-        }
-    }
-    return soulpose;
-}
-
 static std::vector<FTransform> getMetaTPoseFPose(SoulSkeleton& sk, CoordType srcCoord, CoordType tgtCoord) {
 
     std::vector<FTransform> pose(sk.joints.size());
 
-    auto soulpose = getMetaTPoseSoulPose(sk);
+    auto soulpose = SoulIK::getMetaTPoseSoulPose(sk);
     IKRigUtils::SoulPose2FPose(soulpose, pose);
     IKRigUtils::LocalFPoseCoordConvert(srcCoord, tgtCoord, pose);
 
@@ -497,7 +360,7 @@ static SoulIKRigRetargetConfig config2_6chain() {
     return config;
 }
 
-static SoulIKRigRetargetConfig config_to_meta() {
+static SoulIKRigRetargetConfig config_s1_meta() {
     SoulIKRigRetargetConfig config;
     config.SourceCoord      = CoordType::RightHandZupYfront;
     config.WorkCoord        = CoordType::RightHandZupYfront;
@@ -512,85 +375,243 @@ static SoulIKRigRetargetConfig config_to_meta() {
 
     config.SourceChains = {
         // name     start               end
+        // spine
         {"spine",   "Spine",            "Thorax"},
 
+        // head
+        {"head",    "Neck",             "Head"},
+
         //{"lleg",    "LeftHip",          "LeftAnkle"},
-        {"lleg1",    "LeftHip",          "LeftHip"},
-        {"lleg2",    "LeftKnee",          "LeftKnee"},
-        {"lleg3",    "LeftAnkle",          "LeftAnkle"},
+        {"lleg1",   "LeftHip",          "LeftHip"},
+        {"lleg2",   "LeftKnee",         "LeftKnee"},
+        {"lleg3",   "LeftAnkle",        "LeftAnkle"},
 
         //{"rleg",    "RightHip",         "RightAnkle"},
-        {"rleg1",    "RightHip",         "RightHip"},
-        {"rleg2",    "RightKnee",         "RightKnee"},
-        {"rleg3",    "RightAnkle",         "RightAnkle"},
+        {"rleg1",   "RightHip",         "RightHip"},
+        {"rleg2",   "RightKnee",        "RightKnee"},
+        {"rleg3",   "RightAnkle",       "RightAnkle"},
 
         //{"larm",    "LeftShoulder",     "LeftWrist"},
-        {"larm1",    "LeftShoulder",     "LeftShoulder"},
-        {"larm2",    "LeftElbow",     "LeftElbow"},
-        {"larm3",    "LeftWrist",     "LeftWrist"},
-        
+        {"larm1",   "LeftShoulder",     "LeftShoulder"},
+        {"larm2",   "LeftElbow",        "LeftElbow"},
+        {"larm3",   "LeftWrist",        "LeftWrist"},
         
         //{"rram",    "RightShoulder",    "RightWrist"},
-        {"rram1",    "RightShoulder",    "RightWrist"},
-        {"rram2",    "RightElbow",    "RightElbow"},
-        {"rram3",    "RightWrist",    "RightWrist"},
+        {"rram1",   "RightShoulder",    "RightShoulder"},
+        {"rram2",   "RightElbow",       "RightElbow"},
+        {"rram3",   "RightWrist",       "RightWrist"},
 
-        {"head",    "Neck",             "Head"},
     };
 
     config.TargetChains = {
         // name    start        end
-        {"spine",   "Rol01_Torso0102Jnt_M",           "Rol01_Neck0101Jnt_M"},
+        // spine
+        {"spine",   "Rol01_Torso0102Jnt_M",     "Rol01_Neck0101Jnt_M"},
 
-        //{"lleg",    "Rol01_Leg01Up01Jnt_L",          "Rol01_Leg01AnkleJnt_L"},
-        {"lleg1",    "Rol01_Leg01Up01Jnt_L",          "Rol01_Leg01Up01Jnt_L"},
-        {"lleg2",    "Rol01_Leg01Low01Jnt_L",          "Rol01_Leg01Low01Jnt_L"},
-        {"lleg3",    "Rol01_Leg01AnkleJnt_L",         "Rol01_Leg01AnkleJnt_L"},
+        // head
+        {"head",    "Rol01_Neck0102Jnt_M",      "Head_M"},
 
-        //{"rleg",    "Rol01_Leg01Up01Jnt_R",         "Rol01_Leg01AnkleJnt_R"},
-        {"rleg1",    "Rol01_Leg01Up01Jnt_R",         "Rol01_Leg01Up01Jnt_R"},
-        {"rleg2",    "Rol01_Leg01Low01Jnt_R",         "Rol01_Leg01Low01Jnt_R"},
-        {"rleg3",    "Rol01_Leg01AnkleJnt_R",         "Rol01_Leg01AnkleJnt_R"},
+        //{"lleg",    "Rol01_Leg01Up01Jnt_L",     "Rol01_Leg01AnkleJnt_L"},
+        {"lleg1",   "Rol01_Leg01Up01Jnt_L",     "Rol01_Leg01Up01Jnt_L"},
+        {"lleg2",   "Rol01_Leg01Low01Jnt_L",    "Rol01_Leg01Low01Jnt_L"},
+        {"lleg3",   "Rol01_Leg01AnkleJnt_L",    "Rol01_Leg01AnkleJnt_L"},
+
+        //{"rleg",    "Rol01_Leg01Up01Jnt_R",     "Rol01_Leg01AnkleJnt_R"},
+        {"rleg1",   "Rol01_Leg01Up01Jnt_R",     "Rol01_Leg01Up01Jnt_R"},
+        {"rleg2",   "Rol01_Leg01Low01Jnt_R",    "Rol01_Leg01Low01Jnt_R"},
+        {"rleg3",   "Rol01_Leg01AnkleJnt_R",    "Rol01_Leg01AnkleJnt_R"},
 
         //{"larm",    "Rol01_Arm01Up01Jnt_L",     "Rol01_Arm01Low03Jnt_L"},
-        {"larm1",    "Rol01_Arm01Up01Jnt_L",     "Rol01_Arm01Up01Jnt_L"},
-        {"larm2",    "Rol01_Arm01Low01Jnt_L",     "Rol01_Arm01Low01Jnt_L"},
-        {"larm3",    "Rol01_Arm01Low03Jnt_L",     "Rol01_Arm01Low03Jnt_L"},
+        {"larm1",   "Rol01_Arm01Up01Jnt_L",     "Rol01_Arm01Up01Jnt_L"},
+        {"larm2",   "Rol01_Arm01Low01Jnt_L",    "Rol01_Arm01Low01Jnt_L"},
+        {"larm3",   "Rol01_Hand01MasterJnt_L",  "Rol01_Hand01MasterJnt_L"},
 
         //{"rram",    "Rol01_Arm01Up01Jnt_R",    "Rol01_Arm01Low03Jnt_R"},
-        {"rram1",    "Rol01_Arm01Up01Jnt_R",    "Rol01_Arm01Up01Jnt_R"},
-        {"rram2",    "Rol01_Arm01Low01Jnt_R",    "Rol01_Arm01Low01Jnt_R"},
-        {"rram3",    "Rol01_Arm01Low03Jnt_R",    "Rol01_Arm01Low03Jnt_R"},
-
-
-        {"head",    "Rol01_Neck0102Jnt_M",             "Head_M"},
+        {"rram1",   "Rol01_Arm01Up01Jnt_R",     "Rol01_Arm01Up01Jnt_R"},
+        {"rram2",   "Rol01_Arm01Low01Jnt_R",    "Rol01_Arm01Low01Jnt_R"},
+        {"rram3",   "Rol01_Hand01MasterJnt_R",  "Rol01_Hand01MasterJnt_R"},        
     };
 
     config.ChainMapping = {
         // fk   ik      sourceChain     targetChain
-        {true,  false,  "spine",         "spine"},
-
-        //{true,  false,  "lleg",         "lleg"},
-        {true,  false,  "lleg1",         "lleg1"},
-        {true,  false,  "lleg2",         "lleg2"},
-        {true,  false,  "lleg3",         "lleg3"},
         
-        //{true,  false,  "rleg",         "rleg"},
-        {true,  false,  "rleg1",         "rleg1"},
-        {true,  false,  "rleg2",         "rleg2"},
-        {true,  false,  "rleg3",         "rleg3"},
+        // spine
+        {true,  false,  "spine",        "spine"},
 
-        //{true,  false,  "larm",         "larm"},
-        {true,  false,  "larm1",         "larm1"},
-        {true,  false,  "larm2",         "larm2"},
-        {true,  false,  "larm3",         "larm3"},
-        
-        //{true,  false,  "rram",         "rram"},
-        {true,  false,  "rram1",         "rram1"},
-        {true,  false,  "rram2",         "rram2"},
-        {true,  false,  "rram3",         "rram3"},
-
+        // head
         {true,  false,  "head",         "head"},
+
+        // lleg
+        {true,  false,  "lleg1",        "lleg1"},
+        {true,  false,  "lleg2",        "lleg2"},
+        {true,  false,  "lleg3",        "lleg3"},
+        
+        // rleg
+        {true,  false,  "rleg1",        "rleg1"},
+        {true,  false,  "rleg2",        "rleg2"},
+        {true,  false,  "rleg3",        "rleg3"},
+
+        // larm
+        {true,  false,  "larm1",        "larm1"},
+        {true,  false,  "larm2",        "larm2"},
+        {true,  false,  "larm3",        "larm3"},
+        
+        // rarm
+        {true,  false,  "rram1",        "rram1"},
+        {true,  false,  "rram2",        "rram2"},
+        {true,  false,  "rram3",        "rram3"},
+    };
+
+    return config;
+}
+
+static SoulIKRigRetargetConfig config_flair_meta() {
+    SoulIKRigRetargetConfig config;
+    config.SourceCoord      = CoordType::RightHandZupYfront;
+    config.WorkCoord        = CoordType::RightHandZupYfront;
+    config.TargetCoord      = CoordType::RightHandYupZfront;
+
+    config.SourceRootBone   = "mixamorig:Hips";
+    config.SourceGroundBone = "mixamorig:LeftToeBase";
+    config.TargetRootBone   = "Rol01_Torso01HipCtrlJnt_M";
+    config.TargetGroundBone = "Rol01_Leg01FootJnt_L";
+    
+    //config.skipRootBone = true;
+
+    config.SourceChains = {
+        // name     start                               end
+        // spine
+        {"spine",       "mixamorig:Spine",              "mixamorig:Spine2"},
+
+        // head
+        {"head",        "mixamorig:Neck",               "mixamorig:Head"},
+
+        // lleg
+        {"lleg1",       "mixamorig:LeftUpLeg",          "mixamorig:LeftUpLeg"},
+        {"lleg2",       "mixamorig:LeftLeg",            "mixamorig:LeftLeg"},
+        {"lleg3",       "mixamorig:LeftFoot",           "mixamorig:LeftFoot"},
+
+        // rleg
+        {"rleg1",       "mixamorig:RightUpLeg",         "mixamorig:RightUpLeg"},
+        {"rleg2",       "mixamorig:RightLeg",           "mixamorig:RightLeg"},
+        {"rleg3",       "mixamorig:RightFoot",          "mixamorig:RightFoot"},
+
+        // larm
+        {"larm0",       "mixamorig:LeftShoulder",       "mixamorig:LeftShoulder"},
+        {"larm1",       "mixamorig:LeftArm",            "mixamorig:LeftArm"},
+        {"larm2",       "mixamorig:LeftForeArm",        "mixamorig:LeftForeArm"},
+        {"larm3",       "mixamorig:LeftHand",           "mixamorig:LeftHand"},
+        
+        // lhand
+        {"lfinger1",    "mixamorig:LeftHandThumb1",     "mixamorig:LeftHandThumb3"},
+        {"lfinger2",    "mixamorig:LeftHandIndex1",     "mixamorig:LeftHandIndex3"},
+        {"lfinger3",    "mixamorig:LeftHandMiddle1",    "mixamorig:LeftHandMiddle3"},
+        {"lfinger4",    "mixamorig:LeftHandRing1",      "mixamorig:LeftHandRing3"},
+        {"lfinger5",    "mixamorig:LeftHandPinky1",     "mixamorig:LeftHandPinky3"},
+
+        // rarm
+        {"rram0",       "mixamorig:RightShoulder",      "mixamorig:RightShoulder"},
+        {"rram1",       "mixamorig:RightArm",           "mixamorig:RightArm"},
+        {"rram2",       "mixamorig:RightForeArm",       "mixamorig:RightForeArm"},
+        {"rram3",       "mixamorig:RightHand",          "mixamorig:RightHand"},
+
+        // rhand
+        {"rfinger1",    "mixamorig:RightHandThumb1",    "mixamorig:RightHandThumb3"},
+        {"rfinger2",    "mixamorig:RightHandIndex1",    "mixamorig:RightHandIndex3"},
+        {"rfinger3",    "mixamorig:RightHandMiddle1",   "mixamorig:RightHandMiddle3"},
+        {"rfinger4",    "mixamorig:RightHandRing1",     "mixamorig:RightHandRing3"},
+        {"rfinger5",    "mixamorig:RightHandPinky1",    "mixamorig:RightHandPinky3"},
+    };
+
+    config.TargetChains = {
+        // name     start                           end
+        // spine
+        {"spine",       "Rol01_Torso0102Jnt_M",             "Rol01_Neck0101Jnt_M"},
+
+        // head
+        {"head",        "Rol01_Neck0102Jnt_M",              "Head_M"},
+
+        // lleg
+        {"lleg1",       "Rol01_Leg01Up01Jnt_L",             "Rol01_Leg01Up01Jnt_L"},
+        {"lleg2",       "Rol01_Leg01Low01Jnt_L",            "Rol01_Leg01Low01Jnt_L"},
+        {"lleg3",       "Rol01_Leg01AnkleJnt_L",            "Rol01_Leg01AnkleJnt_L"},
+
+        // rleg
+        {"rleg1",       "Rol01_Leg01Up01Jnt_R",             "Rol01_Leg01Up01Jnt_R"},
+        {"rleg2",       "Rol01_Leg01Low01Jnt_R",            "Rol01_Leg01Low01Jnt_R"},
+        {"rleg3",       "Rol01_Leg01AnkleJnt_R",            "Rol01_Leg01AnkleJnt_R"},
+
+        // larm
+        {"larm0",       "Rol01_Arm01ClavicleStartJnt_L",    "Rol01_Arm01ClavicleStartJnt_L"},
+        {"larm1",       "Rol01_Arm01Up01Jnt_L",             "Rol01_Arm01Up01Jnt_L"},
+        {"larm2",       "Rol01_Arm01Low01Jnt_L",            "Rol01_Arm01Low01Jnt_L"},
+        {"larm3",       "Rol01_Hand01MasterJnt_L",          "Rol01_Hand01MasterJnt_L"},
+
+        // lhand
+        {"lfinger1",    "Rol01_Hand01Thumb01FKCtrlJnt_L",   "Rol01_Hand01Thumb03FKCtrlJnt_L"},
+        {"lfinger2",    "Rol01_Hand01Index02FKCtrlJnt_L",   "Rol01_Hand01Index04FKCtrlJnt_L"},
+        {"lfinger3",    "Rol01_Hand01Middle02FKCtrlJnt_L",  "Rol01_Hand01Middle04FKCtrlJnt_L"},
+        {"lfinger4",    "Rol01_Hand01Ring02FKCtrlJnt_L",    "Rol01_Hand01Ring04FKCtrlJnt_L"},
+        {"lfinger5",    "Rol01_Hand01Little02FKCtrlJnt_L",  "Rol01_Hand01Little04FKCtrlJnt_L"},
+
+        // rarm
+        {"rram0",       "Rol01_Arm01ClavicleStartJnt_R",    "Rol01_Arm01ClavicleStartJnt_R"},
+        {"rram1",       "Rol01_Arm01Up01Jnt_R",             "Rol01_Arm01Up01Jnt_R"},
+        {"rram2",       "Rol01_Arm01Low01Jnt_R",            "Rol01_Arm01Low01Jnt_R"},
+        {"rram3",       "Rol01_Hand01MasterJnt_R",          "Rol01_Hand01MasterJnt_R"},
+
+        // rhand
+        {"rfinger1",    "Rol01_Hand01Thumb01FKCtrlJnt_R",   "Rol01_Hand01Thumb03FKCtrlJnt_R"},
+        {"rfinger2",    "Rol01_Hand01Index02FKCtrlJnt_R",   "Rol01_Hand01Index04FKCtrlJnt_R"},
+        {"rfinger3",    "Rol01_Hand01Middle02FKCtrlJnt_R",  "Rol01_Hand01Middle04FKCtrlJnt_R"},
+        {"rfinger4",    "Rol01_Hand01Ring02FKCtrlJnt_R",    "Rol01_Hand01Ring04FKCtrlJnt_R"},
+        {"rfinger5",    "Rol01_Hand01Little02FKCtrlJnt_R",  "Rol01_Hand01Little04FKCtrlJnt_R"},
+    };
+
+    config.ChainMapping = {
+        // fk   ik      sourceChain     targetChain
+        
+        // spine
+        {true,  false,  "spine",        "spine"},
+
+        // head
+        {true,  false,  "head",         "head"},
+
+        // lleg
+        {true,  false,  "lleg1",        "lleg1"},
+        {true,  false,  "lleg2",        "lleg2"},
+        {true,  false,  "lleg3",        "lleg3"},
+        
+        // rleg
+        {true,  false,  "rleg1",        "rleg1"},
+        {true,  false,  "rleg2",        "rleg2"},
+        {true,  false,  "rleg3",        "rleg3"},
+
+        // larm
+        {true,  false,  "larm0",        "larm0"},
+        {true,  false,  "larm1",        "larm1"},
+        {true,  false,  "larm2",        "larm2"},
+        {true,  false,  "larm3",        "larm3"},
+
+        // lhand
+        {true,  false,  "lfinger1",     "lfinger1"},
+        {true,  false,  "lfinger2",     "lfinger2"},
+        {true,  false,  "lfinger3",     "lfinger3"},
+        {true,  false,  "lfinger4",     "lfinger4"},
+        {true,  false,  "lfinger5",     "lfinger5"},
+        
+        // rarm
+        {true,  false,  "rram0",        "rram0"},
+        {true,  false,  "rram1",        "rram1"},
+        {true,  false,  "rram2",        "rram2"},
+        {true,  false,  "rram3",        "rram3"},
+
+        // rhand
+        {true,  false,  "rfinger1",     "rfinger1"},
+        {true,  false,  "rfinger2",     "rfinger2"},
+        {true,  false,  "rfinger3",     "rfinger3"},
+        {true,  false,  "rfinger4",     "rfinger4"},
+        {true,  false,  "rfinger5",     "rfinger5"},
     };
 
     return config;
@@ -610,146 +631,71 @@ static std::string getModelPath() {
     return model_path;
 }
 
-void testMetaFBX() {
-    std::string modelPath = getModelPath();
-    std::string metaAFile = modelPath + "3D_Avatar2_Rig_0723.fbx";
-    std::string metaTFile = modelPath + "3D_Avatar2_Rig_0723_tpose1.fbx";
-
-    SoulIK::FBXRW fbxapose, fbxtpose;
-    fbxapose.readSkeketonMesh(metaAFile);
-    fbxtpose.readSkeketonMesh(metaTFile);
-
-
-    SoulIK::SoulScene& ascene = *fbxapose.getSoulScene();
-    SoulIK::SoulScene& tscene = *fbxtpose.getSoulScene();
-    SoulIK::SoulSkeletonMesh& askm = *ascene.skmeshes[7];
-    SoulIK::SoulSkeletonMesh& tskm = *tscene.skmeshes[7];
-
-
-    IKRigUtils::debugPrintSkeletonTreeTransform(tscene, tskm);
-
-    // // print node tree
-    // IKRigUtils::debugPrintNodePose(ascene.rootNode.get());
-    // IKRigUtils::debugPrintNodePose(tscene.rootNode.get());
-
-
-    // IKRigUtils::debugPrintSkeletonTreeIBM(askm.skeleton);
-    // IKRigUtils::debugPrintSkeletonTreeIBM(tskm.skeleton);
-
-    // // save obj file
-    // ObjRW objrw;
-    // objrw.writeMesh(askm, modelPath + "a.obj");
-    // objrw.writeMesh(tskm, modelPath + "t.obj");
-
-    printf("done");
-
-}
-
-static void getFilePaths(std::string& inputfile, std::string& inputfile2, std::string& outfile, SoulIKRigRetargetConfig& config) {
+static void getFilePaths(std::string& srcAnimationFile, 
+    std::string& srcTPoseFile, 
+    std::string& targetFile,
+    std::string& outfile, 
+    SoulIKRigRetargetConfig& config) {
+    
     std::string modelPath = getModelPath();
 
-    //std::string inputfile = modelPath + "3D_Avatar2_Rig_0723.fbx";
-    //std::string outfile = modelPath + "3D_Avatar2_Rig_0723_out.fbx";
-    // std::string inputfile = modelPath + "S1_SittingDown_3d_17kpts.fbx";
-    // std::string outfile = modelPath + "S1_SittingDown_3d_17kpts_tiny_out.fbx";
-    inputfile = modelPath + "S1_SittingDown_3d_17kpts_tiny_ball.fbx";
+    srcAnimationFile    = modelPath + "S1_SittingDown_3d_17kpts.fbx";
+    srcTPoseFile        = modelPath + "S1_SittingDown_3d_17kpts.fbx";
+    targetFile          = modelPath + "3D_Avatar2_Rig_0723_itpose.fbx";
+    outfile             = modelPath + "out.fbx";
+
     if (config.TargetCoord == CoordType::RightHandZupYfront) {
-        inputfile2 = modelPath + "S1_SittingDown_3d_17kpts_tiny_ball.fbx";
+        targetFile      = modelPath = "S1_SittingDown_3d_17kpts_tiny_ball";
     }
-    else if (config.TargetCoord == CoordType::RightHandYupZfront) {
-        //inputfile2 = modelPath + "3D_Avatar2_Rig_0723_tpose3_hik.fbx";
-        inputfile2 = modelPath + "3D_Avatar2_Rig_0723.fbx";
-        //inputfile2 = modelPath + "T-Pose_02.fbx";
-    }
-    outfile = modelPath + "out.fbx";
 }
 
 int main(int argc, char *argv[]) {
 
-    //testMetaFBX();
-    //return 0;
-
     /////////////////////////////////////////////
     // setting of coord
     //auto config             =  config1_1chain_lleg();
-    auto config             =  config_to_meta();
+    auto config             =  config_s1_meta();
     //auto config             = config2_6chain();
+    //auto config             = config_flair_meta();
     CoordType srccoord      = config.SourceCoord;
     CoordType workcoord     = config.WorkCoord;
     CoordType tgtcoord      = config.TargetCoord;
     FTransform tsrc2work    = IKRigUtils::getFTransformFromCoord(srccoord, workcoord);
     FTransform twork2tgt    = IKRigUtils::getFTransformFromCoord(workcoord, tgtcoord);
     FTransform ttgt2work    = IKRigUtils::getFTransformFromCoord(tgtcoord, workcoord);
-    bool isModelAPose       = true;
 
     /////////////////////////////////////////////
     // read fbx
-    std::string inputfile, inputfile2, outfile;
-    SoulIK::FBXRW fbxrw, fbxrw2;
-    getFilePaths(inputfile, inputfile2, outfile, config);
-    fbxrw.readSkeketonMesh(inputfile);
-    fbxrw2.readSkeketonMesh(inputfile2);
+    std::string srcAnimationFile, srcTPoseFile, targetFile, outfile;
+    getFilePaths(srcAnimationFile, srcTPoseFile, targetFile, outfile, config);
 
-    SoulIK::SoulScene& srcscene = *fbxrw.getSoulScene();
-    SoulIK::SoulScene& tgtscene = *fbxrw2.getSoulScene();
-    SoulIK::SoulSkeletonMesh& srcskm = *srcscene.skmeshes[0];
-    SoulIK::SoulSkeletonMesh& tgtskm = *tgtscene.skmeshes[0];
+    SoulIK::FBXRW fbxSrcAnimation, fbxSrcTPose, fbxTarget;
+    fbxSrcAnimation.readPureSkeletonWithDefualtMesh(srcAnimationFile, "Hip");
+    fbxSrcTPose.readPureSkeletonWithDefualtMesh(srcTPoseFile, "Hip");
+    fbxTarget.readSkeletonMesh(targetFile);
+
+    SoulIK::SoulScene& srcscene         = *fbxSrcAnimation.getSoulScene();
+    SoulIK::SoulScene& srcTPoseScene    = *fbxSrcTPose.getSoulScene();
+    SoulIK::SoulScene& tgtscene         = *fbxTarget.getSoulScene();
+    SoulIK::SoulSkeletonMesh& srcskm    = *srcscene.skmeshes[0];
+    SoulIK::SoulSkeletonMesh& tgtskm    = *tgtscene.skmeshes[0];
 
     #ifdef DEBUG_POSE_PRINT
-    // printf("skeleton tree1L\n");
-    // IKRigUtils::debugPrintSkeletonTreeTransform(srcscene, srcskm);
-    // printf("skeleton tree1G\n");
-    // IKRigUtils::debugPrintSkeletonTreeGTransform(srcscene, srcskm);
-    // printf("skeleton tree1L\n");
-    SoulPose temppose1, temppose2;
-    IKRigUtils::getSoulPoseFromMesh(tgtscene, tgtskm, temppose1);
-    IKRigUtils::LocalSoulPoseCoordConvert(tgtcoord, workcoord, temppose1.transforms);
-    printf("skeleton tree1L\n");
-    IKRigUtils::debugPrintSoulPose(tgtskm.skeleton, temppose1.transforms);
-    printf("skeleton tree1G\n");
-    IKRigUtils::SoulPoseToGlobal(tgtskm.skeleton, temppose1.transforms, temppose2.transforms);
-    IKRigUtils::debugPrintSoulPose(tgtskm.skeleton, temppose2.transforms);
-    printf("skeleton tree1L\n");
-    IKRigUtils::SoulPoseToLocal(tgtskm.skeleton, temppose2.transforms, temppose1.transforms);
-    IKRigUtils::debugPrintSoulPose(tgtskm.skeleton, temppose1.transforms);
-    // printf("skeleton tree2\n");
-    // IKRigUtils::debugPrintSkeletonTreeTransform(tgtscene, tgtskm);
-    // printf("skeleton tree2G\n");
-    // IKRigUtils::debugPrintSkeletonTreeGTransform(tgtscene, tgtskm);
-
-    //IKRigUtils::debugPrintNodePose(tgtscene.rootNode.get());
+    IKRigUtils::debugPrintSKM(srcTPoseScene, *srcTPoseScene.skmeshes[0], srccoord, workcoord);
+    IKRigUtils::debugPrintSKM(tgtscene,tgtskm, tgtcoord, workcoord);
     #endif
 
     /////////////////////////////////////////////
     // init
     SoulIK::USkeleton srcusk;
     SoulIK::USkeleton tgtusk;
-    IKRigUtils::getUSkeletonFromMesh(srcscene, srcskm, srcusk, srccoord, workcoord);
+    IKRigUtils::getUSkeletonFromMesh(srcTPoseScene, *srcTPoseScene.skmeshes[0], srcusk, srccoord, workcoord);
     IKRigUtils::getUSkeletonFromMesh(tgtscene, tgtskm, tgtusk, tgtcoord, workcoord);
-    if (isModelAPose) {
-        // fix to tpose
-        tgtusk.refpose = getMetaTPoseFPose(tgtskm.skeleton, CoordType::RightHandYupZfront, CoordType::RightHandZupYfront);
-    }
-    //srcusk.refpose[0].Rotation = FQuat(); // debug
-    //tgtusk.refpose[0].Rotation = FQuat(); // debug
-
+    //tgtusk.refpose = getMetaTPoseFPose(tgtskm.skeleton, CoordType::RightHandYupZfront, CoordType::RightHandZupYfront);
 
     #ifdef DEBUG_POSE_PRINT
-    // printf("uskeleton tree1G\n");
-    // IKRigUtils::debugPrintUSkeletonTreeGTransform(srcskm.skeleton, srcusk);
-    // printf("uskeleton tree2G\n");
-    // IKRigUtils::debugPrintUSkeletonTreeGTransform(tgtskm.skeleton, tgtusk);
-    
-    std::vector<FTransform> tempfpose1, tempfpose2;
-    printf("uskeleton tree1L\n");
-    tempfpose1 = tgtusk.refpose;
-    IKRigUtils::debugPrintFPose(tgtskm.skeleton, tempfpose1);
-    printf("uskeleton tree1G\n");
-    IKRigUtils::FPoseToGlobal(tgtskm.skeleton, tempfpose1, tempfpose2);
-    IKRigUtils::debugPrintFPose(tgtskm.skeleton, tempfpose2);
-    printf("uskeleton tree1L\n");
-    IKRigUtils::FPoseToLocal(tgtskm.skeleton, tempfpose2, tempfpose1);
-    IKRigUtils::debugPrintFPose(tgtskm.skeleton, tempfpose1);
+    IKRigUtils::debugPrintUSK(srcusk, srcskm, srccoord, workcoord);
+    IKRigUtils::debugPrintUSK(tgtusk, tgtskm, tgtcoord, workcoord);
     #endif
 
     SoulIK::UIKRetargetProcessor ikretarget;
@@ -758,84 +704,53 @@ int main(int argc, char *argv[]) {
     
     /////////////////////////////////////////////
     // build pose animation form mesh0
-    int debugFrameCount = 24 * 10;
     std::vector<SoulIK::SoulPose> tempposes;
     std::vector<SoulIK::SoulPose> tempoutposes;
     buildPoseAnimationByInterpolation(srcscene, srcskm, srcskm.animation, tempposes);
     int frameCount = tempposes.size();
     tempoutposes.resize(tempposes.size());
-    tempoutposes.resize(debugFrameCount);
 
     /////////////////////////////////////////////
     // run retarget
     std::unordered_map<FName, float> SpeedValuesFromCurves;
     float DeltaTime = 0;
 
-    std::vector<FTransform> initposeLocal = tgtusk.refpose;
-    std::vector<FTransform> initposeGlobal;
-    IKRigUtils::FPoseToGlobal(tgtskm.skeleton, initposeLocal, initposeGlobal);
-
     std::vector<FTransform> inpose;
     std::vector<FTransform> inposeLocal;
     std::vector<FTransform> outposeLocal;
-    for(int frame = 0; frame < debugFrameCount/*tempposes.size()*/; frame++) {
-
-        #ifdef DEBUG_POSE_PRINT
-        printf("frame:%d\n", frame);
-        #endif
-        //printf("skeleton tree1L: %d\n", frame);
-        //IKRigUtils::debugPrintSoulPose(srcskm.skeleton, tempposes[frame].transforms);
-        // if(frame < 20000) {
-        //     printf("source skeleton tree1G: %d\n", frame);
-        //     SoulPose tempposeG;
-        //     IKRigUtils::SoulPoseToGlobal(srcskm.skeleton, tempposes[frame].transforms, tempposeG.transforms);
-        //     IKRigUtils::debugPrintSoulPose(srcskm.skeleton, tempposeG.transforms);
-        // }
-        
-        //if (frame == 0) { inposeLocal = tgtusk.refpose;}
-        // printf("%d: t(%f %f %f) t(%f %f %f) t(%f %f %f) %f %f %f\n", frame, 
-        //     inpose[1].Translation.x, inpose[1].Translation.y, inpose[1].Translation.z,
-        //     inpose[2].Translation.x, inpose[2].Translation.y, inpose[2].Translation.z,
-        //     inpose[3].Translation.x, inpose[3].Translation.y, inpose[3].Translation.z,
-        //     inpose[1].Rotation.getAngleDegree(), inpose[2].Rotation.getAngleDegree(), inpose[3].Rotation.getAngleDegree());
+    for(int frame = 0; frame < frameCount; frame++) {
 
         // input and cast
         IKRigUtils::SoulPose2FPose(tempposes[frame], inposeLocal);
 
-        //inposeLocal[0].Rotation = FQuat(); // debug
-
-
-        // retarget
+        // coord convert
         IKRigUtils::LocalFPoseCoordConvert(tsrc2work, srccoord, workcoord, inposeLocal);
+
+        // to global
         IKRigUtils::FPoseToGlobal(srcskm.skeleton, inposeLocal, inpose);
-        //printf("frame:%d\n", frame);
-        //IKRigUtils::debugPrintPoseJoints("initpose", initposeGlobal, {1, 2});
-        //IKRigUtils::debugPrintPoseJoints("inpose", inpose, {1, 2});
-        std::vector<FTransform>& outpose = ikretarget.RunRetargeter(inpose, SpeedValuesFromCurves, DeltaTime);
-        //IKRigUtils::debugPrintPoseJoints("outpose", outpose, {1, 2});
-        IKRigUtils::FPoseToLocal(tgtskm.skeleton, outpose, outposeLocal);
-        // if (frame == 0) { outposeLocal = tgtusk.refpose;}
-        // outposeLocal = tgtusk.refpose; // debug
 
         #ifdef DEBUG_POSE_PRINT
-        if(frame < 20000) {
-            // printf("target skeleton tree1G: %d\n", frame);
-            // std::vector<FTransform> tempposeG;
-            // IKRigUtils::FPoseToGlobal(tgtskm.skeleton, outposeLocal, tempposeG);
-            // IKRigUtils::debugPrintFPose(tgtskm.skeleton, tempposeG);
-            IKRigUtils::debugPrintFPose(tgtskm.skeleton, outpose);
-            IKRigUtils::debugPrintFPose(tgtskm.skeleton, outposeLocal);
-        }
+        printf("frame:%d\n", frame);
+        IKRigUtils::debugPrintInputSoulPose(tempposes[frame], srcskm, frame);
+        IKRigUtils::debugPrintIOFPose("in", srcskm, inposeLocal, inpose, frame);
         #endif
 
+        // retarget
+        std::vector<FTransform>& outpose = ikretarget.RunRetargeter(inpose, SpeedValuesFromCurves, DeltaTime);
+
+        // to local
+        IKRigUtils::FPoseToLocal(tgtskm.skeleton, outpose, outposeLocal);
+
+        #ifdef DEBUG_POSE_PRINT
+        IKRigUtils::debugPrintIOFPose("out", tgtskm, outposeLocal, outpose, frame);
+        #endif
+
+        // coord convert
         IKRigUtils::LocalFPoseCoordConvert(twork2tgt, workcoord, tgtcoord, outposeLocal);
 
         // cast and output
         IKRigUtils::FPose2SoulPose(outposeLocal, tempoutposes[frame]);
 
-
-        // test
-        //tempoutposes[frame].transforms[0].translation.x += frame;
         // test init fpose
         // std::vector<FTransform> initposeLocal2 = tgtusk.refpose;
         // IKRigUtils::LocalPoseCoordConvert(twork2tgt, initposeLocal2, workcoord, tgtcoord);
@@ -850,10 +765,12 @@ int main(int argc, char *argv[]) {
         //tempoutposes[frame] = tempposes[frame];
     }
 
+    printf("process animation %d keyframes\n", frameCount);
+
     /////////////////////////////////////////////
     // output pose animation to mesh0
-    writePoseAnimationToMesh(tempoutposes, tgtskm, debugFrameCount/*srcskm.animation.duration*/, srcskm.animation.ticksPerSecond);
-    fbxrw2.writeSkeletonMesh(outfile);
+    writePoseAnimationToMesh(tempoutposes, tgtskm, frameCount, srcskm.animation.ticksPerSecond);
+    fbxTarget.writeSkeletonMesh(outfile);
 
     return 0;
 }

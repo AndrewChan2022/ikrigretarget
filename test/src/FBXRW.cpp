@@ -39,8 +39,7 @@ public:
     void sortJointsByNodeTree(std::vector<SoulJoint> &joints, std::vector<std::string> &jointNames, 
         const std::vector<aiNode*>& nodes, std::vector<std::string> &nodeNames);
     
-    void processSkeletonAnimation(const aiScene* scene, aiMesh *mesh, SoulSkeletonMesh &fbxMesh, 
-        std::vector<aiNode*>& nodes, std::vector<std::string>& nodeNames);
+    void processSkeletonAnimation(const aiScene* scene, SoulSkeletonMesh &fbxMesh);
 
     void buildSkeletonTree(std::vector<SoulJoint>& joints, std::vector<std::string>& jointNames, 
         const std::vector<aiNode*>& nodes, std::vector<std::string>& nodeNames);
@@ -52,6 +51,8 @@ public:
     void createNode(SoulNode* node, aiNode* parentNode, aiScene* scene, int32_t nodeIndex);
     void createSkeleton(SoulSkeletonMesh &fbxMesh, aiMesh* mesh);
     void createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeletonMesh>>& skeletonMeshes, aiScene* scene);
+
+    bool generateMeshFromPureSkeleton(SoulScene& soulScene, std::string const& rootBoneName);
 public:
     Importer importer;
     bool m_hasAnimation{false};
@@ -135,7 +136,16 @@ void FBXRW::printScene() {
 
 static void ____read____(){}
 
-void FBXRW::readSkeketonMesh(std::string inPath, float scale) {
+void FBXRW::readPureSkeletonWithDefualtMesh(std::string inPath, std::string const& rootBoneName, float scale) {
+    readSkeletonMesh(inPath, scale);
+
+    bool ret = pimpl->generateMeshFromPureSkeleton(*m_soulScene, rootBoneName);
+    if (!ret) {
+        printf("error: cannot find skeleton\n");
+    }
+}
+
+void FBXRW::readSkeletonMesh(std::string inPath, float scale) {
     m_path = inPath;
     m_soulScene = std::make_shared<SoulScene>();
 
@@ -489,7 +499,7 @@ std::shared_ptr<SoulSkeletonMesh> FBXRWImpl::processMesh(aiMesh* mesh, const aiS
     processSkeleton(mesh, fbxMesh, nodes, nodeNames);
 
     // skeleton animation
-    processSkeletonAnimation(scene, mesh, fbxMesh, nodes, nodeNames);
+    processSkeletonAnimation(scene, fbxMesh);
 
     return pSoulMesh;
 }
@@ -617,10 +627,7 @@ void FBXRWImpl::sortJointsByNodeTree(std::vector<SoulJoint> &joints,
 }
 
 // first animation as skeleton animation
-void FBXRWImpl::processSkeletonAnimation(const aiScene* scene, 
-                            aiMesh *mesh, SoulSkeletonMesh &fbxMesh, 
-                            std::vector<aiNode*>& nodes, 
-                            std::vector<std::string>& nodeNames) {
+void FBXRWImpl::processSkeletonAnimation(const aiScene* scene, SoulSkeletonMesh &fbxMesh) {
 
     auto& joints = fbxMesh.skeleton.joints;
     if (scene->mNumAnimations == 0 || joints.size() == 0) {
@@ -676,6 +683,85 @@ void FBXRWImpl::processSkeletonAnimation(const aiScene* scene,
     }
 }
 
+static void processJointNode(SoulSkeleton& sk, SoulNode* node, SoulTransform const& ParentGlobalTransform, int depth) {
+    if (node != nullptr) {
+
+        SoulJoint joint;
+
+        // name
+        joint.name = node->name;
+
+        // ibm
+        SoulTransform local = SoulTransform(node->transform);
+        SoulTransform global =  ParentGlobalTransform * local;
+        joint.inverseBindposeMatrix = glm::inverse(global.toMatrix());
+
+        // parent
+        joint.parentId = -1;
+        if (node->parent != nullptr) {
+            joint.parentId = sk.getJointIdByName(node->parent->name);
+        }
+
+        sk.joints.push_back(joint);
+
+        // child
+        for (auto& child:  node->children) {
+            processJointNode(sk, child.get(), global, depth + 1);
+        }
+    }
+}
+
+bool FBXRWImpl::generateMeshFromPureSkeleton(SoulScene& soulScene, std::string const& rootBoneName) {
+
+    const aiScene* aiscene = importer.GetScene();
+    
+    soulScene.skmeshes.insert(soulScene.skmeshes.begin(), std::make_shared<SoulSkeletonMesh>());
+    SoulSkeletonMesh& mesh = *soulScene.skmeshes[0];
+
+    // geom
+    mesh.vertices.push_back(glm::vec3(-0.5, 0.0, 0.0));
+    mesh.vertices.push_back(glm::vec3(0.5, 0.0, 0.0));
+    mesh.vertices.push_back(glm::vec3(0.0, 0.5, 0.0));
+
+    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+
+    mesh.tangents.push_back(glm::vec3(-0.866, -0.5, 0.0));
+    mesh.tangents.push_back(glm::vec3(0.866, 0.5, 0.0));
+    mesh.tangents.push_back(glm::vec3(0.0, 1.0, 0.0));
+
+    mesh.uvs.push_back(glm::vec2(0.0, 0.0));
+    mesh.uvs.push_back(glm::vec2(1.0, 0.0));
+    mesh.uvs.push_back(glm::vec2(0.5, 1.0));
+
+    mesh.indices.push_back(0);
+    mesh.indices.push_back(1);
+    mesh.indices.push_back(2);
+
+    mesh.jointIds.push_back(glm::uvec4(0, 1, 2, 3));
+    mesh.weights.push_back(glm::vec4(0.25, 0.25, 0.25, 0.25));
+    mesh.weightCounts.push_back(4);
+
+    mesh.jointIds.push_back(glm::uvec4(0, 1, 2, 3));
+    mesh.weights.push_back(glm::vec4(0.25, 0.25, 0.25, 0.25));
+    mesh.weightCounts.push_back(4);
+
+    mesh.jointIds.push_back(glm::uvec4(0, 1, 2, 3));
+    mesh.weights.push_back(glm::vec4(0.25, 0.25, 0.25, 0.25));
+    mesh.weightCounts.push_back(4);
+
+    // skeleton
+    mesh.skeleton;
+    SoulNode* jointRoot = soulScene.findNodeByName(rootBoneName).get();
+    processJointNode(mesh.skeleton, jointRoot, SoulTransform::identity, 0);
+
+    // skeleton animation
+    processSkeletonAnimation(aiscene, mesh);
+
+    return true;
+}
+
 static void ____write____(){}
 
 void FBXRW::writeSkeletonMesh(std::string outPath, float scale) {
@@ -698,32 +784,32 @@ void FBXRW::writeSkeletonMesh(std::string outPath, float scale) {
     scene->mFlags = 8;
 
     // build node tree
-    scene->mRootNode = new aiNode();  // transfer owner to scene
-    scene->mRootNode->mName.Set("root");
+    // scene->mRootNode = new aiNode();  // transfer owner to scene
+    // scene->mRootNode->mName.Set("RootNode");
 
-    scene->mRootNode->mNumChildren = (uint32_t)m_soulScene->skmeshes.size();
-    scene->mRootNode->mChildren = new aiNode* [scene->mRootNode->mNumChildren]; // transfer owner to parent node
-    for(int i = 0; i < m_soulScene->skmeshes.size(); i++) {
-        auto& mesh = *m_soulScene->skmeshes[i];
+    // scene->mRootNode->mNumChildren = (uint32_t)m_soulScene->skmeshes.size();
+    // scene->mRootNode->mChildren = new aiNode* [scene->mRootNode->mNumChildren]; // transfer owner to parent node
+    // for(int i = 0; i < m_soulScene->skmeshes.size(); i++) {
+    //     auto& mesh = *m_soulScene->skmeshes[i];
 
-        aiNode* child = new aiNode;
-        scene->mRootNode->mChildren[i] = child;
+    //     aiNode* child = new aiNode;
+    //     scene->mRootNode->mChildren[i] = child;
 
-        // name
-        child->mName.Set(mesh.name);
+    //     // name
+    //     child->mName.Set(mesh.name);
 
-        // tree
-        child->mParent = scene->mRootNode;
+    //     // tree
+    //     child->mParent = scene->mRootNode;
 
-        // mesh
-        child->mNumMeshes = 1;
-        child->mMeshes = new unsigned int[1];
-        child->mMeshes[0] = i;
+    //     // mesh
+    //     child->mNumMeshes = 1;
+    //     child->mMeshes = new unsigned int[1];
+    //     child->mMeshes[0] = i;
 
-        // todo
-        // transform
-        //child.mTransformation = ;        
-    }
+    //     // todo
+    //     // transform
+    //     //child.mTransformation = ;        
+    // }
 
     // build material
     pimpl->createDefaultMaterial(scene);
@@ -789,23 +875,23 @@ void FBXRWImpl::createNodes(aiScene* scene, SoulScene& fbxScene) {
     createNode(fbxScene.rootNode.get(), nullptr, scene, 0);
 }
 
-void FBXRWImpl::createNode(SoulNode* node, aiNode* parentNode, aiScene* scene, int32_t nodeIndex) {
+void FBXRWImpl::createNode(SoulNode* node, aiNode* parentAINode, aiScene* scene, int32_t nodeIndex) {
     
-    aiNode* curNode = new aiNode;
-    curNode->mName = node->name;
+    aiNode* curAINode = new aiNode;
+    curAINode->mName = node->name;
 
     // tree
-    curNode->mParent = parentNode;
-    if(parentNode == nullptr) {
-        scene->mRootNode = curNode;
+    curAINode->mParent = parentAINode;
+    if(parentAINode == nullptr) {
+        scene->mRootNode = curAINode;
     } else {
-        parentNode->mChildren[nodeIndex] = curNode;
+        parentAINode->mChildren[nodeIndex] = curAINode;
     }
-    curNode->mNumChildren = (uint32_t)node->children.size();
-    curNode->mChildren = new aiNode* [curNode->mNumChildren];
+    curAINode->mNumChildren = (uint32_t)node->children.size();
+    curAINode->mChildren = new aiNode* [curAINode->mNumChildren];
 
     // transform
-    aiMatrix4x4& mat = curNode->mTransformation;
+    aiMatrix4x4& mat = curAINode->mTransformation;
     auto& m = node->transform;
     // assimp row major, glm column major
     mat = aiMatrix4x4(m[0][0], m[1][0], m[2][0], m[3][0],
@@ -814,15 +900,15 @@ void FBXRWImpl::createNode(SoulNode* node, aiNode* parentNode, aiScene* scene, i
                       m[0][3], m[1][3], m[2][3], m[3][3]);
     
     // meshes
-    curNode->mNumMeshes = (uint32_t)node->meshes.size();
-    curNode->mMeshes = new unsigned int[curNode->mNumMeshes];
-    for(uint32_t i = 0; i < curNode->mNumMeshes; i++) {
-        curNode->mMeshes[i] = node->meshes[i];
+    curAINode->mNumMeshes = (uint32_t)node->meshes.size();
+    curAINode->mMeshes = new unsigned int[curAINode->mNumMeshes];
+    for(uint32_t i = 0; i < curAINode->mNumMeshes; i++) {
+        curAINode->mMeshes[i] = node->meshes[i];
     }
 
     // recursive child node
     for(int i = 0; i < node->children.size(); i++) {
-        createNode(node->children[i].get(), curNode, scene, i);
+        createNode(node->children[i].get(), curAINode, scene, i);
     }
 }
 

@@ -30,7 +30,8 @@ namespace SoulIK {
         ~FBXRW() = default;
 
         // read
-        void readSkeketonMesh(std::string inPath, float scale = 1.0);        
+        void readSkeletonMesh(std::string inPath, float scale = 1.0);
+        void readPureSkeletonWithDefualtMesh(std::string inPath, std::string const& rootBoneName, float scale = 1.0);
 
         // write
         void setScene(std::shared_ptr<SoulScene>& soulScene) { m_soulScene = soulScene; }
@@ -40,6 +41,7 @@ namespace SoulIK {
         bool hasAnimation();
         void printScene();
         std::shared_ptr<SoulScene> getSoulScene() { return m_soulScene; }
+    private:
     private:
         std::string m_path;
         std::shared_ptr<FBXRWImpl> pimpl;

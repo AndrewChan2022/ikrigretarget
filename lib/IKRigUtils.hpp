@@ -110,7 +110,14 @@ namespace SoulIK {
         static void debugPrintSkeletonTreeTransform(SoulScene& scene, SoulSkeletonMesh& skmesh);
         static void debugPrintSkeletonTreeGTransform(SoulScene& scene, SoulSkeletonMesh& skmesh);
         static void debugPrintUSkeletonTreeGTransform(SoulSkeleton& sk, USkeleton& usk);
+        static void debugPrintNodeTree(SoulNode* node, int depth = 0);
         // TRS of some joints
         static void debugPrintPoseJoints(const std::string& prefix, SoulSkeleton& sk, std::vector<FTransform>& inpose, std::vector<std::string> jointNames);
+
+
+        static void debugPrintSKM(SoulScene& scene, SoulSkeletonMesh& skm, CoordType srccoord, CoordType workcoord);
+        static void debugPrintUSK(USkeleton& usk, SoulSkeletonMesh& skm, CoordType srccoord, CoordType workcoord);
+        static void debugPrintInputSoulPose(SoulPose& pose, SoulSkeletonMesh& skm, int frame);
+        static void debugPrintIOFPose(std::string const& name, SoulSkeletonMesh& skm, std::vector<FTransform>& inposeLocal, std::vector<FTransform>& inpose, int frame);
     };
 }

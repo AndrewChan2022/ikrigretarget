@@ -9,6 +9,8 @@
 
 using namespace SoulIK;
 
+const SoulTransform SoulTransform::identity = SoulTransform();
+
 SoulTransform::SoulTransform(glm::mat4 const& m) {
     glm::vec3 skew;
     glm::vec4 perspective;
@@ -76,3 +78,59 @@ glm::mat4 SoulTransform::toMatrix() const {
     return OutMatrix;
 }
 
+
+void SoulSkeletonMesh::calcNormal() {
+
+    // reset to 0
+    glm::vec3 zero(0.0);
+    for(auto& n : normals) {
+        n = zero;
+    }
+
+    // calc face normal and plus to its vertices
+    size_t faceCount = indices.size() / 3;
+    for (size_t i = 0; i < faceCount; i++) {
+
+        uint32_t& i0 = indices[i*3]; 
+        uint32_t& i1 = indices[i*3+1]; 
+        uint32_t& i2 = indices[i*3+2];
+
+        glm::vec3& v0 = vertices[i0]; 
+        glm::vec3& v1 = vertices[i1]; 
+        glm::vec3& v2 = vertices[i2];
+
+        glm::vec3 e01 = v1 - v0;
+        glm::vec3 e12 = v2 - v1;
+        glm::vec3 n = glm::cross(e01, e12);
+        n = glm::normalize(n);
+
+        normals[i0] += n;
+        normals[i1] += n;
+        normals[i2] += n;
+    }
+
+    // normalize
+    for(auto& n : normals) {
+        n = glm::normalize(n);
+    }
+}
+
+static std::shared_ptr<SoulNode> findNodeByName(std::string const& name, std::shared_ptr<SoulNode> const& node, int depth) {
+
+    if (node->name == name) {
+        return node;
+    } 
+
+    for(auto& child : node->children) {
+        auto ret = findNodeByName(name, child, depth+1);
+        if (ret != nullptr) {
+            return ret;
+        }
+    }
+
+    return nullptr;
+}
+
+std::shared_ptr<SoulNode> SoulScene::findNodeByName(std::string const& name) const {
+    return ::findNodeByName(name, rootNode, 0);
+}
