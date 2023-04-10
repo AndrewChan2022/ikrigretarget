@@ -875,11 +875,10 @@ void FChainDecoderFK::DecodePose(
 		const FQuat SourceCurrentRotation = SourceCurrentTransform.GetRotation();
 		const FQuat SourceInitialRotation = SourceInitialTransform.GetRotation();
 		FQuat RotationDelta = SourceCurrentRotation * SourceInitialRotation.Inverse();
-		RotationDelta.Normalize(); // chenkai bugfix
 		//printf("rot0:%f rotnow:%f rotationDelta:%f\n", SourceInitialRotation.getAngleDegree(), SourceCurrentRotation.getAngleDegree(), RotationDelta.getAngleDegree());
 		const FQuat TargetInitialRotation = TargetInitialTransform.GetRotation();
 		FQuat OutRotation = RotationDelta * TargetInitialRotation; // copy Global rotation
-		OutRotation.Normalize(); // chenkai bugfix
+		// OutRotation.Normalize(); // chenkai bugfix, not bug
 
 		#ifdef DEBUG_POSE_LOG_CHAINFK
 		printf("TargetInitialRotation.xyzwd:(%.2f %.2f %.2f %.2f)%.2f angle:%.2f\n", 

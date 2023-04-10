@@ -1,6 +1,6 @@
 //
 //  main.cpp
-//  test libGLVNDGLContext
+//  test ikrigretarget
 //
 //  Created by kai chen on 2/8/23.
 //
@@ -359,6 +359,54 @@ static SoulIKRigRetargetConfig config2_6chain() {
 
     return config;
 }
+
+static SoulIKRigRetargetConfig config_s1_meta_error() {
+    SoulIKRigRetargetConfig config;
+    config.SourceCoord      = CoordType::RightHandZupYfront;
+    config.WorkCoord        = CoordType::RightHandZupYfront;
+    config.TargetCoord      = CoordType::RightHandYupZfront;
+
+    config.SourceRootBone   = "Hip";
+    config.SourceGroundBone = "RightAnkle_end";
+    config.TargetRootBone   = "Rol01_Torso01HipCtrlJnt_M";
+    config.TargetGroundBone = "Rol01_Leg01FootJnt_L";
+    
+    //config.skipRootBone = true;
+
+    config.SourceChains = {
+        // name     start               end
+        {"spine",   "Spine",            "Thorax"},
+        {"head",    "Neck",             "Head"},
+        {"lleg",    "LeftHip",          "LeftAnkle"},
+        {"rleg",    "RightHip",         "RightAnkle"},
+        {"larm",    "LeftShoulder",     "LeftWrist"},        
+        {"rram",    "RightShoulder",    "RightWrist"},
+
+    };
+
+    config.TargetChains = {
+        // name    start        end
+        {"spine",   "Rol01_Torso0102Jnt_M",     "Rol01_Neck0101Jnt_M"},
+        {"head",    "Rol01_Neck0102Jnt_M",      "Head_M"},
+        {"lleg",    "Rol01_Leg01Up01Jnt_L",     "Rol01_Leg01AnkleJnt_L"},
+        {"rleg",    "Rol01_Leg01Up01Jnt_R",     "Rol01_Leg01AnkleJnt_R"},
+        {"larm",    "Rol01_Arm01Up01Jnt_L",     "Rol01_Arm01Low03Jnt_L"},
+        {"rram",    "Rol01_Arm01Up01Jnt_R",    "Rol01_Arm01Low03Jnt_R"},
+    };
+
+    config.ChainMapping = {
+        // fk   ik      sourceChain     targetChain
+        {true,  false,  "spine",        "spine"},
+        {true,  false,  "head",         "head"},
+        {true,  false,  "lleg",         "lleg"},
+        {true,  false,  "rleg",         "rleg"},
+        {true,  false,  "larm",         "larm"},
+        {true,  false,  "rram",         "rram"},
+    };
+
+    return config;
+}
+
 
 static SoulIKRigRetargetConfig config_s1_meta() {
     SoulIKRigRetargetConfig config;
