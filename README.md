@@ -1,10 +1,24 @@
 
+
+# Release nots
+
+
+2023.4.10: 
+    
+    version 1.0:
+        read source animation fbx file
+        read source tpose fbx file
+        read target meta fbx file
+
+        run retarget from source animation to target meta file
+
+    retarget config:
+        s1 to meta
+        fliar to meta
+
 # todo
 
-1. fix meta retarget error pose
-2. read model with only skeleton
-3. generate meta model of tpose
-4. skip root retarget
+1. skip root retarget
 
 
 # platform
