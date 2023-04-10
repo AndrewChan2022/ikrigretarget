@@ -79,33 +79,31 @@ main.cpp
 
     /////////////////////////////////////////////
     // config
-    auto config             = config_to_meta();
+    auto config             = config_s1_meta();
     CoordType srccoord      = config.SourceCoord;
     CoordType workcoord     = config.WorkCoord;
     CoordType tgtcoord      = config.TargetCoord;
-    bool isModelAPose       = true;
 
     /////////////////////////////////////////////
     // read fbx
-    SoulIK::FBXRW fbxrw, fbxrw2;
-    fbxrw.readSkeketonMesh(inputfile);
-    fbxrw2.readSkeketonMesh(inputfile2);
+    std::string srcAnimationFile, srcTPoseFile, targetFile, outfile;
+    SoulIK::FBXRW fbxSrcAnimation, fbxSrcTPose, fbxTarget;
+    fbxSrcAnimation.readPureSkeletonWithDefualtMesh(srcAnimationFile, "Hip");
+    fbxSrcTPose.readPureSkeletonWithDefualtMesh(srcTPoseFile, "Hip");
+    fbxTarget.readSkeletonMesh(targetFile);
 
-    SoulIK::SoulScene& srcscene = *fbxrw.getSoulScene();
-    SoulIK::SoulScene& tgtscene = *fbxrw2.getSoulScene();
-    SoulIK::SoulSkeletonMesh& srcskm = *srcscene.skmeshes[0];
-    SoulIK::SoulSkeletonMesh& tgtskm = *tgtscene.skmeshes[0];
+    SoulIK::SoulScene& srcscene         = *fbxSrcAnimation.getSoulScene();
+    SoulIK::SoulScene& srcTPoseScene    = *fbxSrcTPose.getSoulScene();
+    SoulIK::SoulScene& tgtscene         = *fbxTarget.getSoulScene();
+    SoulIK::SoulSkeletonMesh& srcskm    = *srcscene.skmeshes[0];
+    SoulIK::SoulSkeletonMesh& tgtskm    = *tgtscene.skmeshes[0];
 
     /////////////////////////////////////////////
     // init
     SoulIK::USkeleton srcusk;
     SoulIK::USkeleton tgtusk;
-    IKRigUtils::getUSkeletonFromMesh(srcscene, srcskm, srcusk, srccoord, workcoord);
+    IKRigUtils::getUSkeletonFromMesh(srcTPoseScene, *srcTPoseScene.skmeshes[0], srcusk, srccoord, workcoord);
     IKRigUtils::getUSkeletonFromMesh(tgtscene, tgtskm, tgtusk, tgtcoord, workcoord);
-    if (isModelAPose) { 
-        // fix to tpose
-        tgtusk.refpose = getMetaTPoseFPose(tgtskm.skeleton, tgtcoord, workcoord);
-    }
 
     SoulIK::UIKRetargetProcessor ikretarget;
 	auto InRetargeterAsset = createIKRigAsset(config, srcskm.skeleton, tgtskm.skeleton, srcusk, tgtusk);
@@ -151,7 +149,7 @@ main.cpp
     class USkeleton {
         std::string name;
         std::vector<FBoneNode> boneTree;    // each item name and parentId
-        std::vector<FTransform> refpose;    // coord: Right Hand Z up Y front
+        std::vector<FTransform> refpose;    // coord: Right Hand Z up Y front, local
         ...
     };
     struct FBoneNode {
@@ -162,7 +160,8 @@ main.cpp
 
 ## init of IKRigRetargetAsset
 
-    // define retarget config
+    /////////////////////////////////////////////
+    // define config
     struct SoulIKRigRetargetConfig {
         struct SoulIKRigChain {
             std::string chainName;
@@ -200,14 +199,120 @@ main.cpp
                     USkeleton& srcusk, USkeleton& tgtusk);
 
 
-## fix to tpose
+    /////////////////////////////////////////////
+    // example config:
 
-for test model, its rest pose is A pose, so need fix it to tpose
+    SoulIKRigRetargetConfig config;
+    config.SourceCoord      = CoordType::RightHandZupYfront;
+    config.WorkCoord        = CoordType::RightHandZupYfront;
+    config.TargetCoord      = CoordType::RightHandYupZfront;
 
-    if (isTargetMetaAndAPose) {
-        // fix to tpose
-        tgtusk.refpose = getMetaTPoseFPose(...);
-    }
+    config.SourceRootBone   = "Hip";
+    config.SourceGroundBone = "RightAnkle_end";
+    config.TargetRootBone   = "Rol01_Torso01HipCtrlJnt_M";
+    config.TargetGroundBone = "Rol01_Leg01FootJnt_L";
+    
+    //config.skipRootBone = true;
+
+    config.SourceChains = {
+        // name     start               end
+        // spine
+        {"spine",   "Spine",            "Thorax"},
+
+        // head
+        {"head",    "Neck",             "Head"},
+
+        //{"lleg",    "LeftHip",          "LeftAnkle"},
+        {"lleg1",   "LeftHip",          "LeftHip"},
+        {"lleg2",   "LeftKnee",         "LeftKnee"},
+        {"lleg3",   "LeftAnkle",        "LeftAnkle"},
+
+        //{"rleg",    "RightHip",         "RightAnkle"},
+        {"rleg1",   "RightHip",         "RightHip"},
+        {"rleg2",   "RightKnee",        "RightKnee"},
+        {"rleg3",   "RightAnkle",       "RightAnkle"},
+
+        //{"larm",    "LeftShoulder",     "LeftWrist"},
+        {"larm1",   "LeftShoulder",     "LeftShoulder"},
+        {"larm2",   "LeftElbow",        "LeftElbow"},
+        {"larm3",   "LeftWrist",        "LeftWrist"},
+        
+        //{"rram",    "RightShoulder",    "RightWrist"},
+        {"rram1",   "RightShoulder",    "RightShoulder"},
+        {"rram2",   "RightElbow",       "RightElbow"},
+        {"rram3",   "RightWrist",       "RightWrist"},
+
+    };
+
+    config.TargetChains = {
+        // name    start        end
+        // spine
+        {"spine",   "Rol01_Torso0102Jnt_M",     "Rol01_Neck0101Jnt_M"},
+
+        // head
+        {"head",    "Rol01_Neck0102Jnt_M",      "Head_M"},
+
+        //{"lleg",    "Rol01_Leg01Up01Jnt_L",     "Rol01_Leg01AnkleJnt_L"},
+        {"lleg1",   "Rol01_Leg01Up01Jnt_L",     "Rol01_Leg01Up01Jnt_L"},
+        {"lleg2",   "Rol01_Leg01Low01Jnt_L",    "Rol01_Leg01Low01Jnt_L"},
+        {"lleg3",   "Rol01_Leg01AnkleJnt_L",    "Rol01_Leg01AnkleJnt_L"},
+
+        //{"rleg",    "Rol01_Leg01Up01Jnt_R",     "Rol01_Leg01AnkleJnt_R"},
+        {"rleg1",   "Rol01_Leg01Up01Jnt_R",     "Rol01_Leg01Up01Jnt_R"},
+        {"rleg2",   "Rol01_Leg01Low01Jnt_R",    "Rol01_Leg01Low01Jnt_R"},
+        {"rleg3",   "Rol01_Leg01AnkleJnt_R",    "Rol01_Leg01AnkleJnt_R"},
+
+        //{"larm",    "Rol01_Arm01Up01Jnt_L",     "Rol01_Arm01Low03Jnt_L"},
+        {"larm1",   "Rol01_Arm01Up01Jnt_L",     "Rol01_Arm01Up01Jnt_L"},
+        {"larm2",   "Rol01_Arm01Low01Jnt_L",    "Rol01_Arm01Low01Jnt_L"},
+        {"larm3",   "Rol01_Hand01MasterJnt_L",  "Rol01_Hand01MasterJnt_L"},
+
+        //{"rram",    "Rol01_Arm01Up01Jnt_R",    "Rol01_Arm01Low03Jnt_R"},
+        {"rram1",   "Rol01_Arm01Up01Jnt_R",     "Rol01_Arm01Up01Jnt_R"},
+        {"rram2",   "Rol01_Arm01Low01Jnt_R",    "Rol01_Arm01Low01Jnt_R"},
+        {"rram3",   "Rol01_Hand01MasterJnt_R",  "Rol01_Hand01MasterJnt_R"},        
+    };
+
+    config.ChainMapping = {
+        // fk   ik      sourceChain     targetChain
+        
+        // spine
+        {true,  false,  "spine",        "spine"},
+
+        // head
+        {true,  false,  "head",         "head"},
+
+        // lleg
+        {true,  false,  "lleg1",        "lleg1"},
+        {true,  false,  "lleg2",        "lleg2"},
+        {true,  false,  "lleg3",        "lleg3"},
+        
+        // rleg
+        {true,  false,  "rleg1",        "rleg1"},
+        {true,  false,  "rleg2",        "rleg2"},
+        {true,  false,  "rleg3",        "rleg3"},
+
+        // larm
+        {true,  false,  "larm1",        "larm1"},
+        {true,  false,  "larm2",        "larm2"},
+        {true,  false,  "larm3",        "larm3"},
+        
+        // rarm
+        {true,  false,  "rram1",        "rram1"},
+        {true,  false,  "rram2",        "rram2"},
+        {true,  false,  "rram3",        "rram3"},
+    };
+
+
+## tpose
+
+we both model same initial pose
+
+so the src model including:
+
+    src animation model
+
+    src tpose model
 
 ## init of processor
 
@@ -243,7 +348,7 @@ for test model, its rest pose is A pose, so need fix it to tpose
 
 develop maya plugin based on this lib
 
-render the skeleton and animation
+render the skeleton and animation so easy debug
 
 # Acknowledgements
 
