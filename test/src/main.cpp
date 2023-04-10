@@ -749,20 +749,7 @@ int main(int argc, char *argv[]) {
         IKRigUtils::LocalFPoseCoordConvert(twork2tgt, workcoord, tgtcoord, outposeLocal);
 
         // cast and output
-        IKRigUtils::FPose2SoulPose(outposeLocal, tempoutposes[frame]);
-
-        // test init fpose
-        // std::vector<FTransform> initposeLocal2 = tgtusk.refpose;
-        // IKRigUtils::LocalPoseCoordConvert(twork2tgt, initposeLocal2, workcoord, tgtcoord);
-        // IKRigUtils::FPose2SoulPose(initposeLocal2, tempoutposes[frame]);
-        
-        // test init soulpose
-        //SoulIK::SoulPose tgtsoulpose;
-        //IKRigUtils::getSoulPoseFromMesh(tgtscene, tgtskm, tgtsoulpose);
-        //tempoutposes[frame] = tgtsoulpose;
-
-        // test inpose
-        //tempoutposes[frame] = tempposes[frame];
+        IKRigUtils::FPose2SoulPose(outposeLocal, tempoutposes[frame]);        
     }
 
     printf("process animation %d keyframes\n", frameCount);
