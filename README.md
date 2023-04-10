@@ -1,6 +1,6 @@
 
 
-# Release nots
+# Release notes
 
 
 2023.4.10: 
