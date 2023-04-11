@@ -18,7 +18,8 @@
 
 using namespace SoulIK;
 
-//#define DEBUG_POSE_PRINT
+#define DEBUG_POSE_PRINT
+//#define DEBUG_POSE_PRINT_EVERY_FRAME
 
 // generate pose of every joint and every frame
 static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh& skmesh,
@@ -679,26 +680,6 @@ static std::string getModelPath() {
     return model_path;
 }
 
-static void getFilePaths(std::string& srcAnimationFile, 
-    std::string& srcTPoseFile, 
-    std::string& targetFile,
-    std::string& outfile, 
-    SoulIKRigRetargetConfig& config) {
-    
-    std::string modelPath = getModelPath();
-
-    srcAnimationFile    = modelPath + "S1_Walking_3d_17kpts.fbx";
-    srcTPoseFile        = modelPath + "S1_Walking_3d_17kpts.fbx";
-    //srcAnimationFile    = modelPath + "Flair.fbx";
-    //srcTPoseFile        = modelPath + "Flair.fbx";
-    targetFile          = modelPath + "3D_Avatar2_Rig_0723.fbx";
-    outfile             = modelPath + "out.fbx";
-
-    if (config.TargetCoord == CoordType::RightHandZupYfront) {
-        targetFile      = modelPath = "S1_SittingDown_3d_17kpts_tiny_ball";
-    }
-}
-
 struct TestCase {
     SoulIKRigRetargetConfig  config;
     std::string srcAnimationFile;
@@ -709,27 +690,72 @@ struct TestCase {
     bool isTargetNeedHardCodeTPose{ false };
 };
 
-
-TestCase getS1SittingCase() {
+TestCase case_S1SittingDown() {
+    
     TestCase testCase;
+
     testCase.config = config_s1_meta();
     testCase.srcAnimationFile = "S1_SittingDown_3d_17kpts.fbx";
     testCase.srcTPoseFile = "S1_SittingDown_3d_17kpts.fbx";
-    testCase.targetFile = "S1_SittingDown_3d_17kpts.fbx";
-    testCase.targetTPoseFile = "S1_SittingDown_3d_17kpts.fbx";
-    testCase.targetTPoseFile = "out.fbx";
+    testCase.targetFile = "3D_Avatar2_Rig_0723.fbx";
+    testCase.targetTPoseFile = "3D_Avatar2_Rig_0723_itpose.fbx";
+    testCase.outFile = "out.fbx";
+    testCase.isTargetNeedHardCodeTPose = false;
+
+    return testCase;
 }
 
+TestCase case_S1Walking() {
+    
+    TestCase testCase;
+
+    testCase.config = config_s1_meta();
+    testCase.srcAnimationFile = "S1_Walking_3d_17kpts.fbx";
+    testCase.srcTPoseFile = "S1_Walking_3d_17kpts.fbx";
+    testCase.targetFile = "3D_Avatar2_Rig_0723.fbx";
+    testCase.targetTPoseFile = "3D_Avatar2_Rig_0723_itpose.fbx";
+    testCase.outFile = "out.fbx";
+    testCase.isTargetNeedHardCodeTPose = false;
+
+    return testCase;
+}
+
+TestCase case_Flair() {
+    
+    TestCase testCase;
+
+    testCase.config = config_s1_meta();
+    testCase.srcAnimationFile = "Flair.fbx";
+    testCase.srcTPoseFile = "Flair.fbx";
+    testCase.targetFile = "3D_Avatar2_Rig_0723.fbx";
+    testCase.targetTPoseFile = "3D_Avatar2_Rig_0723_itpose.fbx";
+    testCase.outFile = "out.fbx";
+    testCase.isTargetNeedHardCodeTPose = false;
+    return testCase;
+}
+
+static void getFilePaths(std::string& srcAnimationFile, 
+    std::string& srcTPoseFile, 
+    std::string& targetFile,
+    std::string& targetTPoseFile,
+    std::string& outfile, 
+    TestCase& testcase) {
+    
+    std::string modelPath = getModelPath();
+
+    srcAnimationFile    = modelPath + testcase.srcAnimationFile;
+    srcTPoseFile        = modelPath + testcase.srcTPoseFile;
+    targetFile          = modelPath + testcase.targetFile;
+    targetTPoseFile     = modelPath + testcase.targetTPoseFile;
+    outfile             = modelPath + testcase.outFile;
+}
 
 int main(int argc, char *argv[]) {
 
     /////////////////////////////////////////////
     // setting of coord
-    TestCase                testCase;
-    //auto config             =  config1_1chain_lleg();
-    auto config             =  
-    //auto config             = config2_6chain();
-    //auto config             = config_flair_meta();
+    TestCase testCase       = case_S1SittingDown();
+    auto config             = testCase.config;
     CoordType srccoord      = config.SourceCoord;
     CoordType workcoord     = config.WorkCoord;
     CoordType tgtcoord      = config.TargetCoord;
@@ -739,17 +765,27 @@ int main(int argc, char *argv[]) {
 
     /////////////////////////////////////////////
     // read fbx
-    std::string srcAnimationFile, srcTPoseFile, targetFile, outfile;
-    getFilePaths(srcAnimationFile, srcTPoseFile, targetFile, outfile, config);
+    std::string srcAnimationFile, srcTPoseFile, targetFile, targetTPoseFile, outfile;
+    getFilePaths(srcAnimationFile, srcTPoseFile, targetFile, targetTPoseFile, outfile, testCase);
 
-    SoulIK::FBXRW fbxSrcAnimation, fbxSrcTPose, fbxTarget;
+    SoulIK::FBXRW fbxSrcAnimation, fbxSrcTPose, fbxTarget, fbxTargetTPose;
     fbxSrcAnimation.readPureSkeletonWithDefualtMesh(srcAnimationFile, config.SourceRootBone);
-    fbxSrcTPose.readPureSkeletonWithDefualtMesh(srcTPoseFile, config.SourceRootBone);
+    if(srcAnimationFile == srcTPoseFile) {
+        fbxSrcTPose = fbxSrcAnimation;
+    } else {
+        fbxSrcTPose.readPureSkeletonWithDefualtMesh(srcTPoseFile, config.SourceRootBone);
+    }
     fbxTarget.readSkeletonMesh(targetFile);
+    if (targetFile == targetTPoseFile) {
+        fbxTargetTPose = fbxTarget;
+    } else {
+        fbxTargetTPose.readSkeletonMesh(targetTPoseFile);
+    }
 
     SoulIK::SoulScene& srcscene         = *fbxSrcAnimation.getSoulScene();
     SoulIK::SoulScene& srcTPoseScene    = *fbxSrcTPose.getSoulScene();
     SoulIK::SoulScene& tgtscene         = *fbxTarget.getSoulScene();
+    SoulIK::SoulScene& tgtTPosescene    = *fbxTargetTPose.getSoulScene();
     SoulIK::SoulSkeletonMesh& srcskm    = *srcscene.skmeshes[0];
     SoulIK::SoulSkeletonMesh& tgtskm    = *tgtscene.skmeshes[0];
 
@@ -763,8 +799,14 @@ int main(int argc, char *argv[]) {
     SoulIK::USkeleton srcusk;
     SoulIK::USkeleton tgtusk;
     IKRigUtils::getUSkeletonFromMesh(srcTPoseScene, *srcTPoseScene.skmeshes[0], srcusk, srccoord, workcoord);
-    IKRigUtils::getUSkeletonFromMesh(tgtscene, tgtskm, tgtusk, tgtcoord, workcoord);
-    tgtusk.refpose = getMetaTPoseFPose(tgtskm.skeleton, CoordType::RightHandYupZfront, CoordType::RightHandZupYfront);
+    IKRigUtils::getUSkeletonFromMesh(tgtTPosescene, *tgtTPosescene.skmeshes[0], tgtusk, tgtcoord, workcoord);
+    //IKRigUtils::debugPrintUSK(tgtusk, *tgtTPosescene.skmeshes[0], tgtcoord, workcoord);
+    IKRigUtils::getUSkeletonFromMesh(tgtscene, *tgtscene.skmeshes[0], tgtusk, tgtcoord, workcoord);
+    //IKRigUtils::debugPrintUSK(tgtusk, *tgtscene.skmeshes[0], tgtcoord, workcoord);
+    
+    //if (testCase.isTargetNeedHardCodeTPose) {
+        tgtusk.refpose = getMetaTPoseFPose(tgtskm.skeleton, CoordType::RightHandYupZfront, CoordType::RightHandZupYfront);
+    //}
 
     #ifdef DEBUG_POSE_PRINT
     IKRigUtils::debugPrintUSK(srcusk, srcskm, srccoord, workcoord);
@@ -802,7 +844,7 @@ int main(int argc, char *argv[]) {
         // to global
         IKRigUtils::FPoseToGlobal(srcskm.skeleton, inposeLocal, inpose);
 
-        #ifdef DEBUG_POSE_PRINT
+        #if defined(DEBUG_POSE_PRINT) &&  defined(DEBUG_POSE_PRINT_EVERY_FRAME)
         printf("frame:%d\n", frame);
         IKRigUtils::debugPrintInputSoulPose(tempposes[frame], srcskm, frame);
         IKRigUtils::debugPrintIOFPose("in", srcskm, inposeLocal, inpose, frame);
@@ -814,7 +856,7 @@ int main(int argc, char *argv[]) {
         // to local
         IKRigUtils::FPoseToLocal(tgtskm.skeleton, outpose, outposeLocal);
 
-        #ifdef DEBUG_POSE_PRINT
+        #if defined(DEBUG_POSE_PRINT) &&  defined(DEBUG_POSE_PRINT_EVERY_FRAME)
         IKRigUtils::debugPrintIOFPose("out", tgtskm, outposeLocal, outpose, frame);
         #endif
 
