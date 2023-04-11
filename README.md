@@ -14,7 +14,7 @@
 
     retarget config:
         s1 to meta
-        fliar to meta
+        flair to meta
 
 # todo
 

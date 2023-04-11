@@ -149,6 +149,8 @@ void FBXRW::readSkeletonMesh(std::string inPath, float scale) {
     m_path = inPath;
     m_soulScene = std::make_shared<SoulScene>();
 
+    printf("read model:%s\n", inPath.c_str());
+
     // read
     pimpl = std::make_shared<FBXRWImpl>();
     Importer& importer = pimpl->importer;
