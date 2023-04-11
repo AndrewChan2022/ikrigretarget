@@ -291,7 +291,7 @@ namespace SoulIK
         const TArray<FBoneChain>& GetRetargetChains() const { return RetargetDefinition.BoneChains; };
         const FName& GetRetargetRoot() const { return RetargetDefinition.RootBone; };
         const FName& GetRetargetGround() const { return RetargetDefinition.GroundBone; };
-        const FBoneChain* UIKRigDefinition::GetRetargetChainByName(FName ChainName) const
+        const FBoneChain* GetRetargetChainByName(FName ChainName) const
         {
             for (const FBoneChain& Chain : RetargetDefinition.BoneChains)
             {

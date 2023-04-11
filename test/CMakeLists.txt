@@ -29,8 +29,20 @@ message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 
 if(APPLE)
 
-    target_link_libraries(testikrigretarget PRIVATE ikrigretarget)
+    set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/macos/assimp)
+    message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
+    find_library(ASSIMP_LIB NAMES libassimp.5.2.5.dylib PATHS ${LIBS_DIR} NO_DEFAULT_PATH)
+    message(STATUS "ASSIMP_LIB: ${ASSIMP_LIB}")
+    target_link_libraries(testikrigretarget PRIVATE  ikrigretarget ${ASSIMP_LIB})
 
+    message(STATUS "TARGET_RUNTIME_DLLS: $<TARGET_RUNTIME_DLLS:testikrigretarget>")
+    message(STATUS "TARGET_FILE_DIR: $<TARGET_RUNTIME_DLLS:testikrigretarget>")
+
+    # add_custom_command(TARGET testikrigretarget POST_BUILD
+    #     COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+    #     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/win/assimp/assimp-vc143-mtd.dll
+    #     $<TARGET_FILE_DIR:testikrigretarget> 
+    # )
 
 else()
 
