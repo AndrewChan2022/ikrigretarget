@@ -31,7 +31,7 @@ if(APPLE)
 
     set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/macos/assimp)
     message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
-    find_library(ASSIMP_LIB NAMES libassimp.5.2.5.dylib PATHS ${LIBS_DIR} NO_DEFAULT_PATH)
+    find_library(ASSIMP_LIB NAMES libassimp.dylib PATHS ${LIBS_DIR} NO_DEFAULT_PATH)
     message(STATUS "ASSIMP_LIB: ${ASSIMP_LIB}")
     target_link_libraries(testikrigretarget PRIVATE  ikrigretarget ${ASSIMP_LIB})
 
