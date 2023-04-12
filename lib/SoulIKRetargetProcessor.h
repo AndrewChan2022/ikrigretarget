@@ -173,6 +173,8 @@ struct FResolvedBoneChain
 
 struct FRootSource
 {
+	ERootType RootType;
+
 	FName BoneName;
 	int32 BoneIndex;
 	FQuat InitialRotation;
@@ -185,6 +187,8 @@ struct FRootSource
 
 struct FRootTarget
 {
+	ERootType RootType;
+
 	FName BoneName;
 	int32 BoneIndex;
 	FVector InitialPosition;
@@ -204,12 +208,14 @@ struct FRootRetargeter
 	void Reset();
 	
 	bool InitializeSource(
+		const ERootType SourceRootType,
 		const FName SourceRootBoneName,
 		const FName SourceGroundBoneName,
 		const FRetargetSkeleton& SourceSkeleton,
 		FIKRigLogger& Log);
 	
 	bool InitializeTarget(
+		const ERootType TargetRootType,
 		const FName TargetRootBoneName,
 		const FName TargetGroundBoneName,
 		const FTargetSkeleton& TargetSkeleton,

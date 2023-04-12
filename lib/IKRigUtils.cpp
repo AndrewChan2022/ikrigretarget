@@ -11,6 +11,95 @@
 
 using namespace SoulIK;
 
+std::shared_ptr<UIKRetargeter> IKRigUtils::createIKRigAsset(SoulIKRigRetargetConfig& config,
+    SoulSkeleton& srcsk, SoulSkeleton& tgtsk, USkeleton& srcusk, USkeleton& tgtusk) {
+
+    std::shared_ptr<UIKRetargeter> pInRetargeterAsset = std::make_shared<UIKRetargeter>();
+    UIKRetargeter& InRetargeterAsset = *pInRetargeterAsset;
+
+    ///////////////////////////////////////
+    // ikrig 1
+    InRetargeterAsset.SourceIKRigAsset = std::make_shared<UIKRigDefinition>();
+    
+    // skeleton
+    FIKRigSkeleton rigsk;
+    IKRigUtils::USkeleton2RigSkeleton(srcusk, rigsk);
+    InRetargeterAsset.SourceIKRigAsset->Skeleton = rigsk;
+
+    // rootbone
+    InRetargeterAsset.SourceIKRigAsset->RetargetDefinition.RootBone = config.SourceRootBone;
+    InRetargeterAsset.SourceIKRigAsset->RetargetDefinition.GroundBone = config.SourceGroundBone;
+    InRetargeterAsset.SourceIKRigAsset->RetargetDefinition.RootType = config.SourceRootType;
+
+    // chain
+    InRetargeterAsset.SourceIKRigAsset->RetargetDefinition.BoneChains.resize(config.SourceChains.size());
+    for(size_t i = 0; i < config.SourceChains.size(); i++) {
+        auto& chain = config.SourceChains[i];
+        auto& BoneChain = InRetargeterAsset.SourceIKRigAsset->RetargetDefinition.BoneChains[i];
+
+        BoneChain.ChainName = chain.chainName;
+        BoneChain.StartBone.BoneName = chain.startBone;
+        BoneChain.StartBone.BoneIndex = srcsk.getJointIdByName(chain.startBone);
+        BoneChain.EndBone.BoneName = chain.endBone;
+        BoneChain.EndBone.BoneIndex = srcsk.getJointIdByName(chain.endBone);
+    }
+
+    ///////////////////////////////////////
+    // ikrig 2
+    InRetargeterAsset.TargetIKRigAsset = std::make_shared<UIKRigDefinition>();
+
+    // skeleton
+    FIKRigSkeleton rigsk2;
+    IKRigUtils::USkeleton2RigSkeleton(tgtusk, rigsk2);
+    InRetargeterAsset.TargetIKRigAsset->Skeleton = rigsk2;
+
+    // root bone
+    InRetargeterAsset.TargetIKRigAsset->RetargetDefinition.RootBone = config.TargetRootBone;
+    InRetargeterAsset.TargetIKRigAsset->RetargetDefinition.GroundBone = config.TargetGroundBone;
+    InRetargeterAsset.TargetIKRigAsset->RetargetDefinition.RootType = config.TargetRootType;
+
+    // chain
+    InRetargeterAsset.TargetIKRigAsset->RetargetDefinition.BoneChains.resize(config.TargetChains.size());
+    for(size_t i = 0; i < config.TargetChains.size(); i++) {
+        auto& chain = config.TargetChains[i];
+        auto& BoneChain = InRetargeterAsset.TargetIKRigAsset->RetargetDefinition.BoneChains[i];
+
+        BoneChain.ChainName = chain.chainName;
+        BoneChain.StartBone.BoneName = chain.startBone;
+        BoneChain.StartBone.BoneIndex = srcsk.getJointIdByName(chain.startBone);
+        BoneChain.EndBone.BoneName = chain.endBone;
+        BoneChain.EndBone.BoneIndex = srcsk.getJointIdByName(chain.endBone);
+    }
+
+    ///////////////////////////////////////
+    // mapping
+    for(size_t i = 0; i < config.ChainMapping.size(); i++) {
+        std::shared_ptr<URetargetChainSettings> chainSetting = std::make_shared<URetargetChainSettings>();
+
+        chainSetting->Settings.FK.EnableFK = config.ChainMapping[i].EnableFK;
+        chainSetting->Settings.IK.EnableIK = config.ChainMapping[i].EnableIK;
+        chainSetting->SourceChain = config.ChainMapping[i].SourceChain;
+        chainSetting->TargetChain = config.ChainMapping[i].TargetChain;
+        InRetargeterAsset.ChainSettings.push_back(chainSetting);
+    }
+
+    ///////////////////////////////////////
+    // global settting
+    InRetargeterAsset.GlobalSettings = std::make_shared<UIKRetargetGlobalSettings>();
+    InRetargeterAsset.GlobalSettings->Settings.bEnableRoot = (config.TargetRootType != ERootType::Ignore);
+
+    return pInRetargeterAsset;
+}
+
+std::string IKRigUtils::CoordTypeToString(CoordType aCoordType) {
+    if(aCoordType == CoordType::RightHandZupYfront) {
+        return "RightHandZupYfront";
+    } else if (aCoordType == CoordType::RightHandYupZfront) {
+        return "RightHandYupZfront";
+    }
+    return "unkown CoordType";
+}
+
 FTransform IKRigUtils::getFTransformFromCoord(CoordType srcCoord, CoordType tgtCoord) {
     FTransform t = FTransform::Identity;
 
@@ -284,6 +373,7 @@ void IKRigUtils::SoulPoseToLocal(SoulSkeleton& sk, std::vector<SoulTransform>& g
 
 void IKRigUtils::SoulPoseToGlobal(SoulSkeleton& sk, std::vector<SoulTransform>& localpose, std::vector<SoulTransform>& globalpose) {
     assert(sk.joints.size() == localpose.size());
+    assert(sk.joints.size() != 0);
     globalpose.resize(localpose.size());
     
     globalpose[0] = localpose[0];
@@ -753,6 +843,17 @@ void IKRigUtils::debugPrintSKM(std::string const& name, SoulScene& scene, SoulSk
     printf("%s:\n", name.c_str());
     SoulPose temppose1, temppose2;
     IKRigUtils::getSoulPoseFromMesh(scene, skm, temppose1);
+
+    std::string srccoordstr = IKRigUtils::CoordTypeToString(srccoord);
+    printf("skeleton tree1L on srccoord:%s\n", srccoordstr.c_str());
+    IKRigUtils::debugPrintSoulPose(skm.skeleton, temppose1.transforms);
+    printf("skeleton tree1G on srccoord:%s\n", srccoordstr.c_str());
+    IKRigUtils::SoulPoseToGlobal(skm.skeleton, temppose1.transforms, temppose2.transforms);
+    IKRigUtils::debugPrintSoulPose(skm.skeleton, temppose2.transforms);
+    printf("skeleton tree1L on srccoord:%s\n", srccoordstr.c_str());
+    IKRigUtils::SoulPoseToLocal(skm.skeleton, temppose2.transforms, temppose1.transforms);
+    IKRigUtils::debugPrintSoulPose(skm.skeleton, temppose1.transforms);
+
     IKRigUtils::LocalSoulPoseCoordConvert(srccoord, workcoord, temppose1.transforms);
     printf("skeleton tree1L on workcoord\n");
     IKRigUtils::debugPrintSoulPose(skm.skeleton, temppose1.transforms);

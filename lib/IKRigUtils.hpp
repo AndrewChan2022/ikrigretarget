@@ -14,6 +14,35 @@
 // you should define your native scene data structure for your processor or renderer
 namespace SoulIK {
 
+    // class CoordType
+    // {
+    // public:
+    //     enum Value : uint8_t {
+    //         RightHandZupYfront,     // 3dsmax
+    //         RightHandYupZfront,     // maya houdini substance marmoset godot OpenGL
+    //     };
+    //     CoordType() = default;
+    //     constexpr CoordType(Value aCoordType) : value(aCoordType) { }
+    //     #if Enable switch(CoordType) use case:
+    //     // Allow switch and comparisons.
+    //     constexpr operator Value() const { return value; }
+    //     // Prevent usage: if(fruit)
+    //     explicit operator bool() const = delete;        
+    //     #else
+    //     constexpr bool operator==(CoordType a) const { return value == a.value; }
+    //     constexpr bool operator!=(CoordType a) const { return value != a.value; }
+    //     #endif
+    //     constexpr bool ToString() const { 
+    //         if(value == RightHandZupYfront) {
+    //             return "RightHandZupYfront";
+    //         } else if (value == RightHandYupZfront) {
+    //             return "RightHandYupZfront";
+    //         }
+    //     }
+    // private:
+    //     Value value;
+    // };
+
     enum class CoordType: uint8_t {
         RightHandZupYfront,     // 3dsmax
         RightHandYupZfront,     // maya houdini substance marmoset godot OpenGL
@@ -41,10 +70,10 @@ namespace SoulIK {
         CoordType TargetCoord;
 
         // root
-        bool SkipRoot{false};       // todo
-        bool UseGroundBone{true};   // todo
+        ERootType   SourceRootType{ERootType::RootZMinusGroundZ};
         std::string SourceRootBone;
         std::string SourceGroundBone;
+        ERootType   TargetRootType{ERootType::RootZMinusGroundZ};
         std::string TargetRootBone;
         std::string TargetGroundBone;
 
@@ -57,7 +86,13 @@ namespace SoulIK {
     class IKRigUtils {
     private:
     public:
+
+        static std::shared_ptr<UIKRetargeter> createIKRigAsset(SoulIKRigRetargetConfig& config,
+            SoulSkeleton& srcsk, SoulSkeleton& tgtsk, USkeleton& srcusk, USkeleton& tgtusk
+        );
+
         // coord convert
+        static std::string CoordTypeToString(CoordType aCoordType);
         
         static void USkeletonCoordConvert(CoordType srcCoord, CoordType tgtCoord, USkeleton& sk);
         

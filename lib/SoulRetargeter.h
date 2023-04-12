@@ -269,9 +269,15 @@ namespace SoulIK
         std::string IKGoalName;
     };
 
+    enum class ERootType: uint8_t {
+	    RootZ = 0,          // height = root.translation.z
+	    RootZMinusGroundZ,  // height = root.translation.z - ground.translation.z
+	    Ignore              // skip
+    };
     class URetargetDefinition
     {
     public:
+        ERootType   RootType;
         std::string RootBone;
         std::string GroundBone;         // RootBone.z - GroundBone.z = height
         TArray<FBoneChain> BoneChains;
@@ -291,6 +297,7 @@ namespace SoulIK
         const TArray<FBoneChain>& GetRetargetChains() const { return RetargetDefinition.BoneChains; };
         const FName& GetRetargetRoot() const { return RetargetDefinition.RootBone; };
         const FName& GetRetargetGround() const { return RetargetDefinition.GroundBone; };
+        const ERootType GetRootType() const {return RetargetDefinition.RootType; }
         const FBoneChain* GetRetargetChainByName(FName ChainName) const
         {
             for (const FBoneChain& Chain : RetargetDefinition.BoneChains)

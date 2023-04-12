@@ -18,8 +18,16 @@
 
 using namespace SoulIK;
 
-//#define DEBUG_POSE_PRINT
-//#define DEBUG_POSE_PRINT_EVERY_FRAME
+// #define DEBUG_POSE_PRINT
+// #define DEBUG_POSE_PRINT_EVERY_FRAME
+
+#ifdef DEBUG_POSE_PRINT
+    #define DEBUG_PRINT_SKM(name, scene, skm, srccoord, workcoord) IKRigUtils::debugPrintSKM(name, scene, *scene.skmeshes[0], srccoord, workcoord);
+    #define DEBUG_PRINT_USK(name, usk, skm, srccoord, workcoord) IKRigUtils::debugPrintUSK(name, usk, skm, srccoord, workcoord);
+#else
+    #define DEBUG_PRINT_SKM(name, scene, skm, srccoord, workcoord)
+    #define DEBUG_PRINT_USK(name, usk, skm, srccoord, workcoord)
+#endif
 
 #if defined(DEBUG_POSE_PRINT) &&  defined(DEBUG_POSE_PRINT_EVERY_FRAME)
     //#define DEBUG_PRINT(fmt, ...) printf(fmt, ##__VA_ARGS__)
@@ -213,79 +221,6 @@ static void writePoseAnimationToMesh(std::vector<SoulIK::SoulPose>& tempoutposes
     }
 }
 
-static std::shared_ptr<UIKRetargeter> createIKRigAsset(SoulIKRigRetargetConfig& config,
-        SoulSkeleton& srcsk, SoulSkeleton& tgtsk, USkeleton& srcusk, USkeleton& tgtusk) {
-
-    std::shared_ptr<UIKRetargeter> pInRetargeterAsset = std::make_shared<UIKRetargeter>();
-    UIKRetargeter& InRetargeterAsset = *pInRetargeterAsset;
-    
-    ///////////////////////////////////////
-    // ikrig 1
-    InRetargeterAsset.SourceIKRigAsset = std::make_shared<UIKRigDefinition>();
-    
-    // skeleton
-    FIKRigSkeleton rigsk;
-    IKRigUtils::USkeleton2RigSkeleton(srcusk, rigsk);
-    InRetargeterAsset.SourceIKRigAsset->Skeleton = rigsk;
-
-    // rootbone
-    InRetargeterAsset.SourceIKRigAsset->RetargetDefinition.RootBone = config.SourceRootBone;
-    InRetargeterAsset.SourceIKRigAsset->RetargetDefinition.GroundBone = config.SourceGroundBone;
-
-    // chain
-    InRetargeterAsset.SourceIKRigAsset->RetargetDefinition.BoneChains.resize(config.SourceChains.size());
-    for(size_t i = 0; i < config.SourceChains.size(); i++) {
-        auto& chain = config.SourceChains[i];
-        auto& BoneChain = InRetargeterAsset.SourceIKRigAsset->RetargetDefinition.BoneChains[i];
-
-        BoneChain.ChainName = chain.chainName;
-        BoneChain.StartBone.BoneName = chain.startBone;
-        BoneChain.StartBone.BoneIndex = srcsk.getJointIdByName(chain.startBone);
-        BoneChain.EndBone.BoneName = chain.endBone;
-        BoneChain.EndBone.BoneIndex = srcsk.getJointIdByName(chain.endBone);
-    }
-
-    ///////////////////////////////////////
-    // ikrig 2
-    InRetargeterAsset.TargetIKRigAsset = std::make_shared<UIKRigDefinition>();
-
-    // skeleton
-    FIKRigSkeleton rigsk2;
-    IKRigUtils::USkeleton2RigSkeleton(tgtusk, rigsk2);
-    InRetargeterAsset.TargetIKRigAsset->Skeleton = rigsk2;
-
-    // root bone
-    InRetargeterAsset.TargetIKRigAsset->RetargetDefinition.RootBone = config.TargetRootBone;
-    InRetargeterAsset.TargetIKRigAsset->RetargetDefinition.GroundBone = config.TargetGroundBone;
-
-    // chain
-    InRetargeterAsset.TargetIKRigAsset->RetargetDefinition.BoneChains.resize(config.TargetChains.size());
-    for(size_t i = 0; i < config.TargetChains.size(); i++) {
-        auto& chain = config.TargetChains[i];
-        auto& BoneChain = InRetargeterAsset.TargetIKRigAsset->RetargetDefinition.BoneChains[i];
-
-        BoneChain.ChainName = chain.chainName;
-        BoneChain.StartBone.BoneName = chain.startBone;
-        BoneChain.StartBone.BoneIndex = srcsk.getJointIdByName(chain.startBone);
-        BoneChain.EndBone.BoneName = chain.endBone;
-        BoneChain.EndBone.BoneIndex = srcsk.getJointIdByName(chain.endBone);
-    }
-
-    ///////////////////////////////////////
-    // mapping
-    for(size_t i = 0; i < config.ChainMapping.size(); i++) {
-        std::shared_ptr<URetargetChainSettings> chainSetting = std::make_shared<URetargetChainSettings>();
-
-        chainSetting->Settings.FK.EnableFK = config.ChainMapping[i].EnableFK;
-        chainSetting->Settings.IK.EnableIK = config.ChainMapping[i].EnableIK;
-        chainSetting->SourceChain = config.ChainMapping[i].SourceChain;
-        chainSetting->TargetChain = config.ChainMapping[i].TargetChain;
-        InRetargeterAsset.ChainSettings.push_back(chainSetting);
-    }
-
-    return pInRetargeterAsset;
-}
-
 static std::vector<FTransform> getMetaTPoseFPose(SoulSkeleton& sk, CoordType srcCoord, CoordType tgtCoord) {
 
     std::vector<FTransform> pose(sk.joints.size());
@@ -302,6 +237,9 @@ static SoulIKRigRetargetConfig config1_1chain_lleg() {
     config.SourceCoord  = CoordType::RightHandZupYfront;
     config.WorkCoord    = CoordType::RightHandZupYfront;
     config.TargetCoord  = CoordType::RightHandZupYfront;
+
+    config.SourceRootType   = ERootType::RootZMinusGroundZ;
+    config.TargetRootType   = ERootType::RootZ;
 
     config.SourceRootBone   = "Hip";
     config.SourceGroundBone = "RightAnkle_end";
@@ -333,6 +271,9 @@ static SoulIKRigRetargetConfig config2_6chain() {
     config.SourceCoord      = CoordType::RightHandZupYfront;
     config.WorkCoord        = CoordType::RightHandZupYfront;
     config.TargetCoord      = CoordType::RightHandZupYfront;
+
+    config.SourceRootType   = ERootType::RootZMinusGroundZ;
+    config.TargetRootType   = ERootType::RootZ;
 
     config.SourceRootBone   = "Hip";
     config.SourceGroundBone = "RightAnkle_end";
@@ -377,6 +318,9 @@ static SoulIKRigRetargetConfig config_s1_meta_error() {
     config.SourceCoord      = CoordType::RightHandZupYfront;
     config.WorkCoord        = CoordType::RightHandZupYfront;
     config.TargetCoord      = CoordType::RightHandYupZfront;
+
+    config.SourceRootType   = ERootType::RootZMinusGroundZ;
+    config.TargetRootType   = ERootType::RootZ;
 
     config.SourceRootBone   = "Hip";
     config.SourceGroundBone = "RightAnkle_end";
@@ -426,8 +370,11 @@ static SoulIKRigRetargetConfig config_s1_meta() {
     config.WorkCoord        = CoordType::RightHandZupYfront;
     config.TargetCoord      = CoordType::RightHandYupZfront;
 
-    config.SourceRootBone   = "Hip";
-    config.SourceGroundBone = "RightAnkle_end";
+    config.SourceRootType   = ERootType::RootZMinusGroundZ;
+    config.TargetRootType   = ERootType::RootZ;
+
+    config.SourceRootBone   = "mixamorig:Hips";
+    config.SourceGroundBone = "mixamorig:LeftToe_End";
     config.TargetRootBone   = "Rol01_Torso01HipCtrlJnt_M";
     config.TargetGroundBone = "Rol01_Leg01FootJnt_L";
     
@@ -527,9 +474,12 @@ static SoulIKRigRetargetConfig config_s1_meta() {
 
 static SoulIKRigRetargetConfig config_flair_meta() {
     SoulIKRigRetargetConfig config;
-    config.SourceCoord      = CoordType::RightHandZupYfront;
+    config.SourceCoord      = CoordType::RightHandYupZfront;
     config.WorkCoord        = CoordType::RightHandZupYfront;
     config.TargetCoord      = CoordType::RightHandYupZfront;
+
+    config.SourceRootType   = ERootType::RootZ;
+    config.TargetRootType   = ERootType::RootZ;
 
     config.SourceRootBone   = "mixamorig:Hips";
     config.SourceGroundBone = "mixamorig:LeftToeBase";
@@ -677,20 +627,6 @@ static SoulIKRigRetargetConfig config_flair_meta() {
     return config;
 }
 
-static std::string getModelPath() {
-    std::string file_path = __FILE__;
-    
-    #ifdef _WIN64
-        std::string dir_path = file_path.substr(0, file_path.rfind("\\"));
-        std::string model_path = dir_path + "\\..\\..\\model\\";
-    #else
-        std::string dir_path = file_path.substr(0, file_path.rfind("/"));
-        std::string model_path = dir_path + "/../../model/";
-    #endif
-
-    return model_path;
-}
-
 struct TestCase {
     SoulIKRigRetargetConfig  config;
     std::string srcAnimationFile;
@@ -735,14 +671,28 @@ TestCase case_Flair() {
     
     TestCase testCase;
 
-    testCase.config = config_s1_meta();
+    testCase.config = config_flair_meta(); 
     testCase.srcAnimationFile = "Flair.fbx";
-    testCase.srcTPoseFile = "Flair.fbx";
+    testCase.srcTPoseFile = "Y_Bot.fbx";
     testCase.targetFile = "3D_Avatar2_Rig_0723.fbx";
     testCase.targetTPoseFile = "3D_Avatar2_Rig_0723_itpose.fbx";
     testCase.outFile = "out.fbx";
     testCase.isTargetNeedHardCodeTPose = false;
     return testCase;
+}
+
+static std::string getModelPath() {
+    std::string file_path = __FILE__;
+    
+    #ifdef _WIN64
+        std::string dir_path = file_path.substr(0, file_path.rfind("\\"));
+        std::string model_path = dir_path + "\\..\\..\\model\\";
+    #else
+        std::string dir_path = file_path.substr(0, file_path.rfind("/"));
+        std::string model_path = dir_path + "/../../model/";
+    #endif
+
+    return model_path;
 }
 
 static void getFilePaths(std::string& srcAnimationFile, 
@@ -765,7 +715,7 @@ int main(int argc, char *argv[]) {
 
     /////////////////////////////////////////////
     // setting of coord
-    TestCase testCase       = case_S1SittingDown();
+    TestCase testCase       = case_Flair();
     auto config             = testCase.config;
     CoordType srccoord      = config.SourceCoord;
     CoordType workcoord     = config.WorkCoord;
@@ -800,10 +750,8 @@ int main(int argc, char *argv[]) {
     SoulIK::SoulSkeletonMesh& srcskm    = *srcscene.skmeshes[0];
     SoulIK::SoulSkeletonMesh& tgtskm    = *tgtscene.skmeshes[0];
 
-    #ifdef DEBUG_POSE_PRINT
-    IKRigUtils::debugPrintSKM("SrcSoulPose", srcTPoseScene, *srcTPoseScene.skmeshes[0], srccoord, workcoord);
-    IKRigUtils::debugPrintSKM("TgtSoulPose", tgtscene, tgtskm, tgtcoord, workcoord);
-    #endif
+    DEBUG_PRINT_SKM("SrcSoulPose", srcTPoseScene, *srcTPoseScene.skmeshes[0], srccoord, workcoord);
+    DEBUG_PRINT_SKM("TgtSoulPose", tgtscene, tgtskm, tgtcoord, workcoord);
 
     /////////////////////////////////////////////
     // init
@@ -817,13 +765,11 @@ int main(int argc, char *argv[]) {
     //tgtusk.refpose = getMetaTPoseFPose(tgtskm.skeleton, CoordType::RightHandYupZfront, CoordType::RightHandZupYfront);
     //}
 
-    #ifdef DEBUG_POSE_PRINT
-    IKRigUtils::debugPrintUSK("SrcUSK", srcusk, srcskm, srccoord, workcoord);
-    IKRigUtils::debugPrintUSK("TgtUSK", tgtusk, tgtskm, tgtcoord, workcoord);
-    #endif
+    DEBUG_PRINT_USK("SrcUSK", srcusk, srcskm, srccoord, workcoord);
+    DEBUG_PRINT_USK("TgtUSK", tgtusk, tgtskm, tgtcoord, workcoord);
 
     SoulIK::UIKRetargetProcessor ikretarget;
-	std::shared_ptr<UIKRetargeter> InRetargeterAsset = createIKRigAsset(config, srcskm.skeleton, tgtskm.skeleton, srcusk, tgtusk);
+	std::shared_ptr<UIKRetargeter> InRetargeterAsset = IKRigUtils::createIKRigAsset(config, srcskm.skeleton, tgtskm.skeleton, srcusk, tgtusk);
     ikretarget.Initialize(&srcusk, &tgtusk, InRetargeterAsset.get(), false); // todo: raw pointer not safe
     
     /////////////////////////////////////////////
@@ -832,7 +778,13 @@ int main(int argc, char *argv[]) {
     std::vector<SoulIK::SoulPose> tempoutposes;
     buildPoseAnimationByInterpolation(srcscene, srcskm, srcskm.animation, tempposes);
     int frameCount = tempposes.size();
-    //frameCount = 240;
+    // {
+    //     frameCount = 24; // debug
+    //     tempposes.resize(frameCount);
+    //     for (size_t i = 0; i < frameCount; i++) {
+    //         IKRigUtils::getSoulPoseFromMesh(srcscene, srcskm, tempposes[i]);
+    //     }
+    // }
     tempoutposes.resize(frameCount);
 
     /////////////////////////////////////////////

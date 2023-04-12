@@ -1,36 +1,46 @@
 
 
+
+
 # todo and issues
 
-1. skip root retarget
-2. flair model bug
-3. animation jump bug
+1. animation jump bug
+2. release version assimp delete fail
 
 # Release notes
 
 
-2023.4.11
+version 1.0.2: 2023.4.11
 
-    version 1.0.1:
-        input file:  sourceAnimation sourceTPose targetAnimation targetTPose
-            need align tpose uskeleton to animation skeleton
-        add testcase struct
+    fix flair to meta retarget:  change coordtype and rootBoneName
 
-        add macos support with release assimp lib
-        windows change assimp from debug to release
+    add ERootType:
+        RootZ               : height = root.translation.z
+        RootZMinusGroundZ   : height = root.translation.z - ground.translation.z
+        Ignore              : skip root retarget
 
-2023.4.10: 
-    
-    version 1.0.0:
-        read source animation fbx file
-        read source tpose fbx file
-        read target meta fbx file
+version 1.0.1: 2023.4.12
 
-        run retarget from source animation to target meta file
+    input file:  sourceAnimation sourceTPose targetAnimation targetTPose
+        need align tpose uskeleton to animation skeleton
+    add testcase struct
 
-        retarget config:
-            s1 to meta
-            flair to meta
+    fix uskeleton coordtype convert
+    fix tpose and animation pose alignment
+
+    add macos support with release assimp lib
+    windows change assimp from debug to release
+
+version 1.0.0: 2023.4.10:
+    read source animation fbx file
+    read source tpose fbx file
+    read target meta fbx file
+
+    run retarget from source animation to target meta file
+
+    retarget config:
+        s1 to meta
+        flair to meta
 
 
 # platform
@@ -380,6 +390,50 @@ so the src model including:
 
     // type cast
     IKRigUtils::FPose2SoulPose(outposeLocal, outposes[frame]);
+
+
+# algorithm
+
+
+root retarget: retarget position by height ratio
+
+    init:
+        source.InitialHeightInverse = 1/ root.z
+        target.initialHeight = root.z
+    retarget:
+        target.root.translation = source.root.translation *  target.initialHeight * source.InitialHeightInverse
+
+chain FK retarget: copy global rotation delta
+
+    init:
+        foreach chain:
+            foreach joint:
+                record initialPoseGlobal, initialPoseLocal
+                reset currentPoseGlobal
+    retarget(inputPoseGlobal, outposeGlobal):
+        foreach chain:
+            foreach joint:
+
+                // apply parent transform to child to get position
+                currentPositionGlobal = apply parrent.currentPoseGlobal to initialPoseLocal
+
+                // copy global rotation delta
+                deltaRotationGlobal = inputPoseGlobal.currentRotationGlboal / source.initalRotationGlboal
+                currentRotationGlboal = initialRotationGlobal * deltaRotationGlobal
+
+                // copy global scale delta
+                currentScaleGlobal = TargetInitialScaleGlobal + (SourceCurrentScaleGlobal - SourceInitialScaleGlobal);
+
+                // pose from position and rotation
+                currentPoseGlobal = (currentPositionGlobal, currentRotationGlboal)
+                outposeGlobal[boneIndex] =  currentPoseGlobal
+
+    // chain IK retarget
+    todo
+
+    // pole match retarget
+    todo
+
 
 
 

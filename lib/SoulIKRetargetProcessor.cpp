@@ -1253,12 +1253,14 @@ bool FRetargetChainPairIK::Initialize(
 // MARK: - root retargeter
 
 bool FRootRetargeter::InitializeSource(
+	const ERootType SourceRootType,
 	const FName SourceRootBoneName,
 	const FName SourceGroundBoneName,
 	const FRetargetSkeleton& SourceSkeleton,
 	FIKRigLogger& Log)
 {
 	// validate target root bone exists
+	Source.RootType = SourceRootType;
 	Source.BoneName = SourceRootBoneName;
 	Source.BoneIndex = SourceSkeleton.FindBoneIndexByName(SourceRootBoneName);
 	if (Source.BoneIndex == INDEX_NONE)
@@ -1269,14 +1271,17 @@ bool FRootRetargeter::InitializeSource(
 	}
 	
 	// record initial root data
-	int32 groundBoneIndex = SourceSkeleton.FindBoneIndexByName(SourceGroundBoneName);
-	if (groundBoneIndex == -1) {
-		Log.LogError("NoGroundBone", "must set GroundBone");
-		return false;
+	const FTransform InitialTransform = SourceSkeleton.RetargetGlobalPose[Source.BoneIndex];
+	float InitialHeight = InitialTransform.GetTranslation().z;
+	if (Source.RootType == ERootType::RootZMinusGroundZ) {
+		int32 groundBoneIndex = SourceSkeleton.FindBoneIndexByName(SourceGroundBoneName);
+		const FTransform InitialTransformGround = SourceSkeleton.RetargetGlobalPose[groundBoneIndex]; 
+		if (groundBoneIndex == -1) {
+			Log.LogError("NoGroundBone", "must set GroundBone");
+			return false;
+		}
+		float InitialHeight = InitialTransform.GetTranslation().z - InitialTransformGround.GetTranslation().z;	
 	}
-	const FTransform InitialTransformGround = SourceSkeleton.RetargetGlobalPose[groundBoneIndex]; 
-	const FTransform InitialTransform = SourceSkeleton.RetargetGlobalPose[Source.BoneIndex]; 
-	float InitialHeight = InitialTransform.GetTranslation().z - InitialTransformGround.GetTranslation().z;
 	Source.InitialRotation = InitialTransform.GetRotation();
 
 	#ifdef DEBUG_POSE_LOG_ROOT
@@ -1301,12 +1306,14 @@ bool FRootRetargeter::InitializeSource(
 }
 
 bool FRootRetargeter::InitializeTarget(
+	const ERootType TargetRootType,
 	const FName TargetRootBoneName,
 	const FName TargetGroundBoneName,
 	const FTargetSkeleton& TargetSkeleton,
 	FIKRigLogger& Log)
 {
 	// validate target root bone exists
+	Target.RootType = TargetRootType;
 	Target.BoneName = TargetRootBoneName;
 	Target.BoneIndex = TargetSkeleton.FindBoneIndexByName(TargetRootBoneName);
 	if (Target.BoneIndex == INDEX_NONE)
@@ -1317,14 +1324,17 @@ bool FRootRetargeter::InitializeTarget(
 		return false;
 	}
 
-	int32 groundBoneIndex = TargetSkeleton.FindBoneIndexByName(TargetGroundBoneName);
-	if (groundBoneIndex == -1) {
-		Log.LogError("NoGroundBone", "must set GroundBone");
-		return false;
-	}
-	const FTransform TargetTransformGround = TargetSkeleton.RetargetGlobalPose[groundBoneIndex]; 
 	const FTransform TargetInitialTransform = TargetSkeleton.RetargetGlobalPose[Target.BoneIndex];
-	Target.InitialHeight = TargetInitialTransform.GetTranslation().z - TargetTransformGround.GetTranslation().z;
+	Target.InitialHeight = TargetInitialTransform.GetTranslation().z;
+	if (Target.RootType == ERootType::RootZMinusGroundZ) {
+		int32 groundBoneIndex = TargetSkeleton.FindBoneIndexByName(TargetGroundBoneName);
+		if (groundBoneIndex == -1) {
+			Log.LogError("NoGroundBone", "must set GroundBone");
+			return false;
+		}
+		const FTransform TargetTransformGround = TargetSkeleton.RetargetGlobalPose[groundBoneIndex]; 
+		Target.InitialHeight = TargetInitialTransform.GetTranslation().z - TargetTransformGround.GetTranslation().z;
+	}
 	Target.InitialRotation = TargetInitialTransform.GetRotation();
 	Target.InitialPosition = TargetInitialTransform.GetTranslation();
 
@@ -1444,6 +1454,9 @@ void UIKRetargetProcessor::Initialize(
 	
 	// record source asset
 	RetargeterAsset = InRetargeterAsset;
+	if (InRetargeterAsset->GlobalSettings != nullptr) {
+		GlobalSettings = InRetargeterAsset->GlobalSettings->Settings;
+	}
 
 	const UIKRigDefinition* SourceIKRig = RetargeterAsset->GetSourceIKRig();
 	const UIKRigDefinition* TargetIKRig = RetargeterAsset->GetTargetIKRig();
@@ -1538,7 +1551,8 @@ bool UIKRetargetProcessor::InitializeRoots()
 	// initialize root encoder
 	const FName SourceRootBoneName = RetargeterAsset->GetSourceIKRig()->GetRetargetRoot();
 	const FName SourceGroundBoneName = RetargeterAsset->GetSourceIKRig()->GetRetargetGround();
-	const bool bRootEncoderInit = RootRetargeter.InitializeSource(SourceRootBoneName, SourceGroundBoneName, SourceSkeleton, Log);
+	const ERootType SourceRootType = RetargeterAsset->GetSourceIKRig()->GetRootType();
+	const bool bRootEncoderInit = RootRetargeter.InitializeSource(SourceRootType, SourceRootBoneName, SourceGroundBoneName, SourceSkeleton, Log);
 	if (!bRootEncoderInit)
 	{
 		//Log.LogWarning( FText::Format(
@@ -1549,7 +1563,8 @@ bool UIKRetargetProcessor::InitializeRoots()
 	// initialize root decoder
 	const FName TargetRootBoneName = RetargeterAsset->GetTargetIKRig()->GetRetargetRoot();
 	const FName TargetGroundBoneName = RetargeterAsset->GetTargetIKRig()->GetRetargetGround();
-	const bool bRootDecoderInit = RootRetargeter.InitializeTarget(TargetRootBoneName, TargetGroundBoneName, TargetSkeleton, Log);
+	const ERootType TargetRootType = RetargeterAsset->GetTargetIKRig()->GetRootType();
+	const bool bRootDecoderInit = RootRetargeter.InitializeTarget(TargetRootType, TargetRootBoneName, TargetGroundBoneName, TargetSkeleton, Log);
 	if (!bRootDecoderInit)
 	{
 		// Log.LogWarning( FText::Format(
