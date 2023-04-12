@@ -810,9 +810,9 @@ int main(int argc, char *argv[]) {
     SoulIK::USkeleton srcusk;
     SoulIK::USkeleton tgtusk;
     IKRigUtils::getUSkeletonFromMesh(srcTPoseScene, *srcTPoseScene.skmeshes[0], srcusk, srccoord, workcoord);
-    IKRigUtils::sortUSKBySkeleton(srcusk, srcskm.skeleton);
+    IKRigUtils::alignUSKWithSkeleton(srcusk, srcskm.skeleton);
     IKRigUtils::getUSkeletonFromMesh(tgtTPosescene, *tgtTPosescene.skmeshes[0], tgtusk, tgtcoord, workcoord);
-    IKRigUtils::sortUSKBySkeleton(tgtusk, tgtskm.skeleton); //IKRigUtils::debugPrintUSKNames(tgtusk);    
+    IKRigUtils::alignUSKWithSkeleton(tgtusk, tgtskm.skeleton); //IKRigUtils::debugPrintUSKNames(tgtusk);    
     //if (testCase.isTargetNeedHardCodeTPose) {
     //tgtusk.refpose = getMetaTPoseFPose(tgtskm.skeleton, CoordType::RightHandYupZfront, CoordType::RightHandZupYfront);
     //}

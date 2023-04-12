@@ -9,18 +9,28 @@
 # Release notes
 
 
+2023.4.11
+
+    version 1.0.1:
+        input file:  sourceAnimation sourceTPose targetAnimation targetTPose
+            need align tpose uskeleton to animation skeleton
+        add testcase struct
+
+        add macos support with release assimp lib
+        windows change assimp from debug to release
+
 2023.4.10: 
     
-    version 1.0:
+    version 1.0.0:
         read source animation fbx file
         read source tpose fbx file
         read target meta fbx file
 
         run retarget from source animation to target meta file
 
-    retarget config:
-        s1 to meta
-        flair to meta
+        retarget config:
+            s1 to meta
+            flair to meta
 
 
 # platform
@@ -28,6 +38,19 @@
     1. mac 
     2. linux
     3. windows
+
+# macos
+
+    rm -rf build
+    mkdir build && cd build
+
+    // for xcode project
+    cmake .. -GXcode
+
+    // without xcode
+    cmake .. --DCMAKE_BUILD_TYPE=Release
+    make -j16
+
 
 # windows build and test c++
 
@@ -38,11 +61,11 @@
 
     cmake ..
     
+    // with visual studio
     open ikrigretarget.sln with visual studio
     set testikrigretarget as start project
     
-    or
-    
+    // without visual studio
     cmake --build .
     test/Debug/testikrigretarget.exe
 

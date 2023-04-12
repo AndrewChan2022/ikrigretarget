@@ -319,7 +319,7 @@ FTransform IKRigUtils::glmToFTransform(glm::mat4& m) {
     return FTransform(m);
 }
 
-void IKRigUtils::sortUSKBySkeleton(USkeleton& usk, SoulSkeleton const& sk) {
+void IKRigUtils::alignUSKWithSkeleton(USkeleton& usk, SoulSkeleton const& sk) {
 
     assert(usk.boneTree.size() == sk.joints.size());
 

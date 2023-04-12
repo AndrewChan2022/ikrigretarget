@@ -91,7 +91,7 @@ namespace SoulIK {
         static bool getUSkeletonFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh, USkeleton& usk, CoordType srcCoord, CoordType tgtCoord);
         static bool USkeleton2RigSkeleton(USkeleton& sk, FIKRigSkeleton& rigsk);
         static std::vector<SoulJointNode> buildJointTree(SoulSkeleton& sk);
-        static void sortUSKBySkeleton(USkeleton& usk, SoulSkeleton const& sk);
+        static void alignUSKWithSkeleton(USkeleton& usk, SoulSkeleton const& sk);
 
         // search
         static SoulNode* findNodeByName(SoulNode* rootNode, std::string& name);
