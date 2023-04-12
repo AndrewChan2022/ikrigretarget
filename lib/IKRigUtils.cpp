@@ -228,7 +228,7 @@ SoulTransform IKRigUtils::getSoulTransformFromCoord(CoordType srcCoord, CoordTyp
         // maya to 3dsmax  (x,y,z)->(-x,z,y)
         // x 90 then z 180
         float pi = glm::pi<float>();
-        float pi_2 = glm::pi<float>() / 2.0;
+        float pi_2 = glm::pi<float>() / 2.0f;
         glm::quat q1 = glm::angleAxis(pi_2, glm::vec3(1.0, 0.0, 0.0));
         glm::quat q2 = glm::angleAxis(pi, glm::vec3(0.0, 0.0, 1.0));
         glm::quat q = q2 * q1;
@@ -270,7 +270,7 @@ SoulTransform IKRigUtils::getSoulTransformFromCoord(CoordType srcCoord, CoordTyp
         // t = FTransform(q);
 
         float pi = glm::pi<float>();
-        float pi_2 = glm::pi<float>() / 2.0;
+        float pi_2 = glm::pi<float>() / 2.0f;
         glm::quat q1 = glm::angleAxis(pi_2, glm::vec3(1.0, 0.0, 0.0));
         glm::quat q2 = glm::angleAxis(pi, glm::vec3(0.0, 0.0, 1.0));
         glm::quat q = q2 * q1;
@@ -409,7 +409,7 @@ FTransform IKRigUtils::glmToFTransform(glm::mat4& m) {
     return FTransform(m);
 }
 
-void IKRigUtils::alignUSKWithSkeleton(USkeleton& usk, SoulSkeleton const& sk) {
+bool IKRigUtils::alignUSKWithSkeleton(USkeleton& usk, SoulSkeleton const& sk) {
 
     assert(usk.boneTree.size() == sk.joints.size());
 
@@ -432,6 +432,8 @@ void IKRigUtils::alignUSKWithSkeleton(USkeleton& usk, SoulSkeleton const& sk) {
     for (size_t i = 0; i < sk.joints.size(); i++) {
         usk.boneTree[i].parent = sk.joints[i].parentId;
     }
+
+    return true;
 }
 
 SoulNode* IKRigUtils::findNodeByName(SoulNode* rootNode, std::string& name) {
@@ -579,7 +581,7 @@ bool IKRigUtils::getSoulPoseFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh,
 
 void IKRigUtils::debugPrintFPose(SoulSkeleton& sk, std::vector<FTransform>& pose) {
     for (size_t i = 0; i < pose.size(); i++) {
-        printf("%d %s t(%.2f, %.2f, %.2f) s(%.2f, %.2f, %.2f) r.wxyz(%.2f, %.2f, %.2f, %.2f)\n",
+        printf("%zu %s t(%.2f, %.2f, %.2f) s(%.2f, %.2f, %.2f) r.wxyz(%.2f, %.2f, %.2f, %.2f)\n",
             i, 
             sk.joints[i].name.c_str(), 
             pose[i].Translation.x, pose[i].Translation.y, pose[i].Translation.z,
@@ -591,7 +593,7 @@ void IKRigUtils::debugPrintFPose(SoulSkeleton& sk, std::vector<FTransform>& pose
 
 void IKRigUtils::debugPrintSoulPose(SoulSkeleton& sk, std::vector<SoulTransform>& pose) {
     for (size_t i = 0; i < pose.size(); i++) {
-        printf("%d %s t(%.2f, %.2f, %.2f) s(%.2f, %.2f, %.2f) r.wxyz(%.2f, %.2f, %.2f, %.2f)\n",
+        printf("%zu %s t(%.2f, %.2f, %.2f) s(%.2f, %.2f, %.2f) r.wxyz(%.2f, %.2f, %.2f, %.2f)\n",
             i, 
             sk.joints[i].name.c_str(), 
             pose[i].translation.x, pose[i].translation.y, pose[i].translation.z,
@@ -607,7 +609,7 @@ void IKRigUtils::debugPrintLocalFPose(SoulSkeleton& sk, std::vector<FTransform>&
     IKRigUtils::FPoseToGlobal(sk, pose, gpose);
 
     for (size_t i = 0; i < gpose.size(); i++) {
-        printf("%d %s t(%.2f, %.2f, %.2f)\n", 
+        printf("%zd %s t(%.2f, %.2f, %.2f)\n", 
             i, 
             sk.joints[i].name.c_str(), 
             gpose[i].Translation.x,
@@ -630,7 +632,7 @@ static void debugPrintNodePoseRecursive(SoulNode* rootNode, const glm::mat4& par
     glm::vec3& gt = g.translation;
 
     glm::vec3 eulerAngles = glm::eulerAngles(l.rotation);
-    float todegree = 180.0 / M_PI;
+    float todegree = 180.0f / static_cast<float>(M_PI);
     glm::vec3 eu = todegree * eulerAngles;  // -y o -z
 
     for(int i = 0; i < depth; i++) {
@@ -655,7 +657,7 @@ void IKRigUtils::debugPrintNodePose(SoulNode* rootNode) {
 
 void IKRigUtils::debugPrintUSKNames(USkeleton& usk) {
     for (size_t i = 0; i < usk.boneTree.size(); i++) {
-        printf("i:%d name:%s parent:%d\n", i, usk.boneTree[i].name.c_str(), usk.boneTree[i].parent);
+        printf("i:%zd name:%s parent:%d\n", i, usk.boneTree[i].name.c_str(), usk.boneTree[i].parent);
     }
 }
 
@@ -690,7 +692,7 @@ void IKRigUtils::debugPrintSkeletonTree(SoulSkeleton& sk) {
         // search for child
         for(size_t j = jointId + 1; j < jointCount; j++) {
             if (sk.joints[j].parentId == jointId) {
-                tree[jointId].children.push_back(j);
+                tree[jointId].children.push_back(static_cast<int32_t>(j));
             }
         }
     }
@@ -732,7 +734,7 @@ std::vector<SoulJointNode> IKRigUtils::buildJointTree(SoulSkeleton& sk) {
         // search for child
         for(size_t j = jointId + 1; j < jointCount; j++) {
             if (sk.joints[j].parentId == jointId) {
-                tree[jointId].children.push_back(j);
+                tree[jointId].children.push_back(static_cast<int32_t>(j));
             }
         }
     }
@@ -749,7 +751,7 @@ void IKRigUtils::debugPrintSkeletonTreeIBM(SoulSkeleton& sk) {
 
 static void debugPrintPoseJoints(const std::string& prefix, std::vector<FTransform>& inpose, std::vector<int> joints) {
     for(size_t i = 0; i < joints.size(); i++) {
-        printf("%s joint:%d t(%.2f %.2f %.2f) r(%.2f %.2f %.2f %.2f)\n", prefix.c_str(), i,
+        printf("%s joint:%zd t(%.2f %.2f %.2f) r(%.2f %.2f %.2f %.2f)\n", prefix.c_str(), i,
             inpose[i].GetTranslation().x, inpose[i].GetTranslation().y, inpose[i].GetTranslation().z,
             inpose[i].GetRotation().x, inpose[i].GetRotation().y, inpose[i].GetRotation().z, inpose[i].GetRotation().w
         );

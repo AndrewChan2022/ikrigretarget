@@ -239,7 +239,7 @@ int32_t SoulIK::SoulSkeleton::getJointIdByName(std::string name) {
         return e.name == name;
     });
     if (it != joints.end()) {
-        return it - joints.begin();
+        return static_cast<uint32_t>(it - joints.begin());
     }
     return -1;
 }

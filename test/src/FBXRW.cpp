@@ -157,7 +157,7 @@ void FBXRW::readSkeletonMesh(std::string inPath, float scale) {
     
     // import as centi-meter by set GlobalScale = 100, which is default
     // maya export setting:  centi-meter
-    importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 100.0 * scale);
+    importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 100.0f * scale);
     // prevent 1 joint split to 3 joints prerotation/rotation/joint
     importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
     
@@ -1056,7 +1056,7 @@ void FBXRWImpl::createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeleton
     for(size_t i = 0; i < skeletonMeshes.size(); i++) {
         auto& sk = skeletonMeshes[i];
         if (sk->animation.channels.size() != 0) {
-            index = i;
+            index = static_cast<int>(i);
             break;
         }
     }

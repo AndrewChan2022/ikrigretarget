@@ -386,7 +386,7 @@ namespace SoulIK
         }
         #endif
         
-        static float FloatSelect(const float Comparand, const float ValueGEZero, const float ValueLTZero )
+        static double FloatSelect(const double Comparand, const double ValueGEZero, const double ValueLTZero )
         {
             return Comparand >= 0.f ? ValueGEZero : ValueLTZero;
         }

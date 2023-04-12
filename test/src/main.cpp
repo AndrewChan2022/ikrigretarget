@@ -63,7 +63,7 @@ static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh
         
         int prevFrame = 0;
         int curFrame = 0;
-        int frameCount = skmesh.animation.duration + 1;
+        int frameCount = static_cast<int>(skmesh.animation.duration + 1);
         
         // position
         if (channelsSparse[jointId].PositionKeys.size() == 0) {
@@ -82,11 +82,11 @@ static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh
             glm::vec3 prevValue = SparseKeys[0].value;
             glm::vec3 curValue;
             for (int j = 0; j < SparseKeys.size(); j++) {
-                curFrame = SparseKeys[j].time;
+                curFrame = static_cast<int>(SparseKeys[j].time);
                 curValue = SparseKeys[j].value;
                 for(int frame = prevFrame; frame <= curFrame; frame++) {
                     DenseKeys[frame].time = frame;
-                    float alpha = prevFrame == curFrame ? 1 : (frame - prevFrame) / (curFrame - prevFrame); 
+                    float alpha = prevFrame == curFrame ? 1.0f : static_cast<float>(frame - prevFrame) / static_cast<float>(curFrame - prevFrame);
                     DenseKeys[frame].value = glm::mix(prevValue, curValue, alpha);
                 }
 
@@ -118,11 +118,11 @@ static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh
             glm::vec3 prevValue = SparseKeys[0].value;
             glm::vec3 curValue;
             for (int j = 0; j < SparseKeys.size(); j++) {
-                curFrame = SparseKeys[j].time;
+                curFrame = static_cast<int>(SparseKeys[j].time);
                 curValue = SparseKeys[j].value;
                 for(int frame = prevFrame; frame <= curFrame; frame++) {
                     DenseKeys[frame].time = frame;
-                    float alpha = prevFrame == curFrame ? 1 : (frame - prevFrame) / (curFrame - prevFrame); 
+                    float alpha = prevFrame == curFrame ? 1.0f : static_cast<float>(frame - prevFrame) / static_cast<float>(curFrame - prevFrame);
                     DenseKeys[frame].value = glm::mix(prevValue, curValue, alpha);
                 }
 
@@ -154,11 +154,11 @@ static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh
             glm::quat prevValue = SparseKeys[0].value;
             glm::quat curValue;
             for (int j = 0; j < SparseKeys.size(); j++) {
-                curFrame = SparseKeys[j].time;
+                curFrame = static_cast<int>(SparseKeys[j].time);
                 curValue = SparseKeys[j].value;
                 for(int frame = prevFrame; frame <= curFrame; frame++) {
                     DenseKeys[frame].time = frame;
-                    float alpha = prevFrame == curFrame ? 1 : (frame - prevFrame) / (curFrame - prevFrame); 
+                    float alpha = prevFrame == curFrame ? 1.0f : static_cast<float>(frame - prevFrame) / static_cast<float>(curFrame - prevFrame);
                     DenseKeys[frame].value = glm::lerp(prevValue, curValue, alpha);
                 }
 
@@ -175,8 +175,8 @@ static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh
     }
 
     // pose
-    poses.resize(skmesh.animation.duration);
-    int frameCount = skmesh.animation.duration;
+    poses.resize(static_cast<int>(skmesh.animation.duration));
+    int frameCount = static_cast<int>(skmesh.animation.duration);
     for(int frame = 0; frame < frameCount; frame++) {
         SoulPose& pose = poses[frame];
         pose.transforms.resize(skmesh.skeleton.joints.size());
@@ -203,19 +203,19 @@ static void writePoseAnimationToMesh(std::vector<SoulIK::SoulPose>& tempoutposes
         // position
         tgtskm.animation.channels[jointId].PositionKeys.resize(frameCount);
         for(uint64_t frame = 0; frame < tempoutposes.size(); frame++) {
-            tgtskm.animation.channels[jointId].PositionKeys[frame].time = frame;
+            tgtskm.animation.channels[jointId].PositionKeys[frame].time = static_cast<double>(frame);
             tgtskm.animation.channels[jointId].PositionKeys[frame].value =  tempoutposes[frame].transforms[jointId].translation;
         }
 
         tgtskm.animation.channels[jointId].ScalingKeys.resize(frameCount);
         for(uint64_t frame = 0; frame < tempoutposes.size(); frame++) {
-            tgtskm.animation.channels[jointId].ScalingKeys[frame].time = frame;
+            tgtskm.animation.channels[jointId].ScalingKeys[frame].time = static_cast<double>(frame);
             tgtskm.animation.channels[jointId].ScalingKeys[frame].value =  tempoutposes[frame].transforms[jointId].scale;
         }
 
         tgtskm.animation.channels[jointId].RotationKeys.resize(frameCount);
         for(uint64_t frame = 0; frame < tempoutposes.size(); frame++) {
-            tgtskm.animation.channels[jointId].RotationKeys[frame].time = frame;
+            tgtskm.animation.channels[jointId].RotationKeys[frame].time = static_cast<double>(frame);
             tgtskm.animation.channels[jointId].RotationKeys[frame].value =  tempoutposes[frame].transforms[jointId].rotation;
         }        
     }
@@ -777,7 +777,7 @@ int main(int argc, char *argv[]) {
     std::vector<SoulIK::SoulPose> tempposes;
     std::vector<SoulIK::SoulPose> tempoutposes;
     buildPoseAnimationByInterpolation(srcscene, srcskm, srcskm.animation, tempposes);
-    int frameCount = tempposes.size();
+    int frameCount = static_cast<int>(tempposes.size());
     // {
     //     frameCount = 24; // debug
     //     tempposes.resize(frameCount);

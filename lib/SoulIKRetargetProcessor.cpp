@@ -133,7 +133,7 @@ int32 FRetargetSkeleton::FindBoneIndexByName(const FName InName) const
 	if (it == BoneNames.end()) {
 		return -1;
 	} else {
-		return std::distance(BoneNames.begin(), it);
+		return static_cast<int32_t>(std::distance(BoneNames.begin(), it));
 	}
 }
 
@@ -228,7 +228,7 @@ int32 FRetargetSkeleton::GetCachedEndOfBranchIndex(const int32 InBoneIndex) cons
 		return CachedEndOfBranchIndices[InBoneIndex];
 	}
 
-	const int32 NumBones = BoneNames.size();
+	const int32 NumBones = static_cast<int32_t>(BoneNames.size());
 	
 	// if we're asking for root's branch, get the last bone  
 	if (InBoneIndex == 0)
@@ -508,7 +508,7 @@ bool FChainFK::CalculateBoneParameters(FIKRigLogger& Log)
 	BoneDistances.push_back(0.0f);
 	for (int32 i=1; i<InitialGlobalTransforms.size(); ++i)
 	{
-		TotalChainLength += (InitialGlobalTransforms[i].GetTranslation() - InitialGlobalTransforms[i-1].GetTranslation()).Size();
+		TotalChainLength += static_cast<float>((InitialGlobalTransforms[i].GetTranslation() - InitialGlobalTransforms[i-1].GetTranslation()).Size());
 		BoneDistances.push_back(TotalChainLength);
 	}
 
@@ -648,7 +648,7 @@ static void printTargetNodeTransform(
     //		init TRS len/angle/L len/angle/G deltaR
     //		cur  TRS len/angle/L len/angle/G deltaR
 	
-	float len = -1;
+	double len = -1;
 
 	printf("decode target ChainIndex: %d, boneIndex:%d name:%s\n", 
 		ChainIndex, BoneIndex, TargetSkeleton.BoneNames[BoneIndex].c_str()
@@ -671,7 +671,7 @@ static void printTargetNodeTransform(
 		len = (TargetSkeleton.RetargetGlobalPose[ParentIndex].GetTranslation() 
 			-  TargetSkeleton.RetargetGlobalPose[BoneIndex].GetTranslation()).Length();
 	}
-	printf("init G len:%.2f angle:%.2f t(%.2f %.2f %.2f) r.xyzwd(%.2f %.2f %.2f %.2f)%.2f\n",
+	printf("init G len:%.2lf angle:%.2lf t(%.2lf %.2lf %.2lf) r.xyzwd(%.2lf %.2lf %.2lf %.2lf)%.2f\n",
 		len,
 		TargetSkeleton.RetargetGlobalPose[BoneIndex].GetRotation().AngleDegree(),
 		TargetSkeleton.RetargetGlobalPose[BoneIndex].GetTranslation().x,
@@ -775,8 +775,8 @@ void FChainDecoderFK::DecodePose(
 		return;
 	}
 
-	const int32 NumBonesInSourceChain = SourceChain.CurrentGlobalTransforms.size();
-	const int32 NumBonesInTargetChain = TargetBoneIndices.size();
+	const int32 NumBonesInSourceChain = static_cast<int32>(SourceChain.CurrentGlobalTransforms.size());
+	const int32 NumBonesInTargetChain = static_cast<int32>(TargetBoneIndices.size());
 	const int32 TargetStartIndex = std::max(0, NumBonesInTargetChain - NumBonesInSourceChain);
 	const int32 SourceStartIndex = std::max(0,NumBonesInSourceChain - NumBonesInTargetChain);
 
@@ -1272,7 +1272,7 @@ bool FRootRetargeter::InitializeSource(
 	
 	// record initial root data
 	const FTransform InitialTransform = SourceSkeleton.RetargetGlobalPose[Source.BoneIndex];
-	float InitialHeight = InitialTransform.GetTranslation().z;
+	float InitialHeight = static_cast<float>(InitialTransform.GetTranslation().z);
 	if (Source.RootType == ERootType::RootZMinusGroundZ) {
 		int32 groundBoneIndex = SourceSkeleton.FindBoneIndexByName(SourceGroundBoneName);
 		const FTransform InitialTransformGround = SourceSkeleton.RetargetGlobalPose[groundBoneIndex]; 
@@ -1280,7 +1280,7 @@ bool FRootRetargeter::InitializeSource(
 			Log.LogError("NoGroundBone", "must set GroundBone");
 			return false;
 		}
-		float InitialHeight = InitialTransform.GetTranslation().z - InitialTransformGround.GetTranslation().z;	
+		float InitialHeight = static_cast<float>(InitialTransform.GetTranslation().z - InitialTransformGround.GetTranslation().z);
 	}
 	Source.InitialRotation = InitialTransform.GetRotation();
 
@@ -1325,7 +1325,7 @@ bool FRootRetargeter::InitializeTarget(
 	}
 
 	const FTransform TargetInitialTransform = TargetSkeleton.RetargetGlobalPose[Target.BoneIndex];
-	Target.InitialHeight = TargetInitialTransform.GetTranslation().z;
+	Target.InitialHeight = static_cast<float>(TargetInitialTransform.GetTranslation().z);
 	if (Target.RootType == ERootType::RootZMinusGroundZ) {
 		int32 groundBoneIndex = TargetSkeleton.FindBoneIndexByName(TargetGroundBoneName);
 		if (groundBoneIndex == -1) {
@@ -1333,7 +1333,7 @@ bool FRootRetargeter::InitializeTarget(
 			return false;
 		}
 		const FTransform TargetTransformGround = TargetSkeleton.RetargetGlobalPose[groundBoneIndex]; 
-		Target.InitialHeight = TargetInitialTransform.GetTranslation().z - TargetTransformGround.GetTranslation().z;
+		Target.InitialHeight = static_cast<float>(TargetInitialTransform.GetTranslation().z - TargetTransformGround.GetTranslation().z);
 	}
 	Target.InitialRotation = TargetInitialTransform.GetRotation();
 	Target.InitialPosition = TargetInitialTransform.GetTranslation();

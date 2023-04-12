@@ -12,9 +12,9 @@ using namespace SoulIK;
 SoulPose SoulIK::getMetaTPoseSoulPose(SoulSkeleton& sk) {
 
     struct PoseItem {
-        glm::vec3 t;
-        glm::vec3 s;
-        glm::quat q;
+        glm::dvec3 t;
+        glm::dvec3 s;
+        glm::dquat q;
     };
     std::unordered_map<std::string, PoseItem> posedict = {
         //{"Rol01_Torso01HipCtrlJnt_M", {{0.000000, -11.151259, 692.766296}, {1.000000, 1.000000, 1.000000}, {1.000000, 0.000000, 0.000000, 0.000000}}},

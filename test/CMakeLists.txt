@@ -52,9 +52,19 @@ else()
     #include_directories( ${OPENGL_INCLUDE_DIR} )
     # lib
     #CMAKE_CURRENT_SOURCE_DIR 
+
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(ASSIMP_LIB_NAME "assimp-vc143-mtd.lib")
+        set(ASSIMP_DLL_NAME "assimp-vc143-mtd.dll")
+    else()
+        set(ASSIMP_LIB_NAME "assimp-vc143-mt.lib")
+        set(ASSIMP_DLL_NAME "assimp-vc143-mt.dll")
+    endif()
+    
+
     set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/win/assimp)
     message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
-    find_library(ASSIMP_LIB NAMES assimp-vc143-mt.lib PATHS ${LIBS_DIR} NO_DEFAULT_PATH)
+    find_library(ASSIMP_LIB NAMES ${ASSIMP_LIB_NAME} PATHS ${LIBS_DIR} NO_DEFAULT_PATH)
     #find_library(ASSIMP_DLL NAMES assimp-vc143-mt.dll PATHS ${LIBS_DIR} NO_DEFAULT_PATH)
     #set(ASSIMP_DLL D:/data/light4/ikrigretarget/test/thirdparty/lib/win/assimp/assimp-vc143-mt.dll)
     message(STATUS "ASSIMP_LIB: ${ASSIMP_LIB}")
@@ -66,7 +76,7 @@ else()
 
     add_custom_command(TARGET testikrigretarget POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different 
-        ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/win/assimp/assimp-vc143-mt.dll
+        ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/win/assimp/${ASSIMP_DLL_NAME}
         $<TARGET_FILE_DIR:testikrigretarget> 
     )
 
