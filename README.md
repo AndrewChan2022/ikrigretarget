@@ -128,22 +128,35 @@ main.cpp
 
     /////////////////////////////////////////////
     // config
-    auto config             = config_s1_meta();
+    TestCase testCase       = case_Flair();
+    auto config             = testCase.config;
     CoordType srccoord      = config.SourceCoord;
     CoordType workcoord     = config.WorkCoord;
     CoordType tgtcoord      = config.TargetCoord;
 
     /////////////////////////////////////////////
     // read fbx
-    std::string srcAnimationFile, srcTPoseFile, targetFile, outfile;
-    SoulIK::FBXRW fbxSrcAnimation, fbxSrcTPose, fbxTarget;
-    fbxSrcAnimation.readPureSkeletonWithDefualtMesh(srcAnimationFile, "Hip");
-    fbxSrcTPose.readPureSkeletonWithDefualtMesh(srcTPoseFile, "Hip");
+    std::string srcAnimationFile, srcTPoseFile, targetFile, targetTPoseFile, outfile;
+    getFilePaths(srcAnimationFile, srcTPoseFile, targetFile, targetTPoseFile, outfile, testCase);
+
+    SoulIK::FBXRW fbxSrcAnimation, fbxSrcTPose, fbxTarget, fbxTargetTPose;
+    fbxSrcAnimation.readPureSkeletonWithDefualtMesh(srcAnimationFile, config.SourceRootBone);
+    if(srcAnimationFile == srcTPoseFile) {
+        fbxSrcTPose = fbxSrcAnimation;
+    } else {
+        fbxSrcTPose.readPureSkeletonWithDefualtMesh(srcTPoseFile, config.SourceRootBone);
+    }
     fbxTarget.readSkeletonMesh(targetFile);
+    if (targetFile == targetTPoseFile) {
+        fbxTargetTPose = fbxTarget;
+    } else {
+        fbxTargetTPose.readSkeletonMesh(targetTPoseFile);
+    }
 
     SoulIK::SoulScene& srcscene         = *fbxSrcAnimation.getSoulScene();
     SoulIK::SoulScene& srcTPoseScene    = *fbxSrcTPose.getSoulScene();
     SoulIK::SoulScene& tgtscene         = *fbxTarget.getSoulScene();
+    SoulIK::SoulScene& tgtTPosescene    = *fbxTargetTPose.getSoulScene();
     SoulIK::SoulSkeletonMesh& srcskm    = *srcscene.skmeshes[0];
     SoulIK::SoulSkeletonMesh& tgtskm    = *tgtscene.skmeshes[0];
 
@@ -152,7 +165,9 @@ main.cpp
     SoulIK::USkeleton srcusk;
     SoulIK::USkeleton tgtusk;
     IKRigUtils::getUSkeletonFromMesh(srcTPoseScene, *srcTPoseScene.skmeshes[0], srcusk, srccoord, workcoord);
-    IKRigUtils::getUSkeletonFromMesh(tgtscene, tgtskm, tgtusk, tgtcoord, workcoord);
+    IKRigUtils::alignUSKWithSkeleton(srcusk, srcskm.skeleton);
+    IKRigUtils::getUSkeletonFromMesh(tgtTPosescene, *tgtTPosescene.skmeshes[0], tgtusk, tgtcoord, workcoord);
+    IKRigUtils::alignUSKWithSkeleton(tgtusk, tgtskm.skeleton); 
 
     SoulIK::UIKRetargetProcessor ikretarget;
 	auto InRetargeterAsset = createIKRigAsset(config, srcskm.skeleton, tgtskm.skeleton, srcusk, tgtusk);
@@ -193,6 +208,29 @@ main.cpp
     // write animation to fbx
     ...
 
+## input model
+
+    source animation    : including skeleton animation
+    source tpose        : tpose skeleton for source animation model
+    target animation    : save animation based on this model
+    target tpose        : tpose skeleton for target animation model
+
+    
+    because animation model and tpose model may have different skeleton order
+    so need align them:
+
+    IKRigUtils::alignUSKWithSkeleton(sourceTPoseUSKeleton, sourceAnimationSkeletonMesh.skeleton);
+
+## coordtype convert
+
+    enum class CoordType: uint8_t {
+        RightHandZupYfront,
+        RightHandYupZfront,
+    };
+
+    wording coord   : CoordType::RightHandZupYfront
+    from maya       : CoordType::RightHandYupZfront
+
 ## init of uskeleton:
 
     class USkeleton {
@@ -202,12 +240,55 @@ main.cpp
         ...
     };
     struct FBoneNode {
-        std::string name;
-        int32_t parent;
+        std::string name;                   // joint name
+        int32_t parent;                     // joint tree relationship
         ...
     };
 
-## init of IKRigRetargetAsset
+## root retarget config
+
+    1. define root type
+    2. define root name
+    3. if need ground bone, define ground bone type
+
+    enum class ERootType: uint8_t {
+	    RootZ = 0,          // height = root.translation.z
+	    RootZMinusGroundZ,  // height = root.translation.z - ground.translation.z
+	    Ignore              // skip
+    };
+
+    // root
+    ERootType   SourceRootType{ERootType::RootZMinusGroundZ};
+    std::string SourceRootBone;
+    std::string SourceGroundBone;
+    ERootType   TargetRootType{ERootType::RootZMinusGroundZ};
+    std::string TargetRootBone;
+    std::string TargetGroundBone;
+
+
+## chain retarget config
+
+    1. source skeleton define many chains
+    2. target skeleton define may chains
+    3. define chain mapping
+
+    struct SoulIKRigChain {
+        std::string chainName;
+        std::string startBone;
+        std::string endBone;
+    };
+    struct SoulIKRigChainMapping {
+        bool EnableFK{true};
+        bool EnableIK{false};
+        std::string SourceChain;
+        std::string TargetChain;
+    };
+
+    std::vector<SoulIKRigChain> SourceChains;
+    std::vector<SoulIKRigChain> TargetChains;
+    std::vector<SoulIKRigChainMapping> ChainMapping;
+
+## put config all to IKRigRetargetAsset
 
     /////////////////////////////////////////////
     // define config
@@ -230,10 +311,10 @@ main.cpp
         CoordType TargetCoord;
 
         // root
-        bool SkipRoot{false};       // todo
-        bool UseGroundBone{true};   // todo
+        ERootType   SourceRootType{ERootType::RootZMinusGroundZ};
         std::string SourceRootBone;
         std::string SourceGroundBone;
+        ERootType   TargetRootType{ERootType::RootZMinusGroundZ};
         std::string TargetRootBone;
         std::string TargetGroundBone;
 
@@ -256,8 +337,11 @@ main.cpp
     config.WorkCoord        = CoordType::RightHandZupYfront;
     config.TargetCoord      = CoordType::RightHandYupZfront;
 
-    config.SourceRootBone   = "Hip";
-    config.SourceGroundBone = "RightAnkle_end";
+    config.SourceRootType   = ERootType::RootZMinusGroundZ;
+    config.TargetRootType   = ERootType::RootZ;
+
+    config.SourceRootBone   = "mixamorig:Hips";
+    config.SourceGroundBone = "mixamorig:LeftToe_End";
     config.TargetRootBone   = "Rol01_Torso01HipCtrlJnt_M";
     config.TargetGroundBone = "Rol01_Leg01FootJnt_L";
     
@@ -355,13 +439,11 @@ main.cpp
 
 ## tpose
 
-we both model same initial pose
+    better both source and target initial pose on tpose
 
-so the src model including:
+    but other initial pose also fine
 
-    src animation model
-
-    src tpose model
+    rule: source inital pose == target initial pose
 
 ## init of processor
 
