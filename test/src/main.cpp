@@ -832,7 +832,7 @@ int main(int argc, char *argv[]) {
     std::vector<SoulIK::SoulPose> tempoutposes;
     buildPoseAnimationByInterpolation(srcscene, srcskm, srcskm.animation, tempposes);
     int frameCount = tempposes.size();
-    frameCount = 240;
+    //frameCount = 240;
     tempoutposes.resize(frameCount);
 
     /////////////////////////////////////////////
