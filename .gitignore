@@ -4,4 +4,6 @@ build*
 /.vs
 /.vscode
 .DS_Store
-model/out*
+model/out
+
+
