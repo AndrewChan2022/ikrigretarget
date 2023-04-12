@@ -373,8 +373,8 @@ static SoulIKRigRetargetConfig config_s1_meta() {
     config.SourceRootType   = ERootType::RootZMinusGroundZ;
     config.TargetRootType   = ERootType::RootZ;
 
-    config.SourceRootBone   = "mixamorig:Hips";
-    config.SourceGroundBone = "mixamorig:LeftToe_End";
+    config.SourceRootBone   = "Hip";
+    config.SourceGroundBone = "RightAnkle_end";
     config.TargetRootBone   = "Rol01_Torso01HipCtrlJnt_M";
     config.TargetGroundBone = "Rol01_Leg01FootJnt_L";
     
@@ -715,7 +715,7 @@ int main(int argc, char *argv[]) {
 
     /////////////////////////////////////////////
     // setting of coord
-    TestCase testCase       = case_Flair();
+    TestCase testCase       = case_S1Walking(); //case_Flair();
     auto config             = testCase.config;
     CoordType srccoord      = config.SourceCoord;
     CoordType workcoord     = config.WorkCoord;

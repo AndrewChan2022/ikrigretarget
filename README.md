@@ -1,5 +1,33 @@
 
 
+- [todo and issues](#todo-and-issues)
+- [Release notes](#release-notes)
+- [platform](#platform)
+- [macos](#macos)
+- [windows build and test c++](#windows-build-and-test-c--)
+- [release files](#release-files)
+- [build release](#build-release)
+- [prerequisite](#prerequisite)
+- [usage:](#usage-)
+  * [working coordinate system:](#working-coordinate-system-)
+  * [source files:](#source-files-)
+  * [header files:](#header-files-)
+  * [full example:](#full-example-)
+  * [input model](#input-model)
+  * [coordtype convert](#coordtype-convert)
+  * [init of uskeleton:](#init-of-uskeleton-)
+  * [root retarget config](#root-retarget-config)
+  * [chain retarget config](#chain-retarget-config)
+  * [put config all to IKRigRetargetAsset](#put-config-all-to-ikrigretargetasset)
+  * [tpose](#tpose)
+  * [init of processor](#init-of-processor)
+  * [run retarget:](#run-retarget-)
+- [algorithm](#algorithm)
+- [feature work](#feature-work)
+- [Acknowledgements](#acknowledgements)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 
 
 # todo and issues

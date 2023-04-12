@@ -1280,7 +1280,7 @@ bool FRootRetargeter::InitializeSource(
 			Log.LogError("NoGroundBone", "must set GroundBone");
 			return false;
 		}
-		float InitialHeight = static_cast<float>(InitialTransform.GetTranslation().z - InitialTransformGround.GetTranslation().z);
+		InitialHeight = static_cast<float>(InitialTransform.GetTranslation().z - InitialTransformGround.GetTranslation().z);
 	}
 	Source.InitialRotation = InitialTransform.GetRotation();
 
