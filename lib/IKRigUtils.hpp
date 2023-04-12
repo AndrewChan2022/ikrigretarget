@@ -91,6 +91,7 @@ namespace SoulIK {
         static bool getUSkeletonFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh, USkeleton& usk, CoordType srcCoord, CoordType tgtCoord);
         static bool USkeleton2RigSkeleton(USkeleton& sk, FIKRigSkeleton& rigsk);
         static std::vector<SoulJointNode> buildJointTree(SoulSkeleton& sk);
+        static void sortUSKBySkeleton(USkeleton& usk, SoulSkeleton const& sk);
 
         // search
         static SoulNode* findNodeByName(SoulNode* rootNode, std::string& name);
@@ -104,6 +105,7 @@ namespace SoulIK {
         static void debugPrintSoulPose(SoulSkeleton& sk, std::vector<SoulTransform>& pose);
         static void debugPrintLocalFPose(SoulSkeleton& sk, std::vector<FTransform>& pose);
         static void debugPrintNodePose(SoulNode* rootNode);
+        static void debugPrintUSKNames(USkeleton& usk);
         // name tree
         static void debugPrintSkeletonTree(SoulSkeleton& sk);
         static void debugPrintSkeletonTreeIBM(SoulSkeleton& sk);
@@ -115,9 +117,9 @@ namespace SoulIK {
         static void debugPrintPoseJoints(const std::string& prefix, SoulSkeleton& sk, std::vector<FTransform>& inpose, std::vector<std::string> jointNames);
 
 
-        static void debugPrintSKM(SoulScene& scene, SoulSkeletonMesh& skm, CoordType srccoord, CoordType workcoord);
-        static void debugPrintUSK(USkeleton& usk, SoulSkeletonMesh& skm, CoordType srccoord, CoordType workcoord);
-        static void debugPrintInputSoulPose(SoulPose& pose, SoulSkeletonMesh& skm, int frame);
+        static void debugPrintSKM(std::string const& name, SoulScene& scene, SoulSkeletonMesh& skm, CoordType srccoord, CoordType workcoord);
+        static void debugPrintUSK(std::string const& name, USkeleton& usk, SoulSkeletonMesh& skm, CoordType srccoord, CoordType workcoord);
+        static void debugPrintIOSoulPose(std::string const& name, SoulPose& pose, SoulSkeletonMesh& skm, int frame);
         static void debugPrintIOFPose(std::string const& name, SoulSkeletonMesh& skm, std::vector<FTransform>& inposeLocal, std::vector<FTransform>& inpose, int frame);
     };
 }

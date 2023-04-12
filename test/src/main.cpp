@@ -18,8 +18,19 @@
 
 using namespace SoulIK;
 
-#define DEBUG_POSE_PRINT
+//#define DEBUG_POSE_PRINT
 //#define DEBUG_POSE_PRINT_EVERY_FRAME
+
+#if defined(DEBUG_POSE_PRINT) &&  defined(DEBUG_POSE_PRINT_EVERY_FRAME)
+    //#define DEBUG_PRINT(fmt, ...) printf(fmt, ##__VA_ARGS__)
+    #define DEBUG_PRINT(...) printf(__VA_ARGS__)
+    #define DEBUG_PRINT_IO_FPOSE(name, skm, poselocal, poseglobal, frame) IKRigUtils::debugPrintIOFPose(name, skm, poselocal, poseglobal, frame)
+    #define DEBUG_PRINT_IO_SOULPOSE(name, poselocal, skm, frame) IKRigUtils::debugPrintIOSoulPose(name, poselocal, skm, frame)
+#else
+    #define DEBUG_PRINT(fmt, ...)
+    #define DEBUG_PRINT_IO_FPOSE(name, skm, poselocal, poseglobal, frame)
+    #define DEBUG_PRINT_IO_SOULPOSE(name, poselocal, skm, frame)
+#endif
 
 // generate pose of every joint and every frame
 static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh& skmesh,
@@ -790,8 +801,8 @@ int main(int argc, char *argv[]) {
     SoulIK::SoulSkeletonMesh& tgtskm    = *tgtscene.skmeshes[0];
 
     #ifdef DEBUG_POSE_PRINT
-    IKRigUtils::debugPrintSKM(srcTPoseScene, *srcTPoseScene.skmeshes[0], srccoord, workcoord);
-    IKRigUtils::debugPrintSKM(tgtscene,tgtskm, tgtcoord, workcoord);
+    IKRigUtils::debugPrintSKM("SrcSoulPose", srcTPoseScene, *srcTPoseScene.skmeshes[0], srccoord, workcoord);
+    IKRigUtils::debugPrintSKM("TgtSoulPose", tgtscene, tgtskm, tgtcoord, workcoord);
     #endif
 
     /////////////////////////////////////////////
@@ -799,18 +810,16 @@ int main(int argc, char *argv[]) {
     SoulIK::USkeleton srcusk;
     SoulIK::USkeleton tgtusk;
     IKRigUtils::getUSkeletonFromMesh(srcTPoseScene, *srcTPoseScene.skmeshes[0], srcusk, srccoord, workcoord);
+    IKRigUtils::sortUSKBySkeleton(srcusk, srcskm.skeleton);
     IKRigUtils::getUSkeletonFromMesh(tgtTPosescene, *tgtTPosescene.skmeshes[0], tgtusk, tgtcoord, workcoord);
-    //IKRigUtils::debugPrintUSK(tgtusk, *tgtTPosescene.skmeshes[0], tgtcoord, workcoord);
-    IKRigUtils::getUSkeletonFromMesh(tgtscene, *tgtscene.skmeshes[0], tgtusk, tgtcoord, workcoord);
-    //IKRigUtils::debugPrintUSK(tgtusk, *tgtscene.skmeshes[0], tgtcoord, workcoord);
-    
+    IKRigUtils::sortUSKBySkeleton(tgtusk, tgtskm.skeleton); //IKRigUtils::debugPrintUSKNames(tgtusk);    
     //if (testCase.isTargetNeedHardCodeTPose) {
-        tgtusk.refpose = getMetaTPoseFPose(tgtskm.skeleton, CoordType::RightHandYupZfront, CoordType::RightHandZupYfront);
+    //tgtusk.refpose = getMetaTPoseFPose(tgtskm.skeleton, CoordType::RightHandYupZfront, CoordType::RightHandZupYfront);
     //}
 
     #ifdef DEBUG_POSE_PRINT
-    IKRigUtils::debugPrintUSK(srcusk, srcskm, srccoord, workcoord);
-    IKRigUtils::debugPrintUSK(tgtusk, tgtskm, tgtcoord, workcoord);
+    IKRigUtils::debugPrintUSK("SrcUSK", srcusk, srcskm, srccoord, workcoord);
+    IKRigUtils::debugPrintUSK("TgtUSK", tgtusk, tgtskm, tgtcoord, workcoord);
     #endif
 
     SoulIK::UIKRetargetProcessor ikretarget;
@@ -823,7 +832,8 @@ int main(int argc, char *argv[]) {
     std::vector<SoulIK::SoulPose> tempoutposes;
     buildPoseAnimationByInterpolation(srcscene, srcskm, srcskm.animation, tempposes);
     int frameCount = tempposes.size();
-    tempoutposes.resize(tempposes.size());
+    frameCount = 240;
+    tempoutposes.resize(frameCount);
 
     /////////////////////////////////////////////
     // run retarget
@@ -835,6 +845,9 @@ int main(int argc, char *argv[]) {
     std::vector<FTransform> outposeLocal;
     for(int frame = 0; frame < frameCount; frame++) {
 
+        DEBUG_PRINT("frame:%d\n", frame);
+        DEBUG_PRINT_IO_SOULPOSE("InSoulPose srccoord", tempposes[frame], srcskm, frame);
+
         // input and cast
         IKRigUtils::SoulPose2FPose(tempposes[frame], inposeLocal);
 
@@ -843,28 +856,21 @@ int main(int argc, char *argv[]) {
 
         // to global
         IKRigUtils::FPoseToGlobal(srcskm.skeleton, inposeLocal, inpose);
-
-        #if defined(DEBUG_POSE_PRINT) &&  defined(DEBUG_POSE_PRINT_EVERY_FRAME)
-        printf("frame:%d\n", frame);
-        IKRigUtils::debugPrintInputSoulPose(tempposes[frame], srcskm, frame);
-        IKRigUtils::debugPrintIOFPose("in", srcskm, inposeLocal, inpose, frame);
-        #endif
+        DEBUG_PRINT_IO_FPOSE("inFPose workcoord", srcskm, inposeLocal, inpose, frame);
 
         // retarget
         std::vector<FTransform>& outpose = ikretarget.RunRetargeter(inpose, SpeedValuesFromCurves, DeltaTime);
 
         // to local
         IKRigUtils::FPoseToLocal(tgtskm.skeleton, outpose, outposeLocal);
-
-        #if defined(DEBUG_POSE_PRINT) &&  defined(DEBUG_POSE_PRINT_EVERY_FRAME)
-        IKRigUtils::debugPrintIOFPose("out", tgtskm, outposeLocal, outpose, frame);
-        #endif
+        DEBUG_PRINT_IO_FPOSE("outFpose workcoord", tgtskm, outposeLocal, outpose, frame);
 
         // coord convert
         IKRigUtils::LocalFPoseCoordConvert(twork2tgt, workcoord, tgtcoord, outposeLocal);
 
         // cast and output
-        IKRigUtils::FPose2SoulPose(outposeLocal, tempoutposes[frame]);        
+        IKRigUtils::FPose2SoulPose(outposeLocal, tempoutposes[frame]);
+        DEBUG_PRINT_IO_SOULPOSE("outSoulPose tgtcoord", tempoutposes[frame], tgtskm, frame);
     }
 
     printf("process animation %d keyframes\n", frameCount);
