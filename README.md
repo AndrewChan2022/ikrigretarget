@@ -1,5 +1,11 @@
 
 
+# todo and issues
+
+1. skip root retarget
+2. flair model bug
+3. animation jump bug
+
 # Release notes
 
 
@@ -15,10 +21,6 @@
     retarget config:
         s1 to meta
         flair to meta
-
-# todo
-
-1. skip root retarget
 
 
 # platform
