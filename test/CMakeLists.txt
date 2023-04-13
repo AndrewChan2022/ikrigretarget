@@ -27,22 +27,28 @@ add_executable(testikrigretarget
 
 message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 
+set(EMBED_ASSIMP ON)
+
 if(APPLE)
 
-    set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/macos/assimp)
-    message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
-    find_library(ASSIMP_LIB NAMES libassimp.dylib PATHS ${LIBS_DIR} NO_DEFAULT_PATH)
-    message(STATUS "ASSIMP_LIB: ${ASSIMP_LIB}")
-    target_link_libraries(testikrigretarget PRIVATE  ikrigretarget ${ASSIMP_LIB})
+    if(EMBED_ASSIMP)
+        target_link_libraries(testikrigretarget PRIVATE  ikrigretarget assimp)
+    else()
+        set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/macos/assimp)
+        message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
+        find_library(ASSIMP_LIB NAMES libassimp.dylib PATHS ${LIBS_DIR} NO_DEFAULT_PATH)
+        message(STATUS "ASSIMP_LIB: ${ASSIMP_LIB}")
+        target_link_libraries(testikrigretarget PRIVATE  ikrigretarget ${ASSIMP_LIB})
 
-    message(STATUS "TARGET_RUNTIME_DLLS: $<TARGET_RUNTIME_DLLS:testikrigretarget>")
-    message(STATUS "TARGET_FILE_DIR: $<TARGET_RUNTIME_DLLS:testikrigretarget>")
+        message(STATUS "TARGET_RUNTIME_DLLS: $<TARGET_RUNTIME_DLLS:testikrigretarget>")
+        message(STATUS "TARGET_FILE_DIR: $<TARGET_RUNTIME_DLLS:testikrigretarget>")
 
-    # add_custom_command(TARGET testikrigretarget POST_BUILD
-    #     COMMAND ${CMAKE_COMMAND} -E copy_if_different 
-    #     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/win/assimp/assimp-vc143-mtd.dll
-    #     $<TARGET_FILE_DIR:testikrigretarget> 
-    # )
+        # add_custom_command(TARGET testikrigretarget POST_BUILD
+        #     COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+        #     ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/win/assimp/assimp-vc143-mtd.dll
+        #     $<TARGET_FILE_DIR:testikrigretarget> 
+        # )
+    endif()
 
 else()
 
@@ -53,33 +59,37 @@ else()
     # lib
     #CMAKE_CURRENT_SOURCE_DIR 
 
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    if(EMBED_ASSIMP)
+        target_link_libraries(testikrigretarget PRIVATE  ikrigretarget assimp)
+    else()
+        if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+            set(ASSIMP_LIB_NAME "assimp-vc143-mtd.lib")
+            set(ASSIMP_DLL_NAME "assimp-vc143-mtd.dll")
+        else()
+            set(ASSIMP_LIB_NAME "assimp-vc143-mt.lib")
+            set(ASSIMP_DLL_NAME "assimp-vc143-mt.dll")
+        endif()
         set(ASSIMP_LIB_NAME "assimp-vc143-mtd.lib")
         set(ASSIMP_DLL_NAME "assimp-vc143-mtd.dll")
-    else()
-        set(ASSIMP_LIB_NAME "assimp-vc143-mt.lib")
-        set(ASSIMP_DLL_NAME "assimp-vc143-mt.dll")
+        
+
+        set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/win/assimp)
+        message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
+        find_library(ASSIMP_LIB NAMES ${ASSIMP_LIB_NAME} PATHS ${LIBS_DIR} NO_DEFAULT_PATH)
+        #find_library(ASSIMP_DLL NAMES assimp-vc143-mt.dll PATHS ${LIBS_DIR} NO_DEFAULT_PATH)
+        #set(ASSIMP_DLL D:/data/light4/ikrigretarget/test/thirdparty/lib/win/assimp/assimp-vc143-mt.dll)
+        message(STATUS "ASSIMP_LIB: ${ASSIMP_LIB}")
+        #message(STATUS "ASSIMP_DLL: ${ASSIMP_DLL}")
+        target_link_libraries(testikrigretarget PRIVATE  ikrigretarget ${ASSIMP_LIB})
+
+        message(STATUS "TARGET_RUNTIME_DLLS: $<TARGET_RUNTIME_DLLS:testikrigretarget>")
+        message(STATUS "TARGET_FILE_DIR: $<TARGET_RUNTIME_DLLS:testikrigretarget>")
+
+        add_custom_command(TARGET testikrigretarget POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/win/assimp/${ASSIMP_DLL_NAME}
+            $<TARGET_FILE_DIR:testikrigretarget> 
+        )
     endif()
-    set(ASSIMP_LIB_NAME "assimp-vc143-mtd.lib")
-    set(ASSIMP_DLL_NAME "assimp-vc143-mtd.dll")
-    
-
-    set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/win/assimp)
-    message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
-    find_library(ASSIMP_LIB NAMES ${ASSIMP_LIB_NAME} PATHS ${LIBS_DIR} NO_DEFAULT_PATH)
-    #find_library(ASSIMP_DLL NAMES assimp-vc143-mt.dll PATHS ${LIBS_DIR} NO_DEFAULT_PATH)
-    #set(ASSIMP_DLL D:/data/light4/ikrigretarget/test/thirdparty/lib/win/assimp/assimp-vc143-mt.dll)
-    message(STATUS "ASSIMP_LIB: ${ASSIMP_LIB}")
-    #message(STATUS "ASSIMP_DLL: ${ASSIMP_DLL}")
-    target_link_libraries(testikrigretarget PRIVATE  ikrigretarget ${ASSIMP_LIB})
-
-    message(STATUS "TARGET_RUNTIME_DLLS: $<TARGET_RUNTIME_DLLS:testikrigretarget>")
-    message(STATUS "TARGET_FILE_DIR: $<TARGET_RUNTIME_DLLS:testikrigretarget>")
-
-    add_custom_command(TARGET testikrigretarget POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different 
-        ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/win/assimp/${ASSIMP_DLL_NAME}
-        $<TARGET_FILE_DIR:testikrigretarget> 
-    )
 
 endif()

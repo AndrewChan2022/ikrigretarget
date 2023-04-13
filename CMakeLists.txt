@@ -60,4 +60,5 @@ else()
 endif()
 
 ########### other prj
+add_subdirectory(contrib/assimp)
 add_subdirectory(test)
