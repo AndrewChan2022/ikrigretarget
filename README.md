@@ -37,8 +37,11 @@
 
 # Release notes
 
+version 1.0.3: 2023.4.13
 
-version 1.0.2: 2023.4.11
+    fix animation jump:  quaternion not normalize.
+
+version 1.0.2: 2023.4.12
 
     fix flair to meta retarget:  change coordtype and rootBoneName
 
