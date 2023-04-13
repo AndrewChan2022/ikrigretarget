@@ -60,6 +60,8 @@ else()
         set(ASSIMP_LIB_NAME "assimp-vc143-mt.lib")
         set(ASSIMP_DLL_NAME "assimp-vc143-mt.dll")
     endif()
+    set(ASSIMP_LIB_NAME "assimp-vc143-mtd.lib")
+    set(ASSIMP_DLL_NAME "assimp-vc143-mtd.dll")
     
 
     set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/win/assimp)

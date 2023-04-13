@@ -18,8 +18,8 @@
 
 using namespace SoulIK;
 
-// #define DEBUG_POSE_PRINT
-// #define DEBUG_POSE_PRINT_EVERY_FRAME
+//#define DEBUG_POSE_PRINT
+//#define DEBUG_POSE_PRINT_EVERY_FRAME
 
 #ifdef DEBUG_POSE_PRINT
     #define DEBUG_PRINT_SKM(name, scene, skm, srccoord, workcoord) IKRigUtils::debugPrintSKM(name, scene, *scene.skmeshes[0], srccoord, workcoord);
@@ -160,6 +160,7 @@ static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh
                     DenseKeys[frame].time = frame;
                     float alpha = prevFrame == curFrame ? 1.0f : static_cast<float>(frame - prevFrame) / static_cast<float>(curFrame - prevFrame);
                     DenseKeys[frame].value = glm::lerp(prevValue, curValue, alpha);
+                    DenseKeys[frame].value = glm::normalize(DenseKeys[frame].value);
                 }
 
                 // next iteration
@@ -715,7 +716,7 @@ int main(int argc, char *argv[]) {
 
     /////////////////////////////////////////////
     // setting of coord
-    TestCase testCase       = case_S1Walking(); //case_Flair();
+    TestCase testCase       = case_Flair(); // case_S1Walking();
     auto config             = testCase.config;
     CoordType srccoord      = config.SourceCoord;
     CoordType workcoord     = config.WorkCoord;
