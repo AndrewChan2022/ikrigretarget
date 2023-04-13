@@ -712,6 +712,42 @@ static void getFilePaths(std::string& srcAnimationFile,
     outfile             = modelPath + testcase.outFile;
 }
 
+// RVO: https://stackoverflow.com/a/10479595/2482283
+static bool configFromName(std::string const& name, SoulIKRigRetargetConfig& config) {
+
+    typedef SoulIKRigRetargetConfig (*FuncTypeGetConfig)(); // function pointer type
+
+    std::unordered_map<std::string, FuncTypeGetConfig> configTable = {
+        {"s1_meta", config_s1_meta},
+        {"flair_meta", config_flair_meta}
+    };
+
+    if (auto it = configTable.find(name); it != configTable.end()) {
+        config = (*it->second)();
+    } else {
+        return false;
+    }
+    return true;
+}
+
+static void retargetFBX(std::string const& srcAnimationFile,
+    std::string const& srcTPoseFile,
+    std::string const& targetFile,
+    std::string const& rootName,
+    std::string const& targetTPoseFile,
+    std::string const& outfile,
+    std::string const& configName) {
+
+    // testcase 
+    SoulIKRigRetargetConfig config;
+    auto ret = configFromName(configName, config);
+    if (!ret) {
+        printf("cannot find config\n");
+        return;
+    }
+    // ...
+}
+
 int main(int argc, char *argv[]) {
 
     /////////////////////////////////////////////

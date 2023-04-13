@@ -32,8 +32,8 @@
 
 # todo and issues
 
-1. animation jump bug
-2. release version assimp delete fail
+1. win: release version assimp delete fail
+2. macos: assimp error
 
 # Release notes
 
