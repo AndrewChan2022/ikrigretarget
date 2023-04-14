@@ -18,18 +18,18 @@ project(${LIB_NAME})
 add_library(${LIB_NAME} STATIC)
 
 ################## inc
-include_directories(./lib)
+include_directories(./code)
 
 ################## src
 
 file(GLOB APP_HEADER_FILES
-    ./lib/*.h ./lib/*.hpp
+    ./code/*.h ./code/*.hpp
 )
 file(GLOB APP_SOURCE_FILES
-    ./lib/*.cpp
+    ./code/*.cpp
 )
 # SET(APP_SOURCE_FILES
-#     ./lib/*.cpp
+#     ./code/*.cpp
 # )
 SET (ALL_SRCS
     ${APP_HEADER_FILES}
@@ -41,7 +41,7 @@ target_sources(${LIB_NAME} PRIVATE
     ${ALL_SRCS}
 )
 
-#file(GLOB mysrc "./lib/*.cpp")
+#file(GLOB mysrc "./code/*.cpp")
 
 
 ################## lib
