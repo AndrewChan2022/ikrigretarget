@@ -37,6 +37,19 @@
 
 # Release notes
 
+version 1.0.4: 2023.4.14
+
+    1. update macos assimp lib
+    2. fix macos bug:
+        create createIKRigAsset targetBoneIndex error
+        SoulIKRetargetProcessor sort chain error: 
+            std::sort(ChainPairsFK.begin(), ChainPairsFK.end(), ChainsSorter);
+
+            return A.TargetBoneChainName.compare(B.TargetBoneChainName) <= 0;
+            =>
+            return A.TargetBoneChainName.compare(B.TargetBoneChainName) < 0;
+    3. change /lib to /code
+
 version 1.0.3: 2023.4.13
 
     fix animation jump:  quaternion not normalize.
