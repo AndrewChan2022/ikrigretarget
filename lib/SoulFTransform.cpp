@@ -20,7 +20,7 @@ const FVector ZAxisVector = FVector(0, 0, 1);
 
 namespace SoulIK {
 namespace FText {
-    const char* FromName(std::string s) {
+    const char* FromName(std::string const& s) {
         return s.c_str();
     }
 }

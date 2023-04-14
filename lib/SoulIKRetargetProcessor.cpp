@@ -448,24 +448,24 @@ bool FChainFK::Initialize(
 
 #ifdef DEBUG_POSE_LOG
 	printf("encode init\n");
-	printf("InitialGlobalPose[1]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
-		InitialGlobalPose[1].Translation.x,
-		InitialGlobalPose[1].Translation.y,
-		InitialGlobalPose[1].Translation.z,
-		InitialGlobalPose[1].Rotation.x,
-		InitialGlobalPose[1].Rotation.y,
-		InitialGlobalPose[1].Rotation.z,
-		InitialGlobalPose[1].Rotation.w
-	);
-	printf("InitialGlobalPose[2]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
-		InitialGlobalPose[2].Translation.x, 
-		InitialGlobalPose[2].Translation.y,
-		InitialGlobalPose[2].Translation.z,
-		InitialGlobalPose[2].Rotation.x,
-		InitialGlobalPose[2].Rotation.y,
-		InitialGlobalPose[2].Rotation.z,
-		InitialGlobalPose[2].Rotation.w
-	);
+//	printf("InitialGlobalPose[1]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n",
+//		InitialGlobalPose[1].Translation.x,
+//		InitialGlobalPose[1].Translation.y,
+//		InitialGlobalPose[1].Translation.z,
+//		InitialGlobalPose[1].Rotation.x,
+//		InitialGlobalPose[1].Rotation.y,
+//		InitialGlobalPose[1].Rotation.z,
+//		InitialGlobalPose[1].Rotation.w
+//	);
+//	printf("InitialGlobalPose[2]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n",
+//		InitialGlobalPose[2].Translation.x,
+//		InitialGlobalPose[2].Translation.y,
+//		InitialGlobalPose[2].Translation.z,
+//		InitialGlobalPose[2].Rotation.x,
+//		InitialGlobalPose[2].Rotation.y,
+//		InitialGlobalPose[2].Rotation.z,
+//		InitialGlobalPose[2].Rotation.w
+//	);
 
 	printf("InitialGlobalTransforms[0]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
 		InitialGlobalTransforms[0].Translation.x,
@@ -476,15 +476,15 @@ bool FChainFK::Initialize(
 		InitialGlobalTransforms[0].Rotation.z,
 		InitialGlobalTransforms[0].Rotation.w
 	);
-	printf("InitialGlobalTransforms[1]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n", 
-		InitialGlobalTransforms[1].Translation.x, 
-		InitialGlobalTransforms[1].Translation.y,
-		InitialGlobalTransforms[1].Translation.z,
-		InitialGlobalTransforms[1].Rotation.x,
-		InitialGlobalTransforms[1].Rotation.y,
-		InitialGlobalTransforms[1].Rotation.z,
-		InitialGlobalTransforms[1].Rotation.w
-	);
+//	printf("InitialGlobalTransforms[1]:  t.xyz:(%.2f %.2f %.2f) r.xyzw:(%.2f %.2f %.2f %.2f)\n",
+//		InitialGlobalTransforms[1].Translation.x,
+//		InitialGlobalTransforms[1].Translation.y,
+//		InitialGlobalTransforms[1].Translation.z,
+//		InitialGlobalTransforms[1].Rotation.x,
+//		InitialGlobalTransforms[1].Rotation.y,
+//		InitialGlobalTransforms[1].Rotation.z,
+//		InitialGlobalTransforms[1].Rotation.w
+//	);
 #endif
 
 	// calculate parameter of each bone, normalized by the length of the bone chain
@@ -515,7 +515,7 @@ bool FChainFK::CalculateBoneParameters(FIKRigLogger& Log)
 	// cannot retarget chain if all the bones are sitting directly on each other
 	if (TotalChainLength <= KINDA_SMALL_NUMBER)
 	{
-		Log.LogWarning("TinyBoneChain, IK Retargeter bone chain length is too small to reliably retarget.");
+		Log.LogWarning("TinyBoneChain, IK Retargeter bone chain length is too small to reliably retarget.", "");
 		return false;
 	}
 
@@ -1658,7 +1658,7 @@ bool UIKRetargetProcessor::InitializeBoneChainPairs()
 		if (IndexA == IndexB)
 		{
 			// fallback to sorting alphabetically
-			return A.TargetBoneChainName.compare(B.TargetBoneChainName) <= 0;
+			return A.TargetBoneChainName.compare(B.TargetBoneChainName) < 0; // bugfix: <= -> <
 		}
 		return IndexA < IndexB;
 	};

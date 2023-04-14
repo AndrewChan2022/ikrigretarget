@@ -82,7 +82,7 @@ namespace SoulIK {
     };
     struct SoulSkeleton {
         std::vector<SoulJoint>  joints;
-        inline int32_t getJointIdByName(std::string name);
+        inline int32_t getJointIdByName(std::string const& name);
     };
     struct SoulJointNode { // with child
         std::string             name;
@@ -234,7 +234,7 @@ namespace SoulIK {
 
 void ____method_impl____();
 
-int32_t SoulIK::SoulSkeleton::getJointIdByName(std::string name) {
+int32_t SoulIK::SoulSkeleton::getJointIdByName(std::string const& name) {
     auto it = std::find_if(joints.begin(), joints.end(), [&](const auto& e) {
         return e.name == name;
     });

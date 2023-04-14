@@ -59,7 +59,7 @@ namespace SoulIK
 	}
 
     namespace FText {
-        const char* FromName(std::string s);
+        const char* FromName(std::string const& s);
     };
 
     struct FVector;

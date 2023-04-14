@@ -18,7 +18,7 @@ namespace SoulIK {
 struct FIKRigLogger {
 
 	// c style
-	void LogError(char* fmt, ...) { 
+	void LogError(const char* fmt, ...) { 
 		va_list arguments;
     	va_start(arguments, fmt);
 		// You cannot pass the variadic arguments to a variadic function

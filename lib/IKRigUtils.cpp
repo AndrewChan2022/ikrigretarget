@@ -66,9 +66,9 @@ std::shared_ptr<UIKRetargeter> IKRigUtils::createIKRigAsset(SoulIKRigRetargetCon
 
         BoneChain.ChainName = chain.chainName;
         BoneChain.StartBone.BoneName = chain.startBone;
-        BoneChain.StartBone.BoneIndex = srcsk.getJointIdByName(chain.startBone);
+        BoneChain.StartBone.BoneIndex = tgtsk.getJointIdByName(chain.startBone);
         BoneChain.EndBone.BoneName = chain.endBone;
-        BoneChain.EndBone.BoneIndex = srcsk.getJointIdByName(chain.endBone);
+        BoneChain.EndBone.BoneIndex = tgtsk.getJointIdByName(chain.endBone);
     }
 
     ///////////////////////////////////////

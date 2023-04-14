@@ -3,7 +3,6 @@
 build*
 /.vs
 /.vscode
+/model/out.fbx
 .DS_Store
-model/out
-
 
