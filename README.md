@@ -103,7 +103,7 @@ version 1.0.0: 2023.4.10:
 
     // without xcode
     cmake .. --DCMAKE_BUILD_TYPE=Release
-    make -j16
+    make testikrigretarget -j16
 
 
 # windows build and test c++
