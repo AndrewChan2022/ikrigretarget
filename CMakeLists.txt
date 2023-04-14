@@ -60,5 +60,8 @@ else()
 endif()
 
 ########### other prj
-add_subdirectory(contrib/assimp)
+
+if(EMBED_ASSIMP)
+    add_subdirectory(contrib/assimp)
+endif()
 add_subdirectory(test)

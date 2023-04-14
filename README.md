@@ -3,6 +3,7 @@
 - [todo and issues](#todo-and-issues)
 - [Release notes](#release-notes)
 - [platform](#platform)
+- [cmake option](#cmake-option)
 - [macos](#macos)
 - [windows build and test c++](#windows-build-and-test-c--)
 - [release files](#release-files)
@@ -49,6 +50,7 @@ version 1.0.4: 2023.4.14
             =>
             return A.TargetBoneChainName.compare(B.TargetBoneChainName) < 0;
     3. change /lib to /code
+    4. remove embedded assimp project if not -DEMBED_ASSIMP=ON
 
 version 1.0.3: 2023.4.13
 
@@ -93,6 +95,14 @@ version 1.0.0: 2023.4.10:
     2. linux
     3. windows
 
+# cmake option
+
+    // with assimp project embedded
+    -DEMBED_ASSIMP=ON
+
+    // release
+    --DCMAKE_BUILD_TYPE=Release
+
 # macos
 
     rm -rf build
@@ -103,7 +113,7 @@ version 1.0.0: 2023.4.10:
 
     // without xcode
     cmake .. --DCMAKE_BUILD_TYPE=Release
-    make testikrigretarget -j16
+    make -j16
 
 
 # windows build and test c++
