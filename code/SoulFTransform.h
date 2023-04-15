@@ -565,11 +565,11 @@ namespace SoulIK
             if (AnyHasNegativeScale(A->Scale3D, B->Scale3D))
             {
                 // @note, if you have 0 scale with negative, you're going to lose rotation as it can't convert back to quat
-                //MultiplyUsingMatrixWithScale(OutTransform, A, B);
-                glm::dmat4 m1 = A->ToMatrixWithScale();
-                glm::dmat4 m2 = B->ToMatrixWithScale();
-                glm::dmat4 m3 = m2 * m1;
-                *OutTransform = FTransform(m3);
+                MultiplyUsingMatrixWithScale(OutTransform, A, B);
+                //glm::dmat4 m1 = A->ToMatrixWithScale();
+                //glm::dmat4 m2 = B->ToMatrixWithScale();
+                //glm::dmat4 m3 = m2 * m1;
+                //*OutTransform = FTransform(m3);
             }
             else
             {
@@ -719,6 +719,12 @@ namespace SoulIK
         {
             return  (InScale3D.x < 0.f || InScale3D.y < 0.f || InScale3D.z < 0.f 
             || InOtherScale3D.x < 0.f || InOtherScale3D.y < 0.f || InOtherScale3D.z < 0.f );
+        }
+        void MultiplyUsingMatrixWithScale(FTransform* OutTransform, const FTransform* A, const FTransform* B) const {
+            glm::dmat4 m1 = A->ToMatrixWithScale();
+            glm::dmat4 m2 = B->ToMatrixWithScale();
+            glm::dmat4 m3 = m2 * m1;
+            *OutTransform = FTransform(m3);
         }
         void GetRelativeTransformUsingMatrixWithScale(FTransform* OutTransform, const FTransform* Base, const FTransform* Relative) const
         {
