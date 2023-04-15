@@ -582,6 +582,54 @@ namespace SoulIK
             // that was removed at rev 21 with UE4
             #endif
         }
+        FTransform GetRelativeTransform(const FTransform& Other) const {
+
+            // TODO: adapter
+            #if 0 // #ifdef FTRANSFORM_GLM_ADAPTER
+            glm::dmat4 m1 = this->ToMatrixWithScale();
+            glm::dmat4 m2 = Other.Inverse().ToMatrixWithScale();
+            // glm: gchild = gparent * lchild  => lchild =  gparent.inv * gchild
+            // ftransform: gchild = lchild * gparent => lchild = gchild * gparent.inv
+            // => glm impl:  lchild = gparent.inv * gchild
+            glm::dmat4 m3 = m2 * m1;
+            FTransform Result = FTransform(m3);
+            return Result;
+
+            #else
+            
+            // A * B(-1) = VQS(B)(-1) (VQS (A))
+            // 
+            // Scale = S(A)/S(B)
+            // Rotation = Q(B)(-1) * Q(A)
+            // Translation = 1/S(B) *[Q(B)(-1)*(T(A)-T(B))*Q(B)]
+            // where A = this, B = Other
+            FTransform Result;
+
+            if (AnyHasNegativeScale(Scale3D, Other.GetScale3D()))
+            {
+                // @note, if you have 0 scale with negative, you're going to lose rotation as it can't convert back to quat
+                GetRelativeTransformUsingMatrixWithScale(&Result, this, &Other);
+                printf("AnyHasNegativeScale\n");
+            }
+            else
+            {
+                FVector SafeRecipScale3D = GetSafeScaleReciprocal(Other.Scale3D, UE_SMALL_NUMBER);
+                Result.Scale3D = Scale3D*SafeRecipScale3D;
+
+                if (Other.Rotation.IsNormalized() == false)
+                {
+                    return FTransform::Identity;
+                }
+
+                FQuat Inverse = Other.Rotation.Inverse();
+                Result.Rotation = Inverse*Rotation;
+
+                Result.Translation = (Inverse*(Translation - Other.Translation))*(SafeRecipScale3D);
+            }
+
+            return Result;
+            #endif
+        }
 
         FTransform operator*(const FTransform& Other) const
         {
@@ -667,87 +715,11 @@ namespace SoulIK
         }
         
         
-        FTransform GetRelativeTransform(const FTransform& Other) const {
-
-            // TODO: adapter
-            #if 0 // #ifdef FTRANSFORM_GLM_ADAPTER
-            glm::dmat4 m1 = this->ToMatrixWithScale();
-            glm::dmat4 m2 = Other.Inverse().ToMatrixWithScale();
-            // glm: gchild = gparent * lchild  => lchild =  gparent.inv * gchild
-            // ftransform: gchild = lchild * gparent => lchild = gchild * gparent.inv
-            // => glm impl tranpose:  lchild = gparent.inv * gchild
-            glm::dmat4 m3 = m2 * m1;
-            FTransform Result = FTransform(m3);
-            return Result;
-
-            #else
-            
-            // A * B(-1) = VQS(B)(-1) (VQS (A))
-            // 
-            // Scale = S(A)/S(B)
-            // Rotation = Q(B)(-1) * Q(A)
-            // Translation = 1/S(B) *[Q(B)(-1)*(T(A)-T(B))*Q(B)]
-            // where A = this, B = Other
-            FTransform Result;
-
-            if (AnyHasNegativeScale(Scale3D, Other.GetScale3D()))
-            {
-                // @note, if you have 0 scale with negative, you're going to lose rotation as it can't convert back to quat
-                GetRelativeTransformUsingMatrixWithScale(&Result, this, &Other);
-                printf("AnyHasNegativeScale\n");
-            }
-            else
-            {
-                FVector SafeRecipScale3D = GetSafeScaleReciprocal(Other.Scale3D, UE_SMALL_NUMBER);
-                Result.Scale3D = Scale3D*SafeRecipScale3D;
-
-                if (Other.Rotation.IsNormalized() == false)
-                {
-                    return FTransform::Identity;
-                }
-
-                FQuat Inverse = Other.Rotation.Inverse();
-                Result.Rotation = Inverse*Rotation;
-
-                Result.Translation = (Inverse*(Translation - Other.Translation))*(SafeRecipScale3D);
-            }
-
-            return Result;
-            #endif
-        }
         bool AnyHasNegativeScale(const FVector& InScale3D, const  FVector& InOtherScale3D) const
         {
             return  (InScale3D.x < 0.f || InScale3D.y < 0.f || InScale3D.z < 0.f 
             || InOtherScale3D.x < 0.f || InOtherScale3D.y < 0.f || InOtherScale3D.z < 0.f );
         }
-        void MultiplyUsingMatrixWithScale(FTransform* OutTransform, const FTransform* A, const FTransform* B) const {
-            glm::dmat4 m1 = A->ToMatrixWithScale();
-            glm::dmat4 m2 = B->ToMatrixWithScale();
-            glm::dmat4 m3 = m2 * m1;
-            *OutTransform = FTransform(m3);
-        }
-        void GetRelativeTransformUsingMatrixWithScale(FTransform* OutTransform, const FTransform* Base, const FTransform* Relative) const
-        {
-            #if 1 // #ifdef FTRANSFORM_GLM_ADAPTER
-            glm::dmat4 m1 = Base->ToMatrixWithScale();
-            glm::dmat4 m2 = Relative->Inverse().ToMatrixWithScale();
-            // glm: gchild = gparent * lchild  => lchild =  gparent.inv * gchild
-            // ftransform: gchild = lchild * gparent => lchild = gchild * gparent.inv
-            // => glm impl tranpose:  lchild = gparent.inv * gchild
-            glm::dmat4 m3 = m2 * m1;
-
-            #else
-            // the goal of using M is to get the correct orientation
-            // but for translation, we still need scale
-            glm::dmat4 AM = Base->ToMatrixWithScale();
-	        glm::dmat4 BM = Relative->ToMatrixWithScale();
-            // get combined scale
-            FVector SafeRecipScale3D = GetSafeScaleReciprocal(Relative->Scale3D, UE_SMALL_NUMBER);
-            FVector DesiredScale3D = Base->Scale3D*SafeRecipScale3D;
-            ConstructTransformFromMatrixWithDesiredScale(AM, glm::inverse(BM), DesiredScale3D, *OutTransform);
-            #endif
-        }
-
 
         // Convert this Transform to a transformation matrix, ignoring its scaling
         glm::dmat4 ToMatrixNoScale() const
@@ -894,7 +866,34 @@ namespace SoulIK
             return  rv + Translation;
         }
         
+        void MultiplyUsingMatrixWithScale(FTransform* OutTransform, const FTransform* A, const FTransform* B) const {
+            glm::dmat4 m1 = A->ToMatrixWithScale();
+            glm::dmat4 m2 = B->ToMatrixWithScale();
+            glm::dmat4 m3 = m2 * m1;
+            *OutTransform = FTransform(m3);
+        }
 
+        void GetRelativeTransformUsingMatrixWithScale(FTransform* OutTransform, const FTransform* Base, const FTransform* Relative) const
+        {
+            #if 1 // #ifdef FTRANSFORM_GLM_ADAPTER
+            glm::dmat4 m1 = Base->ToMatrixWithScale();
+            glm::dmat4 m2 = Relative->Inverse().ToMatrixWithScale();
+            // glm: gchild = gparent * lchild  => lchild =  gparent.inv * gchild
+            // ftransform: gchild = lchild * gparent => lchild = gchild * gparent.inv
+            // => glm impl:  lchild = gparent.inv * gchild
+            glm::dmat4 m3 = m2 * m1;
+
+            #else
+            // the goal of using M is to get the correct orientation
+            // but for translation, we still need scale
+            glm::dmat4 AM = Base->ToMatrixWithScale();
+	        glm::dmat4 BM = Relative->ToMatrixWithScale();
+            // get combined scale
+            FVector SafeRecipScale3D = GetSafeScaleReciprocal(Relative->Scale3D, UE_SMALL_NUMBER);
+            FVector DesiredScale3D = Base->Scale3D*SafeRecipScale3D;
+            ConstructTransformFromMatrixWithDesiredScale(AM, glm::inverse(BM), DesiredScale3D, *OutTransform);
+            #endif
+        }
         void ConstructTransformFromMatrixWithDesiredScale(const glm::dmat4& AMatrix, const glm::dmat4& BMatrix, const FVector& DesiredScale, FTransform& OutTransform) const
         {
             // todo
