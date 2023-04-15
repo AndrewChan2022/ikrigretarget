@@ -33,8 +33,11 @@
 
 # todo and issues
 
-1. win: release version assimp delete fail
-2. macos: assimp error
+1. python interface
+2. ik part
+3. fbx sdk
+4. render part
+
 
 # Release notes
 

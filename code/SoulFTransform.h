@@ -26,10 +26,13 @@
 
 
 // this file is adpater to glm
-// multiply order   : FTransform left * right == glm right * left
-// glm::dmat4       : child_global = parent_global * child_local
-// FTransform       : child_global = child_local * parent_global
-// quat order       :  FQuat left * right == glm left * right
+// multiply order: https://docs.unrealengine.com/4.27/en-US/API/Runtime/Core/Math/FTransform/
+// FQuat: q = q1 * q2,   q2 right first
+// vector representation:
+// glm: col vector, col major:  v = m1 * m2 * v;   m2 right first
+// FTransform: row vector, row major:  v = v * m2 * m1;   m2 left first
+// glm: child_global = parent_global * child_local
+// FTransform: child_global = child_local * parent_global
 
 #define FTRANSFORM_GLM_ADAPTER
 #define QUAT_GLM_ADAPTER
@@ -532,7 +535,7 @@ namespace SoulIK
         void Multiply(FTransform* OutTransform, const FTransform* A, const FTransform* B) const
         {
             // TODO: adapter
-            #if 1 //#ifdef FTRANSFORM_GLM_ADAPTER
+            #if 0 //#ifdef FTRANSFORM_GLM_ADAPTER
             glm::dmat4 ma = A->ToMatrixWithScale();
             glm::dmat4 mb = B->ToMatrixWithScale();
             glm::dmat4 mc = mb * ma;
@@ -565,7 +568,7 @@ namespace SoulIK
                 //MultiplyUsingMatrixWithScale(OutTransform, A, B);
                 glm::dmat4 m1 = A->ToMatrixWithScale();
                 glm::dmat4 m2 = B->ToMatrixWithScale();
-                glm::dmat4 m3 = m1 * m2;
+                glm::dmat4 m3 = m2 * m1;
                 *OutTransform = FTransform(m3);
             }
             else
@@ -670,9 +673,9 @@ namespace SoulIK
             #if 0 // #ifdef FTRANSFORM_GLM_ADAPTER
             glm::dmat4 m1 = this->ToMatrixWithScale();
             glm::dmat4 m2 = Other.Inverse().ToMatrixWithScale();
-            // glm: gchild = gparent * lchild => lchild = gparent.inv * gchild 
-            // => ue: gchild * gparent.inv
-            // glm::dmat4 m3 = m1 * m2;
+            // glm: gchild = gparent * lchild  => lchild =  gparent.inv * gchild
+            // ftransform: gchild = lchild * gparent => lchild = gchild * gparent.inv
+            // => glm impl tranpose:  lchild = gparent.inv * gchild
             glm::dmat4 m3 = m2 * m1;
             FTransform Result = FTransform(m3);
             return Result;
@@ -722,10 +725,10 @@ namespace SoulIK
             #if 1 // #ifdef FTRANSFORM_GLM_ADAPTER
             glm::dmat4 m1 = Base->ToMatrixWithScale();
             glm::dmat4 m2 = Relative->Inverse().ToMatrixWithScale();
-            // glm: gchild = gparent * lchild => lchild = gparent.inv * gchild 
-            // => ue: gchild * gparent.inv
-            glm::dmat4 m3 = m1 * m2;
-            *OutTransform = FTransform(m3);
+            // glm: gchild = gparent * lchild  => lchild =  gparent.inv * gchild
+            // ftransform: gchild = lchild * gparent => lchild = gchild * gparent.inv
+            // => glm impl tranpose:  lchild = gparent.inv * gchild
+            glm::dmat4 m3 = m2 * m1;
 
             #else
             // the goal of using M is to get the correct orientation
@@ -808,6 +811,8 @@ namespace SoulIK
         glm::dmat4 ToMatrixWithScale() const
         {
             #if 0  // FTRANSFORM_GLM_ADAPTER
+            // col representation, col major
+
             // TODO: adapter, should have better approach
             glm::dquat q(Rotation.w, Rotation.x, Rotation.y, Rotation.z);
             glm::dvec3 t(Translation.x, Translation.y, Translation.z);
@@ -824,7 +829,7 @@ namespace SoulIK
 
             glm::dmat4 OutMatrix;
 
-            // col major
+            // row representation, row major
             OutMatrix[3][0] = Translation.x;
             OutMatrix[3][1] = Translation.y;
             OutMatrix[3][2] = Translation.z;
