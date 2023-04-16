@@ -49,6 +49,9 @@
 
 # algorithm
 
+## coordinate hand
+
+all the coodinate system is right hand.
 
 ## transform represent
 
@@ -136,7 +139,7 @@ joint local space: the space of joint
 
 global space: in world space or model space, because we does not care about transform outside model, so we choose model space.
 
-to transform local pose to global pose(model space), only walking the skeleton hierarchy from current joint all the way to root
+to transform local pose to global pose(model space), only walking the skeleton hierarchy from current joint all the way to root.
 
 denote transform from joint j local space to its parent space:
 
@@ -254,9 +257,9 @@ chain FK retarget: copy global rotation delta
 
 # prerequisite
 
-# usage:
+# usage
 
-## working coordinate system: 
+## working coordinate system
 
     right hand
 
@@ -266,20 +269,20 @@ chain FK retarget: copy global rotation delta
 
     y front
 
-## source files:
+## source files
 
     lib         // retarget implement
     lib/glm     // thirdParty files, need remove if already exist in your project
     test        // test project, including fbx file read write
 
-## header files:
+## header files
 
     SoulRetargeter.h                // define retarget asset
     SoulIKRetargetProcessor.h       // retarget processor
     IKRigUtils.h                    // config define, utils for pose convert, coord system convert...
     SoulScene.h                     // scene, mesh, skeleton, animation define
 
-## full example:
+## full example
 
 main.cpp
 
@@ -394,7 +397,7 @@ main.cpp
     wording coord   : CoordType::RightHandZupYfront
     from maya       : CoordType::RightHandYupZfront
 
-## init of uskeleton:
+## init of uskeleton
 
     class USkeleton {
         std::string name;
