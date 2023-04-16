@@ -113,13 +113,18 @@ col major:  m[col][row]
             store order: col major
         
     SoulFTransform SoulRetargeter.h SoulIKRetargetProcessor.h
-        Unreal FTransform
+        https://docs.unrealengine.com/4.27/en-US/API/Runtime/Core/Math/FTransform/
+        Unreal FTransform 
             represent: row vector
             store order: row major
     lib ASSIMP
         aiMatrix4x4:
             represent: col vector
             store order: row major
+
+## quaternion order
+
+order of all quat: left is first
 
 ## skeleton pose transform
 
