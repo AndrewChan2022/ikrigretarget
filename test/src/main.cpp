@@ -752,7 +752,8 @@ int main(int argc, char *argv[]) {
 
     /////////////////////////////////////////////
     // setting of coord
-    TestCase testCase       = case_Flair(); // case_S1Walking();
+    //TestCase testCase       = case_Flair(); 
+    TestCase testCase       = case_S1Walking();
     auto config             = testCase.config;
     CoordType srccoord      = config.SourceCoord;
     CoordType workcoord     = config.WorkCoord;

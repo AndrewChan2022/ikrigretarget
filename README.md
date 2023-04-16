@@ -1,7 +1,14 @@
 
-
 - [todo and issues](#todo-and-issues)
-- [Release notes](#release-notes)
+- [algorithm](#algorithm)
+  * [transform represent](#transform-represent)
+  * [store order](#store-order)
+  * [transform in our code](#transform-in-our-code)
+  * [skeleton pose transform](#skeleton-pose-transform)
+  * [root retarget](#root-retarget)
+  * [chain FK retarget](#chain-fk-retarget)
+  * [chain IK retarget](#chain-ik-retarget)
+  * [Pole Match retarget](#pole-match-retarget)
 - [platform](#platform)
 - [cmake option](#cmake-option)
 - [macos](#macos)
@@ -23,11 +30,12 @@
   * [tpose](#tpose)
   * [init of processor](#init-of-processor)
   * [run retarget:](#run-retarget-)
-- [algorithm](#algorithm)
 - [feature work](#feature-work)
+- [Release notes](#release-notes)
 - [Acknowledgements](#acknowledgements)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 
 
 
@@ -38,58 +46,150 @@
 3. fbx sdk
 4. render part
 
+# algorithm
 
-# Release notes
 
-version 1.0.4: 2023.4.14
+## transform represent
 
-    1. update macos assimp lib
-    2. fix macos bug:
-        create createIKRigAsset targetBoneIndex error
-        SoulIKRetargetProcessor sort chain error: 
-            std::sort(ChainPairsFK.begin(), ChainPairsFK.end(), ChainsSorter);
+reference:  Game Engine Architexture chapter 5.3.2
 
-            return A.TargetBoneChainName.compare(B.TargetBoneChainName) <= 0;
-            =>
-            return A.TargetBoneChainName.compare(B.TargetBoneChainName) < 0;
-    3. change /lib to /code
-    4. remove embedded assimp project if not -DEMBED_ASSIMP=ON
+Points and vectors can be represented as row matrices (1× n) or column matrices (n × 1)
 
-version 1.0.3: 2023.4.13
+row represent:&nbsp;&nbsp;&nbsp; $v1=\begin{bmatrix}x & y & z\end{bmatrix}$
 
-    fix animation jump:  quaternion not normalize.
+col represent:&nbsp;&nbsp;&nbsp; $v2=\begin{bmatrix}x\\ y \\ z\end{bmatrix} = v1^T$
 
-version 1.0.2: 2023.4.12
+the choice between column and row vectors affect the order of matrix multiply
 
-    fix flair to meta retarget:  change coordtype and rootBoneName
+apply matrix to vector:
 
-    add ERootType:
-        RootZ               : height = root.translation.z
-        RootZMinusGroundZ   : height = root.translation.z - ground.translation.z
-        Ignore              : skip root retarget
+row vector:&nbsp;&nbsp;&nbsp; $v1_{1 \times n} = v1_{1 \times n} \times M_{n \times n}$
 
-version 1.0.1: 2023.4.12
+col vector:&nbsp;&nbsp;&nbsp; $v2_{n \times 1} = M_{n \times n} \times v2_{n \times 1}$
 
-    input file:  sourceAnimation sourceTPose targetAnimation targetTPose
-        need align tpose uskeleton to animation skeleton
-    add testcase struct
+multiple matrix concatenate, apply M1 first, then M2: 
 
-    fix uskeleton coordtype convert
-    fix tpose and animation pose alignment
+$$v1 = v1 \times M1 \times M2$$
+$$v2 = M2 \times M1 \times v2$$
 
-    add macos support with release assimp lib
-    windows change assimp from debug to release
+the represent also affect the element order of matrix
 
-version 1.0.0: 2023.4.10:
-    read source animation fbx file
-    read source tpose fbx file
-    read target meta fbx file
+row vector:
+    $$M_{translation}=
+    \begin{bmatrix}
+    1 & 0 & 0 & 0 \\
+    0 & 1 & 0 & 0 \\
+    0 & 0 & 1 & 0 \\
+    tx & ty & tz & 1 \\
+    \end{bmatrix}$$
 
-    run retarget from source animation to target meta file
+col vector:
+    $$M_{translation}=
+    \begin{bmatrix}
+    1 & 0 & 0 & tx \\
+    0 & 1 & 0 & ty \\
+    0 & 0 & 1 & tz \\
+    0 & 0 & 0 & 1 \\
+    \end{bmatrix}$$
 
-    retarget config:
-        s1 to meta
-        flair to meta
+
+## store order
+
+the matrix can store in row major or col major.
+
+the store order does not affect the represent, but it affect the element order of memory
+
+to access element:
+
+row major:  m[row][col]
+
+col major:  m[col][row]
+
+## transform in our code
+
+    SoulScene.h
+        glm::mat4/glm::dmat4:
+            represent: col vector
+            store order: col major
+        
+    SoulFTransform SoulRetargeter.h SoulIKRetargetProcessor.h
+        Unreal FTransform
+            represent: row vector
+            store order: row major
+    lib ASSIMP
+        aiMatrix4x4:
+            represent: col vector
+            store order: row major
+
+## skeleton pose transform
+
+reference:  game engine architecture chapter 12.3.3
+
+    
+joint local space: the space of joint
+
+global space: in world space or model space, because we does not care about transform outside model, so we choose model space.
+
+to transform local pose to global pose(model space), only walking the skeleton hierarchy from current joint all the way to root
+
+denote transform from joint j local space to its parent space:
+
+$$P_{j->p(j)}$$
+
+row represent:  
+
+$$P_{5->M} = P_{5->4} \times P_{4->3} \times P_{3->0} \times P_{0->M}$$
+
+col represent:
+
+$$P_{5->M} =  P_{0->M} \times P_{3->0} \times P_{4->3} \times P_{5->4} $$
+
+![pose transform](/img/posetransform.png "pose transform")
+
+
+
+## root retarget
+root retarget: retarget position by height ratio
+
+    init:
+        source.InitialHeightInverse = 1/ root.z
+        target.initialHeight = root.z
+    retarget:
+        target.root.translation = source.root.translation *  target.initialHeight * source.InitialHeightInverse
+
+## chain FK retarget
+chain FK retarget: copy global rotation delta
+
+    init:
+        foreach chain:
+            foreach joint:
+                record initialPoseGlobal, initialPoseLocal
+                reset currentPoseGlobal
+    retarget(inputPoseGlobal, outposeGlobal):
+        foreach chain:
+            foreach joint:
+
+                // apply parent transform to child to get position
+                currentPositionGlobal = apply parrent.currentPoseGlobal to initialPoseLocal
+
+                // copy global rotation delta
+                deltaRotationGlobal = inputPoseGlobal.currentRotationGlboal / source.initalRotationGlboal
+                currentRotationGlboal = initialRotationGlobal * deltaRotationGlobal
+
+                // copy global scale delta
+                currentScaleGlobal = TargetInitialScaleGlobal + (SourceCurrentScaleGlobal - SourceInitialScaleGlobal);
+
+                // pose from position and rotation
+                currentPoseGlobal = (currentPositionGlobal, currentRotationGlboal)
+                outposeGlobal[boneIndex] =  currentPoseGlobal
+
+## chain IK retarget
+    // chain IK retarget
+    todo
+
+## Pole Match retarget
+    // pole match retarget
+    todo
 
 
 # platform
@@ -531,48 +631,6 @@ main.cpp
     IKRigUtils::FPose2SoulPose(outposeLocal, outposes[frame]);
 
 
-# algorithm
-
-
-root retarget: retarget position by height ratio
-
-    init:
-        source.InitialHeightInverse = 1/ root.z
-        target.initialHeight = root.z
-    retarget:
-        target.root.translation = source.root.translation *  target.initialHeight * source.InitialHeightInverse
-
-chain FK retarget: copy global rotation delta
-
-    init:
-        foreach chain:
-            foreach joint:
-                record initialPoseGlobal, initialPoseLocal
-                reset currentPoseGlobal
-    retarget(inputPoseGlobal, outposeGlobal):
-        foreach chain:
-            foreach joint:
-
-                // apply parent transform to child to get position
-                currentPositionGlobal = apply parrent.currentPoseGlobal to initialPoseLocal
-
-                // copy global rotation delta
-                deltaRotationGlobal = inputPoseGlobal.currentRotationGlboal / source.initalRotationGlboal
-                currentRotationGlboal = initialRotationGlobal * deltaRotationGlobal
-
-                // copy global scale delta
-                currentScaleGlobal = TargetInitialScaleGlobal + (SourceCurrentScaleGlobal - SourceInitialScaleGlobal);
-
-                // pose from position and rotation
-                currentPoseGlobal = (currentPositionGlobal, currentRotationGlboal)
-                outposeGlobal[boneIndex] =  currentPoseGlobal
-
-    // chain IK retarget
-    todo
-
-    // pole match retarget
-    todo
-
 
 
 
@@ -581,6 +639,58 @@ chain FK retarget: copy global rotation delta
 develop maya plugin based on this lib
 
 render the skeleton and animation so easy debug
+
+# Release notes
+
+version 1.0.4: 2023.4.14
+
+    1. update macos assimp lib
+    2. fix macos bug:
+        create createIKRigAsset targetBoneIndex error
+        SoulIKRetargetProcessor sort chain error: 
+            std::sort(ChainPairsFK.begin(), ChainPairsFK.end(), ChainsSorter);
+
+            return A.TargetBoneChainName.compare(B.TargetBoneChainName) <= 0;
+            =>
+            return A.TargetBoneChainName.compare(B.TargetBoneChainName) < 0;
+    3. change /lib to /code
+    4. remove embedded assimp project if not -DEMBED_ASSIMP=ON
+
+version 1.0.3: 2023.4.13
+
+    fix animation jump:  quaternion not normalize.
+
+version 1.0.2: 2023.4.12
+
+    fix flair to meta retarget:  change coordtype and rootBoneName
+
+    add ERootType:
+        RootZ               : height = root.translation.z
+        RootZMinusGroundZ   : height = root.translation.z - ground.translation.z
+        Ignore              : skip root retarget
+
+version 1.0.1: 2023.4.12
+
+    input file:  sourceAnimation sourceTPose targetAnimation targetTPose
+        need align tpose uskeleton to animation skeleton
+    add testcase struct
+
+    fix uskeleton coordtype convert
+    fix tpose and animation pose alignment
+
+    add macos support with release assimp lib
+    windows change assimp from debug to release
+
+version 1.0.0: 2023.4.10:
+    read source animation fbx file
+    read source tpose fbx file
+    read target meta fbx file
+
+    run retarget from source animation to target meta file
+
+    retarget config:
+        s1 to meta
+        flair to meta
 
 # Acknowledgements
 

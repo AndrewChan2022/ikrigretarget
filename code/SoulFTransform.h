@@ -404,6 +404,20 @@ namespace SoulIK
         }
     };
 
+    struct FMatrix4 : glm::dmat4 {
+
+        // glm: col vector, col major
+        // fmatrix: row vector, row major
+
+        FMatrix4 operator*(const FMatrix4& rhs) const {
+            FMatrix4 o;
+            glm::dmat4& baseRhs = *(glm::dmat4*)&rhs;
+            glm::dmat4& baseThis = *(glm::dmat4*)this;
+            glm::dmat4& baseO = *(glm::dmat4*)&o;
+            baseO = baseRhs * baseRhs;
+        }
+    };
+
     struct FTransform
     {
         // Rotation of this transformation, as a quaternion.
@@ -566,10 +580,6 @@ namespace SoulIK
             {
                 // @note, if you have 0 scale with negative, you're going to lose rotation as it can't convert back to quat
                 MultiplyUsingMatrixWithScale(OutTransform, A, B);
-                //glm::dmat4 m1 = A->ToMatrixWithScale();
-                //glm::dmat4 m2 = B->ToMatrixWithScale();
-                //glm::dmat4 m3 = m2 * m1;
-                //*OutTransform = FTransform(m3);
             }
             else
             {
@@ -900,7 +910,7 @@ namespace SoulIK
             #if 1 // #ifdef FTRANSFORM_GLM_ADAPTER
             // glm: gchild = gparent * lchild => lchild = gparent.inv * gchild 
             // => ue: gchild * gparent.inv
-            glm::dmat4 m3 = AMatrix * BMatrix;
+            glm::dmat4 m3 = BMatrix * AMatrix;
             OutTransform = FTransform(m3);
 
             #else
