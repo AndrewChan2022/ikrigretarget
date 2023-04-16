@@ -84,7 +84,9 @@ $$v1 = v1 \times M1 \times M2$$
 
 $$v2 = M2 \times M1 \times v2$$
 
-the represent also affect the element order of matrix
+the represent also affect the element order of matrix. 
+
+example of translation matrix for hogogeneous coordinate:
 
 row vector:
 
