@@ -58,47 +58,21 @@ reference:  Game Engine Architexture chapter 5.3.2
 
 Points and vectors can be represented as row matrices (1× n) or column matrices (n × 1)
 
-$$\begin{bmatrix} x & y & z \end{bmatrix}$$
+row represent:&nbsp;&nbsp;&nbsp; 
 
-$\begin{bmatrix} x & y & z \end{bmatrix}$
+$$v1=\begin{bmatrix}x & y & z\end{bmatrix}$$
 
-$\begin{bmatrix} x\\ y \\ z \end{bmatrix}$
+col represent:&nbsp;&nbsp;&nbsp; 
 
-$$\begin{bmatrix} x\\ y \\ z \end{bmatrix}$$
-
-$$ \begin{bmatrix}
-    1 & 0 & 0 & 0 \\
-    0 & 1 & 0 & 0 \\
-    0 & 0 & 1 & 0 \\
-    tx & ty & tz & 1 \\
-    \end{bmatrix} $$
-
-$$M = \begin{bmatrix}
-1 & 0 & 0 & 0 \\
-0 & 1 & 0 & 0 \\
-0 & 0 & 1 & 0 \\
-tx & ty & tz & 1 \\
-\end{bmatrix} $$
-
-$$M =\begin{bmatrix}
-1 & 0 & 0 & 0 \\
-0 & 1 & 0 & 0 \\
-0 & 0 & 1 & 0 \\
-tx & ty & tz & 1 \\
-\end{bmatrix} $$
-
-
-row represent:&nbsp;&nbsp;&nbsp; $$v1=\begin{bmatrix}x & y & z\end{bmatrix}$$
-
-col represent:&nbsp;&nbsp;&nbsp; $$v2=\begin{bmatrix}x\\ y \\ z\end{bmatrix} = v1^T$$
+$$v2=\begin{bmatrix}x\\ y \\ z\end{bmatrix} = v1^T$$
 
 the choice between column and row vectors affect the order of matrix multiply
 
 apply matrix to vector:
 
-row vector:&nbsp;&nbsp;&nbsp; $v1_{1 \times n} = v1_{1 \times n} \times M_{n \times n}$
+row vector:&nbsp;&nbsp;&nbsp; $$v1_{1 \times n} = v1_{1 \times n} \times M_{n \times n}$$
 
-col vector:&nbsp;&nbsp;&nbsp; $v2_{n \times 1} = M_{n \times n} \times v2_{n \times 1}$
+col vector:&nbsp;&nbsp;&nbsp; $$v2_{n \times 1} = M_{n \times n} \times v2_{n \times 1}$$
 
 multiple matrix concatenate, apply M1 first, then M2: 
 
@@ -108,22 +82,24 @@ $$v2 = M2 \times M1 \times v2$$
 the represent also affect the element order of matrix
 
 row vector:
-    $$M_{translation}=
-    \begin{bmatrix}
-    1 & 0 & 0 & 0 \\
-    0 & 1 & 0 & 0 \\
-    0 & 0 & 1 & 0 \\
-    tx & ty & tz & 1 \\
-    \end{bmatrix}$$
+
+$$M_{translation}=
+\begin{bmatrix}
+1 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 0 & 1 & 0 \\
+tx & ty & tz & 1 \\
+\end{bmatrix}$$
 
 col vector:
-    $$M_{translation}=
-    \begin{bmatrix}
-    1 & 0 & 0 & tx \\
-    0 & 1 & 0 & ty \\
-    0 & 0 & 1 & tz \\
-    0 & 0 & 0 & 1 \\
-    \end{bmatrix}$$
+
+$$M_{translation}=
+\begin{bmatrix}
+1 & 0 & 0 & tx \\
+0 & 1 & 0 & ty \\
+0 & 0 & 1 & tz \\
+0 & 0 & 0 & 1 \\
+\end{bmatrix}$$
 
 
 ## store order
