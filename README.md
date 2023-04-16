@@ -71,7 +71,14 @@ $$ \begin{bmatrix}
     tx & ty & tz & 1 \\
     \end{bmatrix} $$
 
-    $$ M = \begin{bmatrix}
+    $$M = \begin{bmatrix}
+    1 & 0 & 0 & 0 \\
+    0 & 1 & 0 & 0 \\
+    0 & 0 & 1 & 0 \\
+    tx & ty & tz & 1 \\
+    \end{bmatrix} $$
+
+    $$M =\begin{bmatrix}
     1 & 0 & 0 & 0 \\
     0 & 1 & 0 & 0 \\
     0 & 0 & 1 & 0 \\
@@ -79,9 +86,9 @@ $$ \begin{bmatrix}
     \end{bmatrix} $$
 
 
-row represent:&nbsp;&nbsp;&nbsp; $v1=\begin{bmatrix}x & y & z\end{bmatrix}$
+row represent:&nbsp;&nbsp;&nbsp; $$v1=\begin{bmatrix}x & y & z\end{bmatrix}$$
 
-col represent:&nbsp;&nbsp;&nbsp; $v2=\begin{bmatrix}x\\ y \\ z\end{bmatrix} = v1^T$
+col represent:&nbsp;&nbsp;&nbsp; $$v2=\begin{bmatrix}x\\ y \\ z\end{bmatrix} = v1^T$$
 
 the choice between column and row vectors affect the order of matrix multiply
 
