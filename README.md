@@ -58,6 +58,20 @@ reference:  Game Engine Architexture chapter 5.3.2
 
 Points and vectors can be represented as row matrices (1× n) or column matrices (n × 1)
 
+$\begin{bmatrix} x & y & z \end{bmatrix}$
+
+$\begin{bmatrix} x & y & z \end{bmatrix}$
+
+$\begin{bmatrix} x\\ y \\ z \end{bmatrix}$
+
+$$ \begin{bmatrix}
+    1 & 0 & 0 & 0 \\
+    0 & 1 & 0 & 0 \\
+    0 & 0 & 1 & 0 \\
+    tx & ty & tz & 1 \\
+    \end{bmatrix} $$
+
+
 row represent:&nbsp;&nbsp;&nbsp; $v1=\begin{bmatrix}x & y & z\end{bmatrix}$
 
 col represent:&nbsp;&nbsp;&nbsp; $v2=\begin{bmatrix}x\\ y \\ z\end{bmatrix} = v1^T$
