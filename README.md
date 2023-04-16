@@ -5,6 +5,7 @@
   * [store order](#store-order)
   * [transform in our code](#transform-in-our-code)
   * [skeleton pose transform](#skeleton-pose-transform)
+  * [quaternion order](#quaternion-order)
   * [root retarget](#root-retarget)
   * [chain FK retarget](#chain-fk-retarget)
   * [chain IK retarget](#chain-ik-retarget)
