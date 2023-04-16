@@ -64,6 +64,8 @@ $\begin{bmatrix} x & y & z \end{bmatrix}$
 
 $\begin{bmatrix} x\\ y \\ z \end{bmatrix}$
 
+$$\begin{bmatrix} x\\ y \\ z \end{bmatrix}$$
+
 $$ \begin{bmatrix}
     1 & 0 & 0 & 0 \\
     0 & 1 & 0 & 0 \\
@@ -71,19 +73,19 @@ $$ \begin{bmatrix}
     tx & ty & tz & 1 \\
     \end{bmatrix} $$
 
-    $$M = \begin{bmatrix}
-    1 & 0 & 0 & 0 \\
-    0 & 1 & 0 & 0 \\
-    0 & 0 & 1 & 0 \\
-    tx & ty & tz & 1 \\
-    \end{bmatrix} $$
+$$M = \begin{bmatrix}
+1 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 0 & 1 & 0 \\
+tx & ty & tz & 1 \\
+\end{bmatrix} $$
 
-    $$M =\begin{bmatrix}
-    1 & 0 & 0 & 0 \\
-    0 & 1 & 0 & 0 \\
-    0 & 0 & 1 & 0 \\
-    tx & ty & tz & 1 \\
-    \end{bmatrix} $$
+$$M =\begin{bmatrix}
+1 & 0 & 0 & 0 \\
+0 & 1 & 0 & 0 \\
+0 & 0 & 1 & 0 \\
+tx & ty & tz & 1 \\
+\end{bmatrix} $$
 
 
 row represent:&nbsp;&nbsp;&nbsp; $$v1=\begin{bmatrix}x & y & z\end{bmatrix}$$
