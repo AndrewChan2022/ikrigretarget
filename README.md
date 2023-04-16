@@ -64,7 +64,9 @@ $$v1=\begin{bmatrix}x & y & z\end{bmatrix}$$
 
 col represent:&nbsp;&nbsp;&nbsp; 
 
-$$v2=\begin{bmatrix}x\\ y \\ z\end{bmatrix} = v1^T$$
+$$v2=\begin{bmatrix} 
+    x\\ y \\ z 
+\end{bmatrix} = v1^T$$
 
 the choice between column and row vectors affect the order of matrix multiply
 
