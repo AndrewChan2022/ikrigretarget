@@ -1,11 +1,12 @@
 
 - [todo and issues](#todo-and-issues)
 - [algorithm](#algorithm)
+  * [coordinate hand](#coordinate-hand)
   * [transform represent](#transform-represent)
   * [store order](#store-order)
   * [transform in our code](#transform-in-our-code)
-  * [skeleton pose transform](#skeleton-pose-transform)
   * [quaternion order](#quaternion-order)
+  * [skeleton pose transform](#skeleton-pose-transform)
   * [root retarget](#root-retarget)
   * [chain FK retarget](#chain-fk-retarget)
   * [chain IK retarget](#chain-ik-retarget)
@@ -17,14 +18,14 @@
 - [release files](#release-files)
 - [build release](#build-release)
 - [prerequisite](#prerequisite)
-- [usage:](#usage-)
-  * [working coordinate system:](#working-coordinate-system-)
-  * [source files:](#source-files-)
-  * [header files:](#header-files-)
-  * [full example:](#full-example-)
+- [usage](#usage)
+  * [working coordinate system](#working-coordinate-system)
+  * [source files](#source-files)
+  * [header files](#header-files)
+  * [full example](#full-example)
   * [input model](#input-model)
   * [coordtype convert](#coordtype-convert)
-  * [init of uskeleton:](#init-of-uskeleton-)
+  * [init of uskeleton](#init-of-uskeleton)
   * [root retarget config](#root-retarget-config)
   * [chain retarget config](#chain-retarget-config)
   * [put config all to IKRigRetargetAsset](#put-config-all-to-ikrigretargetasset)
@@ -36,8 +37,6 @@
 - [Acknowledgements](#acknowledgements)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
-
-
 
 
 # todo and issues
