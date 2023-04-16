@@ -81,6 +81,7 @@ col vector:&nbsp;&nbsp;&nbsp; $$v2_{n \times 1} = M_{n \times n} \times v2_{n \t
 multiple matrix concatenate, apply M1 first, then M2: 
 
 $$v1 = v1 \times M1 \times M2$$
+
 $$v2 = M2 \times M1 \times v2$$
 
 the represent also affect the element order of matrix
