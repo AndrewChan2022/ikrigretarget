@@ -96,6 +96,7 @@ namespace SoulIK {
     };
 
     // skeleton animation
+    // TODO: need optimize
     struct SoulTransform {
         glm::vec3 translation;
         glm::quat rotation;

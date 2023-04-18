@@ -418,6 +418,7 @@ namespace SoulIK
         }
     };
 
+    //  TODO: use cast instead of construct new
     struct FTransform
     {
         // Rotation of this transformation, as a quaternion.

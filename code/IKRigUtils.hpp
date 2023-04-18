@@ -56,12 +56,22 @@ namespace SoulIK {
             std::string chainName;
             std::string startBone;
             std::string endBone;
+
+            SoulIKRigChain() = default;
+            SoulIKRigChain(std::string const& chainName_, std::string const& startBone_, std::string const& endBone_)
+            : chainName(chainName_), startBone(startBone_), endBone(endBone_) {
+            }
         };
         struct SoulIKRigChainMapping {
             bool EnableFK{true};
             bool EnableIK{false};
             std::string SourceChain;
             std::string TargetChain;
+
+            SoulIKRigChainMapping() = default;
+            SoulIKRigChainMapping(bool EnableFK_, bool EnableIK_, std::string const& SourceChain_, std::string const& TargetChain_) 
+            : EnableFK(EnableFK_), EnableIK(EnableIK_),  SourceChain(SourceChain_), TargetChain(TargetChain_) {
+            }
         };
 
         // coordinate system
@@ -80,6 +90,10 @@ namespace SoulIK {
         std::vector<SoulIKRigChain> SourceChains;
         std::vector<SoulIKRigChain> TargetChains;
         std::vector<SoulIKRigChainMapping> ChainMapping;
+
+        std::vector<int> IntArray;
+        
+        std::string to_string();
     };
 
 
@@ -93,6 +107,7 @@ namespace SoulIK {
 
         // coord convert
         static std::string CoordTypeToString(CoordType aCoordType);
+        static std::string ERootTypeToString(ERootType aRootType);
         
         static void USkeletonCoordConvert(CoordType srcCoord, CoordType tgtCoord, USkeleton& sk);
         
@@ -126,7 +141,7 @@ namespace SoulIK {
         static bool getUSkeletonFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh, USkeleton& usk, CoordType srcCoord, CoordType tgtCoord);
         static bool USkeleton2RigSkeleton(USkeleton& sk, FIKRigSkeleton& rigsk);
         static std::vector<SoulJointNode> buildJointTree(SoulSkeleton& sk);
-        static bool alignUSKWithSkeleton(USkeleton& usk, SoulSkeleton const& sk);
+        static bool alignUSKWithSkeleton(USkeleton& usk, SoulSkeleton const& sk, SoulScene& uskScene, SoulScene&skScene);
 
         // search
         static SoulNode* findNodeByName(SoulNode* rootNode, std::string& name);

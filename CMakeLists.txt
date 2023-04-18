@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(LIB_NAME ikrigretarget)
+set(LIB_NAME libikrigretarget)
 project(${LIB_NAME})
 
 ################## lib
@@ -65,3 +65,4 @@ if(EMBED_ASSIMP)
     add_subdirectory(contrib/assimp)
 endif()
 add_subdirectory(test)
+add_subdirectory(python)

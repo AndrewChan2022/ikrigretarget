@@ -11,7 +11,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 project(testikrigretarget)
 
 ################## src
-file(GLOB mysrc "./src/*.cpp"  "./src/*.h")
+file(GLOB mysrc "./main.cpp" "./src/*.cpp"  "./src/*.h")
 
 # add include directory
 include_directories(./src)
@@ -32,16 +32,16 @@ message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 if(APPLE)
 
     if(EMBED_ASSIMP)
-        target_link_libraries(testikrigretarget PRIVATE  ikrigretarget assimp)
+        target_link_libraries(testikrigretarget PRIVATE  libikrigretarget assimp)
     else()
         set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/macos/assimp)
         find_library(ASSIMP_LIB NAMES libassimp.dylib PATHS ${LIBS_DIR} NO_DEFAULT_PATH)
-        target_link_libraries(testikrigretarget PRIVATE  ikrigretarget ${ASSIMP_LIB})
+        target_link_libraries(testikrigretarget PRIVATE  libikrigretarget ${ASSIMP_LIB})
     endif()
 else()
 
     if(EMBED_ASSIMP)
-        target_link_libraries(testikrigretarget PUBLIC assimp ikrigretarget)
+        target_link_libraries(testikrigretarget PUBLIC assimp libikrigretarget)
         add_custom_command(
             TARGET testikrigretarget POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory 
@@ -62,7 +62,7 @@ else()
             IMPORTED_LOCATION_MINSIZEREL ${LIBS_DIR}/Release/assimp-vc143-mt.lib
             IMPORTED_LOCATION_RELWITHDEBINFO ${LIBS_DIR}/Release/assimp-vc143-mt.lib
         )
-        target_link_libraries(testikrigretarget PRIVATE ikrigretarget ASSIMP_LIB)
+        target_link_libraries(testikrigretarget PRIVATE libikrigretarget ASSIMP_LIB)
 
         # decide dll to copy during vs build
         add_custom_command(TARGET testikrigretarget POST_BUILD

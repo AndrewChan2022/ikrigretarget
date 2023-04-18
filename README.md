@@ -54,6 +54,8 @@ all the coodinate system is right hand.
 
 ## transform represent
 
+https://fgiesen.wordpress.com/2012/02/12/row-major-vs-column-major-row-vectors-vs-column-vectors/
+
 reference:  Game Engine Architexture chapter 5.3.2
 
 Points and vectors can be represented as row matrices (1× n) or column matrices (n × 1)
@@ -109,7 +111,7 @@ $$M_{translation}=
 \end{bmatrix}$$
 
 
-## store order
+## storage order
 
 the matrix can store in row major or col major.
 

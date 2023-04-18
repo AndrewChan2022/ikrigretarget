@@ -66,6 +66,7 @@ SoulTransform SoulTransform::Inverse() {
 }
 
 glm::mat4 SoulTransform::toMatrix() const {
+    // TODO: directly calc element
     glm::quat q(rotation.w, rotation.x, rotation.y, rotation.z);
     glm::vec3 t(translation.x, translation.y, translation.z);
     glm::vec3 s(scale.x, scale.y, scale.z);

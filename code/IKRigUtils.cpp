@@ -91,6 +91,69 @@ std::shared_ptr<UIKRetargeter> IKRigUtils::createIKRigAsset(SoulIKRigRetargetCon
     return pInRetargeterAsset;
 }
 
+std::string SoulIKRigRetargetConfig::to_string() {
+    std::vector<char> s(1024 * 1024);
+    char* buf = (char*)s.data();
+    int len = 0;
+    int curLen = 0;
+    len += sprintf(buf + len, "<SoulIKRigRetargetConfig:\n\n");
+
+    len += sprintf(buf + len, "SourceCoord:%s\n", IKRigUtils::CoordTypeToString(SourceCoord).c_str());
+    len += sprintf(buf + len, "WorkCoord:%s\n", IKRigUtils::CoordTypeToString(WorkCoord).c_str());
+    len += sprintf(buf + len, "TargetCoord:%s\n", IKRigUtils::CoordTypeToString(TargetCoord).c_str());
+
+    len += sprintf(buf + len, "\n");
+    len += sprintf(buf + len, "SourceRootType:%s\n", IKRigUtils::ERootTypeToString(SourceRootType).c_str());
+    len += sprintf(buf + len, "SourceRootBone:%s\n", SourceRootBone.c_str());
+    len += sprintf(buf + len, "SourceGroundBone:%s\n", SourceGroundBone.c_str());
+    len += sprintf(buf + len, "TargetRootType:%s\n", IKRigUtils::ERootTypeToString(TargetRootType).c_str());
+    len += sprintf(buf + len, "TargetRootBone:%s\n", TargetRootBone.c_str());
+    len += sprintf(buf + len, "TargetGroundBone:%s\n", TargetGroundBone.c_str());
+
+    
+    len += sprintf(buf + len, "\n");
+    len += sprintf(buf + len, "source chains:%zd\n", SourceChains.size());
+    for(auto& chain : SourceChains) {
+        len += sprintf(buf + len, "    chainName:%s startBone:%s endBone:%s\n", 
+            chain.chainName.c_str(),
+            chain.startBone.c_str(),
+            chain.endBone.c_str()
+            );
+    }
+
+    len += sprintf(buf + len, "\n");
+    len += sprintf(buf + len, "Target chains:%zd\n", TargetChains.size());
+    for(auto& chain : TargetChains) {
+        len += sprintf(buf + len, "    chainName:%s startBone:%s endBone:%s\n", 
+            chain.chainName.c_str(),
+            chain.startBone.c_str(),
+            chain.endBone.c_str()
+            );
+    }
+
+    len += sprintf(buf + len, "\n");
+    len += sprintf(buf + len, "Chain Mappings:%zd\n", ChainMapping.size());
+    for(auto& chainMapping : ChainMapping) {
+        len += sprintf(buf + len, "    EnableFK:%d EnableIK:%d SourceChain:%s TargetChain:%s\n",
+            chainMapping.EnableFK,
+            chainMapping.EnableFK,
+            chainMapping.SourceChain.c_str(),
+            chainMapping.TargetChain.c_str()
+            );
+    }
+
+    len += sprintf(buf + len, "\n");
+    len += sprintf(buf + len, "IntArray:%zd\n", IntArray.size());
+    for(auto& v : IntArray) {
+        len += sprintf(buf + len, "    %d\n", v);
+    }
+
+
+    len += sprintf(buf + len, ">\n");
+    std::string ss(buf);
+    return ss;
+}
+
 std::string IKRigUtils::CoordTypeToString(CoordType aCoordType) {
     if(aCoordType == CoordType::RightHandZupYfront) {
         return "RightHandZupYfront";
@@ -98,6 +161,17 @@ std::string IKRigUtils::CoordTypeToString(CoordType aCoordType) {
         return "RightHandYupZfront";
     }
     return "unkown CoordType";
+}
+
+std::string IKRigUtils::ERootTypeToString(ERootType aRootType) {
+    if(aRootType == ERootType::RootZ) {
+        return "RootZ";
+    } else if (aRootType == ERootType::RootZMinusGroundZ) {
+        return "RootZMinusGroundZ";
+    } else if (aRootType == ERootType::Ignore) {
+        return "Ignore";
+    }
+    return "unkown ERootType";	             
 }
 
 FTransform IKRigUtils::getFTransformFromCoord(CoordType srcCoord, CoordType tgtCoord) {
@@ -409,7 +483,7 @@ FTransform IKRigUtils::glmToFTransform(glm::mat4& m) {
     return FTransform(m);
 }
 
-bool IKRigUtils::alignUSKWithSkeleton(USkeleton& usk, SoulSkeleton const& sk) {
+bool IKRigUtils::alignUSKWithSkeleton(USkeleton& usk, SoulSkeleton const& sk, SoulScene& uskScene, SoulScene&skScene) {
 
     assert(usk.boneTree.size() == sk.joints.size());
 
@@ -431,6 +505,37 @@ bool IKRigUtils::alignUSKWithSkeleton(USkeleton& usk, SoulSkeleton const& sk) {
     // build parentId
     for (size_t i = 0; i < sk.joints.size(); i++) {
         usk.boneTree[i].parent = sk.joints[i].parentId;
+    }
+
+    // align scale
+    SoulNode* srcRoot = uskScene.findNodeByName(sk.joints[0].name).get();
+    SoulNode* tgtRoot = skScene.findNodeByName(sk.joints[0].name).get();
+
+    glm::vec3 srcScale(1.0);
+    SoulNode* curNode = srcRoot->parent;
+    while(curNode != nullptr) {
+        SoulTransform tf(curNode->transform);
+        srcScale *= tf.scale;
+        curNode = curNode->parent;
+    }
+
+    glm::vec3 tgtScale(1.0);
+    curNode = tgtRoot->parent;
+    while(curNode != nullptr) {
+        SoulTransform tf(curNode->transform);
+        tgtScale *= tf.scale;
+        curNode = curNode->parent;
+    }
+
+    glm::vec3 deltaScale = srcScale / tgtScale;
+
+    if (glm::distance2(deltaScale, glm::vec3(1.0)) > 0.0001) {
+        printf("*** warning: TPose model and Animation model has different model space scale\n");
+        for(auto& pose: usk.refpose) {
+            pose.Translation.x *= deltaScale.x;
+            pose.Translation.y *= deltaScale.y;
+            pose.Translation.z *= deltaScale.z;
+        }
     }
 
     return true;
