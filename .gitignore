@@ -1,8 +1,9 @@
 
 # local build(s)
+ikretarget.egg-info*
 build*
+model*
 /.vs
 /.vscode
-/model/out.fbx
 .DS_Store
 
