@@ -291,7 +291,7 @@ chain FK retarget: copy global rotation delta
     // pole match retarget
     todo
 
-## render of joint pose animation
+## render of joint pose animation (column vector represent)
 
 https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_020_Skins.md
 
