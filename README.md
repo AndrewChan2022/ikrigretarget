@@ -20,6 +20,7 @@
   * [chain FK retarget](#chain-fk-retarget)
   * [chain IK retarget](#chain-ik-retarget)
   * [Pole Match retarget](#pole-match-retarget)
+  * [render of joint pose animation](#render-of-joint-pose-animation)
 - [usage](#usage)
   * [working coordinate system](#working-coordinate-system)
   * [source files](#source-files)
@@ -215,7 +216,7 @@ col major:  m[col][row]
             hand        : right hand
             represent   : row vector
             store order : row major
-    
+
     lib ASSIMP
         aiMatrix4x4:
             hand        : right hand
@@ -296,7 +297,9 @@ chain FK retarget: copy global rotation delta
     // pole match retarget
     todo
 
-## render of joint pose animation (column vector represent)
+## render of joint pose animation
+
+Here we use column vector represent
 
 https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_020_Skins.md
 
