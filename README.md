@@ -166,7 +166,7 @@ $$v2 = M2 \times M1 \times v2$$
 
 the represent also affect the element order of matrix. 
 
-example of translation matrix for hogogeneous coordinate:
+example of translation matrix for homogeneous coordinate:
 
 row vector:
 
@@ -193,7 +193,7 @@ $$M_{translation}=
 
 the matrix can store in row major or col major.
 
-the store order does not affect the represent, but it affect the element order of memory
+the store order does not affect the represent, but it affect the element order in memory
 
 to access element:
 
@@ -225,7 +225,7 @@ col major:  m[col][row]
 
 ## quaternion order
 
-order of all quat: left is first
+order of all quat: right is first
 
 ## skeleton pose transform
 
