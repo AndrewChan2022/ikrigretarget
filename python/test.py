@@ -153,7 +153,7 @@ def test():
 
 def get_model_path():
     curdir = os.path.dirname(os.path.abspath(__file__))
-    curdir = os.path.join(curdir, "../model")
+    curdir = os.path.join(curdir, "..", "model")
     return curdir
 
 def to_model_path(filename):
@@ -169,7 +169,6 @@ if __name__ == "__main__":
     targetFile = to_model_path("3D_Avatar2_Rig_0723.fbx")
     targetTPoseFile = to_model_path("3D_Avatar2_Rig_0723_itpose.fbx")
     outFile = to_model_path("out.fbx")
-    print(outFile)
 
     ret = ir.retargetFBX(srcAnimationFile, srcTPoseFile, config.SourceRootBone, targetFile, targetTPoseFile, outFile, config)
     print(ret)

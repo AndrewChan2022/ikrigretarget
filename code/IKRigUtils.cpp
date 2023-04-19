@@ -142,12 +142,11 @@ std::string SoulIKRigRetargetConfig::to_string() {
             );
     }
 
-    len += sprintf(buf + len, "\n");
-    len += sprintf(buf + len, "IntArray:%zd\n", IntArray.size());
-    for(auto& v : IntArray) {
-        len += sprintf(buf + len, "    %d\n", v);
-    }
-
+    // len += sprintf(buf + len, "\n");
+    // len += sprintf(buf + len, "IntArray:%zd\n", IntArray.size());
+    // for(auto& v : IntArray) {
+    //     len += sprintf(buf + len, "    %d\n", v);
+    // }
 
     len += sprintf(buf + len, ">\n");
     std::string ss(buf);

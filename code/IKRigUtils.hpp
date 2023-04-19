@@ -91,8 +91,8 @@ namespace SoulIK {
         std::vector<SoulIKRigChain> TargetChains;
         std::vector<SoulIKRigChainMapping> ChainMapping;
 
-        std::vector<int> IntArray;
-        
+        std::vector<int> IntArray; // test python binding
+
         std::string to_string();
     };
 
