@@ -204,18 +204,23 @@ col major:  m[col][row]
 
     SoulScene.h
         glm::mat4/glm::dmat4:
-            represent: col vector
-            store order: col major
+            hand        : right hand
+            represent   : col vector
+            store order : col major
         
     SoulFTransform SoulRetargeter.h SoulIKRetargetProcessor.h
         https://docs.unrealengine.com/4.27/en-US/API/Runtime/Core/Math/FTransform/
+        Here we keep Unreal represent, but use right hand
         Unreal FTransform 
-            represent: row vector
-            store order: row major
+            hand        : right hand
+            represent   : row vector
+            store order : row major
+    
     lib ASSIMP
         aiMatrix4x4:
-            represent: col vector
-            store order: row major
+            hand        : right hand
+            represent   : col vector
+            store order : row major
 
 ## quaternion order
 
