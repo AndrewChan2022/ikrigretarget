@@ -687,6 +687,11 @@ render the skeleton and animation so easy debug
 
 # Release notes
 
+version 1.1.0: 2023.4.19
+
+    1. fix align tpose uskeleton to animation skeleton: bug during scale from root joint to world root different
+    2. python binding
+
 version 1.0.4: 2023.4.14
 
     1. update macos assimp lib
