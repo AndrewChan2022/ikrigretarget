@@ -291,7 +291,49 @@ chain FK retarget: copy global rotation delta
     // pole match retarget
     todo
 
+## render of joint pose animation
 
+https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_020_Skins.md
+
+
+jointMat and pose animation:
+
+    jointMatrix(j) = globalTransformOfJointNode(j) * inverseBindPoseMatrixForJoint(j);
+
+
+    currentpose.position = globalTransformOfJointNode * inverseBindPoseMatrixForJoint * bindpose.position
+        bindpose.position: bind pose vertex world position 
+        currentpose.position: current pose vertex world position
+        inverseBindPoseMatrixForJoint: world space to joint local space of bind pose
+        globalTransformOfJointNode: joint local space to world space of current pose
+
+
+global transform:
+
+    for joint from root to leaf:
+        globalTransformOfJointNode = parentGlobal * childLocal
+
+
+skin shader: average position of several joint
+
+    ...
+    attribute vec4 a_joint;
+    attribute vec4 a_weight;
+
+    uniform mat4 u_jointMat[JOINT_NUM];
+
+    ...
+    void main(void)
+    {
+        mat4 skinMat =
+            a_weight.x * u_jointMat[int(a_joint.x)] +
+            a_weight.y * u_jointMat[int(a_joint.y)] +
+            a_weight.z * u_jointMat[int(a_joint.z)] +
+            a_weight.w * u_jointMat[int(a_joint.w)];
+        vec4 worldPosition = skinMat * vec4(a_position,1.0);
+        vec4 cameraPosition = u_viewMatrix * worldPosition;
+        gl_Position = u_projectionMatrix * cameraPosition;
+    }
 
 # usage
 

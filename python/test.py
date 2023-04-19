@@ -106,47 +106,22 @@ def test():
     a = ir.CoordType.RightHandZupYfront
     print("a:", a)
 
-
     config = ir.SoulIKRigRetargetConfig()
 
-    # coord
-    config.SourceCoord = ir.CoordType.RightHandZupYfront
-    config.WorkCoord = ir.CoordType.RightHandZupYfront
-    config.TargetCoord = ir.CoordType.RightHandZupYfront
-
-    # root 
-    config.SourceRootType = ir.ERootType.RootZ
-    config.SourceRootBone = "hip"
-    config.SourceGroundBone = ""
-    config.TargetRootType = ir.ERootType.RootZ
-    config.TargetRootBone = "hip"
-    config.TargetGroundBone = ""
-
-    # source chain
-    config.SourceChains.append(ir.SoulIKRigChain("name0", "start0", "end1"))
-    config.SourceChains.append(ir.SoulIKRigChain("name1", "start1", "end1"))
-
-    # config.SourceChains = [
-    #     ir.SoulIKRigChain("name0", "start0", "end1"),
-    #     ir.SoulIKRigChain("name1", "start1", "end1")
-    # ]
-
-    # target chain
-    config.TargetChains.append(ir.SoulIKRigChain("name0", "start0", "end1"))
-    config.TargetChains.append(ir.SoulIKRigChain("name1", "start1", "end1"))
-
-    # chain mapping
-    config.ChainMapping.append(ir.SoulIKRigChainMapping(True, False, "larm", "larm"))
-    config.ChainMapping.append(ir.SoulIKRigChainMapping(True, False, "rarm", "rarm"))
+    # source chain error
+    config.SourceChains = [
+        ir.SoulIKRigChain("name0", "start0", "end1"),
+        ir.SoulIKRigChain("name1", "start1", "end1")
+    ]
 
 
+    # int array
     config.IntArray.append(1)
     config.IntArray.append(2)
     config.IntArray.append(3)
 
     print(config)
-
-
+    
     print("IntArray:", len(config.IntArray))
     for i in config.IntArray:
         print(i)
