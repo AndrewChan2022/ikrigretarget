@@ -637,8 +637,8 @@ int main(int argc, char *argv[]) {
     TestCase testCase       = case_gpt();
     auto config             = testCase.config;
 
-    printf("%s", config.to_string().c_str());
-    return 0;
+    // printf("%s", config.to_string().c_str());
+    // return 0;
 
     std::string srcAnimationFile, srcTPoseFile, targetFile, targetTPoseFile, outfile;
     getFilePaths(srcAnimationFile, srcTPoseFile, targetFile, targetTPoseFile, outfile, testCase);

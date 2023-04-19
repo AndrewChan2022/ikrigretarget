@@ -93,62 +93,66 @@ std::shared_ptr<UIKRetargeter> IKRigUtils::createIKRigAsset(SoulIKRigRetargetCon
 
 std::string SoulIKRigRetargetConfig::to_string() {
     std::vector<char> s(1024 * 1024);
+    int buflen = 1024 * 1024;
     char* buf = (char*)s.data();
     int len = 0;
     int curLen = 0;
-    len += sprintf(buf + len, "<SoulIKRigRetargetConfig:\n\n");
+    len += sprintf_s(buf + len, buflen-len, "<SoulIKRigRetargetConfig:\n\n");
 
-    len += sprintf(buf + len, "SourceCoord:%s\n", IKRigUtils::CoordTypeToString(SourceCoord).c_str());
-    len += sprintf(buf + len, "WorkCoord:%s\n", IKRigUtils::CoordTypeToString(WorkCoord).c_str());
-    len += sprintf(buf + len, "TargetCoord:%s\n", IKRigUtils::CoordTypeToString(TargetCoord).c_str());
+    len += sprintf_s(buf + len, buflen-len, "CoordType:\n");
+    len += sprintf_s(buf + len, buflen-len, "    source chains:%zd\n", SourceChains.size());
+    len += sprintf_s(buf + len, buflen-len, "    SourceCoord:%s\n", IKRigUtils::CoordTypeToString(SourceCoord).c_str());
+    len += sprintf_s(buf + len, buflen-len, "    WorkCoord:%s\n", IKRigUtils::CoordTypeToString(WorkCoord).c_str());
+    len += sprintf_s(buf + len, buflen-len, "    TargetCoord:%s\n", IKRigUtils::CoordTypeToString(TargetCoord).c_str());
 
-    len += sprintf(buf + len, "\n");
-    len += sprintf(buf + len, "SourceRootType:%s\n", IKRigUtils::ERootTypeToString(SourceRootType).c_str());
-    len += sprintf(buf + len, "SourceRootBone:%s\n", SourceRootBone.c_str());
-    len += sprintf(buf + len, "SourceGroundBone:%s\n", SourceGroundBone.c_str());
-    len += sprintf(buf + len, "TargetRootType:%s\n", IKRigUtils::ERootTypeToString(TargetRootType).c_str());
-    len += sprintf(buf + len, "TargetRootBone:%s\n", TargetRootBone.c_str());
-    len += sprintf(buf + len, "TargetGroundBone:%s\n", TargetGroundBone.c_str());
+    len += sprintf_s(buf + len, buflen-len, "\n");
+    len += sprintf_s(buf + len, buflen-len, "Root:\n");
+    len += sprintf_s(buf + len, buflen-len, "    SourceRootType:%s\n", IKRigUtils::ERootTypeToString(SourceRootType).c_str());
+    len += sprintf_s(buf + len, buflen-len, "    SourceRootBone:%s\n", SourceRootBone.c_str());
+    len += sprintf_s(buf + len, buflen-len, "    SourceGroundBone:%s\n", SourceGroundBone.c_str());
+    len += sprintf_s(buf + len, buflen-len, "    TargetRootType:%s\n", IKRigUtils::ERootTypeToString(TargetRootType).c_str());
+    len += sprintf_s(buf + len, buflen-len, "    TargetRootBone:%s\n", TargetRootBone.c_str());
+    len += sprintf_s(buf + len, buflen-len, "    TargetGroundBone:%s\n", TargetGroundBone.c_str());
 
     
-    len += sprintf(buf + len, "\n");
-    len += sprintf(buf + len, "source chains:%zd\n", SourceChains.size());
+    len += sprintf_s(buf + len, buflen-len, "\n");
+    len += sprintf_s(buf + len, buflen-len, "source chains:%zd\n", SourceChains.size());
     for(auto& chain : SourceChains) {
-        len += sprintf(buf + len, "    chainName:%s startBone:%s endBone:%s\n", 
+        len += sprintf_s(buf + len, buflen-len, "    chainName:%s startBone:%s endBone:%s\n", 
             chain.chainName.c_str(),
             chain.startBone.c_str(),
             chain.endBone.c_str()
             );
     }
 
-    len += sprintf(buf + len, "\n");
-    len += sprintf(buf + len, "Target chains:%zd\n", TargetChains.size());
+    len += sprintf_s(buf + len, buflen-len, "\n");
+    len += sprintf_s(buf + len, buflen-len, "Target chains:%zd\n", TargetChains.size());
     for(auto& chain : TargetChains) {
-        len += sprintf(buf + len, "    chainName:%s startBone:%s endBone:%s\n", 
+        len += sprintf_s(buf + len, buflen-len, "    chainName:%s startBone:%s endBone:%s\n", 
             chain.chainName.c_str(),
             chain.startBone.c_str(),
             chain.endBone.c_str()
             );
     }
 
-    len += sprintf(buf + len, "\n");
-    len += sprintf(buf + len, "Chain Mappings:%zd\n", ChainMapping.size());
+    len += sprintf_s(buf + len, buflen-len, "\n");
+    len += sprintf_s(buf + len, buflen-len, "Chain Mappings:%zd\n", ChainMapping.size());
     for(auto& chainMapping : ChainMapping) {
-        len += sprintf(buf + len, "    EnableFK:%d EnableIK:%d SourceChain:%s TargetChain:%s\n",
+        len += sprintf_s(buf + len, buflen-len, "    EnableFK:%d EnableIK:%d SourceChain:%s TargetChain:%s\n",
             chainMapping.EnableFK,
-            chainMapping.EnableFK,
+            chainMapping.EnableIK,
             chainMapping.SourceChain.c_str(),
             chainMapping.TargetChain.c_str()
             );
     }
 
-    // len += sprintf(buf + len, "\n");
-    // len += sprintf(buf + len, "IntArray:%zd\n", IntArray.size());
+    // len += sprintf_s(buf + len, buflen-len, "\n");
+    // len += sprintf_s(buf + len, buflen-len, "IntArray:%zd\n", IntArray.size());
     // for(auto& v : IntArray) {
-    //     len += sprintf(buf + len, "    %d\n", v);
+    //     len += sprintf_s(buf + len, buflen-len, "    %d\n", v);
     // }
 
-    len += sprintf(buf + len, ">\n");
+    len += sprintf_s(buf + len, buflen-len, ">\n");
     std::string ss(buf);
     return ss;
 }
