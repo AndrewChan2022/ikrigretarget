@@ -44,12 +44,14 @@ if(APPLE)
 else()
     if(EMBED_ASSIMP)
         target_link_libraries(${PYTHON_MODULE_NAME} PUBLIC assimp libikrigretarget)
-        add_custom_command(
-            TARGET testikrigretarget POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory 
-            $<TARGET_FILE_DIR:assimp>
-            $<TARGET_FILE_DIR:${PYTHON_MODULE_NAME}> 
-        )
+        if(BUILD_SHARED_LIBS)
+            add_custom_command(
+                TARGET ${PYTHON_MODULE_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_directory 
+                $<TARGET_FILE_DIR:assimp>
+                $<TARGET_FILE_DIR:${PYTHON_MODULE_NAME}> 
+            )
+        endif()
     else()
         set(LIBS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../test/thirdparty/lib/win/assimp)
 

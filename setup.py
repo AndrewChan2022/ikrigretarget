@@ -2,9 +2,10 @@ import os
 import re
 import subprocess
 import sys
+import distutils.sysconfig
 from pathlib import Path
 
-from setuptools import Extension, setup
+from setuptools import Extension, setup, find_packages
 from setuptools.command.build_ext import build_ext
 
 # Convert distutils Windows platform specifiers to CMake -A arguments
@@ -57,6 +58,10 @@ class CMakeBuild(build_ext):
 
         # In this example, we pass in the version to C++. You might not need to.
         cmake_args += [f"-DMOUDLE_VERSION_INFO={self.distribution.get_version()}"]
+
+        #### assimp as embeded static lib
+        cmake_args += [f"-DEMBED_ASSIMP=ON"]
+        cmake_args += [f"-DBUILD_SHARED_LIBS=OFF"]
 
         if self.compiler.compiler_type != "msvc":
             # Using Ninja-build since it a) is available as a wheel and b)
@@ -122,6 +127,21 @@ class CMakeBuild(build_ext):
             ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
         )
 
+def get_dll_paths():
+    curdir = os.path.dirname(os.path.abspath(__file__))
+    if sys.platform == "darwin":
+        path1 = os.join(curdir, "test/thirdparty/lib/macos/assimp/libassimp.5.2.5.dylib")
+        path2 = os.join(curdir, "test/thirdparty/lib/macos/assimp/libassimp.5.dylib")
+        path3 = os.join(curdir, "test/thirdparty/lib/macos/assimp/libassimp.dylib")
+        return [path1, path2, path3]
+    elif sys.platform == "win32":
+        path = os.join(curdir, "test/thirdparty/lib/win/assimp/Release/assimp-vc143-mt.dll")
+        # path = "D:\\data\\light5\\ikrigretarget\\test\\thirdparty\\lib\\win\\assimp\\Release\\assimp-vc143-mt.dll"
+        print(path)
+        return [path]
+    else:
+        print("only windows linux platform support")
+        return []
 
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
@@ -137,4 +157,14 @@ setup(
     zip_safe=False,
     extras_require={"test": ["pytest>=6.0"]},
     python_requires=">=3.7",
+    #package_data={"assimp" : ["D:\\data\\light5\\ikrigretarget\\test\\thirdparty\\lib\\win\\assimp\\Release\\assimp-vc143-mt.dll"]},
+    #data_files=[(".", "test\\thirdparty\\lib\\win\\assimp\\Release\\assimp-vc143-mt.dll")]
+    #package_data={"assimp": ["D:\\data\\light5\\ikrigretarget\\test\\thirdparty\\lib\\win\\assimp\\Release\\assimp-vc143-mt.dll"]},
+    #include_package_data=True,
+    #data_files=[(distutils.sysconfig.get_python_lib(), ["D:\\data\\light5\\ikrigretarget\\test\\thirdparty\\lib\\win\\assimp\\Release\\assimp-vc143-mt.dll"])],
+
+    # package_data={'': ['assimp.dll']},
+    # include_package_data=False,
+    #install_requires=[],
+
 )

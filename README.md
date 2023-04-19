@@ -1,9 +1,18 @@
 
 - [todo and issues](#todo-and-issues)
+- [build](#build)
+  * [platform](#platform)
+  * [python build](#python-build)
+  * [cmake option](#cmake-option)
+  * [general build](#general-build)
+  * [macos](#macos)
+  * [windows build and test c++](#windows-build-and-test-c--)
+  * [build release](#build-release)
+  * [prerequisite](#prerequisite)
 - [algorithm](#algorithm)
   * [coordinate hand](#coordinate-hand)
   * [transform represent](#transform-represent)
-  * [store order](#store-order)
+  * [storage order](#storage-order)
   * [transform in our code](#transform-in-our-code)
   * [quaternion order](#quaternion-order)
   * [skeleton pose transform](#skeleton-pose-transform)
@@ -11,13 +20,6 @@
   * [chain FK retarget](#chain-fk-retarget)
   * [chain IK retarget](#chain-ik-retarget)
   * [Pole Match retarget](#pole-match-retarget)
-- [platform](#platform)
-- [cmake option](#cmake-option)
-- [macos](#macos)
-- [windows build and test c++](#windows-build-and-test-c--)
-- [release files](#release-files)
-- [build release](#build-release)
-- [prerequisite](#prerequisite)
 - [usage](#usage)
   * [working coordinate system](#working-coordinate-system)
   * [source files](#source-files)
@@ -42,9 +44,84 @@
 # todo and issues
 
 1. python interface
+    a. config.SourceChains.append(item) is fine 
+       config.SourceChains = [item1, item2] is error
+    b. copy dll to package
 2. ik part
 3. fbx sdk
 4. render part
+    cross platform
+    d3d12/vulkan/metal, no opengl
+    sdf, rt gi ...
+
+# build
+
+## platform
+
+    1. mac 
+    2. linux
+    3. windows
+
+## python build
+
+    pip install .
+    
+    python python/test.py
+
+## cmake option
+
+    // with assimp project embedded
+    -DEMBED_ASSIMP=ON
+
+    // assimp as static lib
+    -DBUILD_SHARED_LIBS=OFF
+
+    // release
+    --DCMAKE_BUILD_TYPE=Release
+
+## general build
+
+    rm -rf build
+    cmake . -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build --config Release -j 16
+
+    build/test/Release/testikrigretarget.exe
+
+## macos
+
+    rm -rf build
+    mkdir build && cd build
+
+    // for xcode project
+    cmake .. -GXcode
+
+    // without xcode
+    cmake .. --DCMAKE_BUILD_TYPE=Release
+    make -j16
+
+
+## windows build and test c++
+
+    rm -rf build
+    mkdir build && cd build
+
+    cmake ..
+    
+    // with visual studio
+    open ikrigretarget.sln with visual studio
+    set testikrigretarget as start project
+    
+    // without visual studio
+    cmake --build .
+    test/Debug/testikrigretarget.exe
+
+## build release
+    
+    mkdir build && cd build
+    cmake .. -DCMAKE_BUILD_TYPE=RELEASE
+    make VERBOSE=1
+
+## prerequisite
 
 # algorithm
 
@@ -215,61 +292,6 @@ chain FK retarget: copy global rotation delta
     todo
 
 
-# platform
-
-    1. mac 
-    2. linux
-    3. windows
-
-# cmake option
-
-    // with assimp project embedded
-    -DEMBED_ASSIMP=ON
-
-    // release
-    --DCMAKE_BUILD_TYPE=Release
-
-# macos
-
-    rm -rf build
-    mkdir build && cd build
-
-    // for xcode project
-    cmake .. -GXcode
-
-    // without xcode
-    cmake .. --DCMAKE_BUILD_TYPE=Release
-    make -j16
-
-
-# windows build and test c++
-
-    //./build.sh 
-
-    rm -rf build
-    mkdir build && cd build
-
-    cmake ..
-    
-    // with visual studio
-    open ikrigretarget.sln with visual studio
-    set testikrigretarget as start project
-    
-    // without visual studio
-    cmake --build .
-    test/Debug/testikrigretarget.exe
-
-# release files
-
-    release/libikrigretarget.a
-
-# build release
-    
-    mkdir build && cd build
-    cmake .. -DCMAKE_BUILD_TYPE=RELEASE
-    make VERBOSE=1
-
-# prerequisite
 
 # usage
 
