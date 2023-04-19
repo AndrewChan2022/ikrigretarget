@@ -2,7 +2,8 @@
 # local build(s)
 ikrigretarget.egg-info*
 build*
-model*
+# model*
+model/out.fbx
 /.vs
 /.vscode
 .DS_Store
