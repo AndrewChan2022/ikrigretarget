@@ -737,6 +737,10 @@ render the skeleton and animation so easy debug
 
 # Release notes
 
+version 1.1.1: 2023.4.20
+
+    fix animation jump:  many float time inside one frame,  interpolate by float alpha.
+    
 version 1.1.0: 2023.4.19
 
     1. fix align tpose uskeleton to animation skeleton: bug during scale from root joint to world root different
