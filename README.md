@@ -44,16 +44,31 @@
 
 # todo and issues
 
+0. animation interpolation
+
+    now generate every frame,
+
+    should generate only frames containing in source animation
+
 1. python interface
+
     a. config.SourceChains.append(item) is fine 
-       config.SourceChains = [item1, item2] is error
+
+       config.SourceChains = [item1, item2] // error
+
     b. copy dll to package
+
 2. ik part
+
 3. fbx sdk
+
 4. render part
+
     cross platform
-    d3d12/vulkan/metal, no opengl
-    sdf, rt gi ...
+
+    RHI of d3d12/vulkan/metal, no OpenGL
+
+    sdf, rt gi, ...
 
 # build
 
@@ -87,6 +102,14 @@
     cmake --build build --config Release -j 16
 
     build/test/Release/testikrigretarget.exe
+
+## linux
+
+    // linux will force -DEMBED_ASSIMP=ON
+    rm -rf build
+    mkdir build && cd build
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DEMBED_ASSIMP=ON
+    make -j16
 
 ## macos
 
@@ -740,7 +763,7 @@ render the skeleton and animation so easy debug
 version 1.1.1: 2023.4.20
 
     fix animation jump:  many float time inside one frame,  interpolate by float alpha.
-    
+
 version 1.1.0: 2023.4.19
 
     1. fix align tpose uskeleton to animation skeleton: bug during scale from root joint to world root different

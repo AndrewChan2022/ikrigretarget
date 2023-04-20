@@ -33,7 +33,12 @@ target_compile_definitions(${PYTHON_MODULE_NAME} PRIVATE VERSION_INFO=${MOUDLE_V
 
 message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 
-if(APPLE)
+if(UNIX AND NOT APPLE)
+    ### force embed
+    if(EMBED_ASSIMP)
+        target_link_libraries(${PYTHON_MODULE_NAME} PRIVATE  libikrigretarget assimp)
+    endif()
+elseif(APPLE)
     if(EMBED_ASSIMP)
         target_link_libraries(${PYTHON_MODULE_NAME} PRIVATE  libikrigretarget assimp)
     else()

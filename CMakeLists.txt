@@ -61,6 +61,10 @@ endif()
 
 ########### other prj
 
+if(UNIX AND NOT APPLE)
+    set(EMBED_ASSIMP ON)
+endif()
+
 if(EMBED_ASSIMP)
     add_subdirectory(contrib/assimp)
 endif()

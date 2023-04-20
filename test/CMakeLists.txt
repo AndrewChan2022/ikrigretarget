@@ -28,8 +28,12 @@ add_executable(testikrigretarget
 message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 
 # set(EMBED_ASSIMP ON)
-
-if(APPLE)
+if(UNIX AND NOT APPLE)
+    ### force embed
+    if(EMBED_ASSIMP)
+        target_link_libraries(testikrigretarget PRIVATE  libikrigretarget assimp)
+    endif()
+elseif(APPLE)
 
     if(EMBED_ASSIMP)
         target_link_libraries(testikrigretarget PRIVATE  libikrigretarget assimp)
