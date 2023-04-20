@@ -5,6 +5,7 @@
   * [python build](#python-build)
   * [cmake option](#cmake-option)
   * [general build](#general-build)
+  * [linux](#linux)
   * [macos](#macos)
   * [windows build and test c++](#windows-build-and-test-c--)
   * [build release](#build-release)
@@ -759,6 +760,10 @@ develop maya plugin based on this lib
 render the skeleton and animation so easy debug
 
 # Release notes
+
+version 1.1.2: 2023.4.20
+
+    add linux build
 
 version 1.1.1: 2023.4.20
 
