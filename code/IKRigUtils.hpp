@@ -127,7 +127,7 @@ namespace SoulIK {
         static void FPoseToLocal(SoulSkeleton& sk, std::vector<FTransform>& globalpose, std::vector<FTransform>& localpose);
         static void FPoseToGlobal(SoulSkeleton& sk, std::vector<FTransform>& localpose, std::vector<FTransform>& globalpose);
         static void SoulPoseToLocal(SoulSkeleton& sk, std::vector<SoulTransform>& globalpose, std::vector<SoulTransform>& localpose);
-        static void SoulPoseToGlobal(SoulSkeleton& sk, std::vector<SoulTransform>& localpose, std::vector<SoulTransform>& globalpose);
+        static std::vector<SoulTransform> SoulPoseToGlobal(SoulSkeleton& sk, std::vector<SoulTransform>& localpose);
 
         // pose struct cast
         static void SoulPose2FPose(SoulPose& soulpose, std::vector<FTransform>& pose);
@@ -147,11 +147,12 @@ namespace SoulIK {
         static SoulNode* findNodeByName(SoulNode* rootNode, std::string& name);
 
         // get pose
-        static bool getSoulPoseFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh, std::vector<SoulTransform>& pose);
-        static bool getSoulPoseFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh, SoulPose& outpose);
+        static std::vector<SoulTransform> getSoulPoseTransformFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh);
+        static SoulPose getSoulPoseFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh);
 
         // debug
         static void debugPrintFPose(SoulSkeleton& sk, std::vector<FTransform>& pose);
+        static void debugPrintFPose(SoulSkeleton& sk, std::vector<FTransform>& pose, std::vector<FTransform>& initpose);
         static void debugPrintSoulPose(SoulSkeleton& sk, std::vector<SoulTransform>& pose);
         static void debugPrintLocalFPose(SoulSkeleton& sk, std::vector<FTransform>& pose);
         static void debugPrintNodePose(SoulNode* rootNode);
@@ -170,6 +171,11 @@ namespace SoulIK {
         static void debugPrintSKM(std::string const& name, SoulScene& scene, SoulSkeletonMesh& skm, CoordType srccoord, CoordType workcoord);
         static void debugPrintUSK(std::string const& name, USkeleton& usk, SoulSkeletonMesh& skm, CoordType srccoord, CoordType workcoord);
         static void debugPrintIOSoulPose(std::string const& name, SoulPose& pose, SoulSkeletonMesh& skm, int frame);
-        static void debugPrintIOFPose(std::string const& name, SoulSkeletonMesh& skm, std::vector<FTransform>& inposeLocal, std::vector<FTransform>& inpose, int frame);
+        static void debugPrintIOFPose(std::string const& name, 
+            SoulSkeletonMesh& skm, 
+            std::vector<FTransform>& inposeLocal, 
+            std::vector<FTransform>& inpose, 
+            std::vector<FTransform>& initInPoseLocal, 
+            int frame);
     };
 }

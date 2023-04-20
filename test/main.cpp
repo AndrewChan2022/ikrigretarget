@@ -646,9 +646,9 @@ int main(int argc, char *argv[]) {
 
     /////////////////////////////////////////////
     // setting of coord
-    TestCase testCase       = case_Flair2(); 
+    //TestCase testCase       = case_Flair2(); 
     //TestCase testCase       = case_S1Walking();
-    //TestCase testCase       = case_gpt();
+    TestCase testCase       = case_gpt();
     auto config             = testCase.config;
 
     // printf("%s", config.to_string().c_str());

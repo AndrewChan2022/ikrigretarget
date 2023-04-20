@@ -448,7 +448,10 @@ void IKRigUtils::SoulPoseToLocal(SoulSkeleton& sk, std::vector<SoulTransform>& g
     }
 }
 
-void IKRigUtils::SoulPoseToGlobal(SoulSkeleton& sk, std::vector<SoulTransform>& localpose, std::vector<SoulTransform>& globalpose) {
+// RVO: https://stackoverflow.com/a/10479595/2482283
+std::vector<SoulTransform> IKRigUtils::SoulPoseToGlobal(SoulSkeleton& sk, std::vector<SoulTransform>& localpose) {
+    std::vector<SoulTransform> globalpose;
+
     assert(sk.joints.size() == localpose.size());
     assert(sk.joints.size() != 0);
     globalpose.resize(localpose.size());
@@ -458,6 +461,8 @@ void IKRigUtils::SoulPoseToGlobal(SoulSkeleton& sk, std::vector<SoulTransform>& 
         int parentId = sk.joints[jointId].parentId;
         globalpose[jointId] = globalpose[parentId] * localpose[jointId];
     }
+
+    return globalpose;
 }
 
 void IKRigUtils::SoulPose2FPose(SoulIK::SoulPose& soulpose, std::vector<FTransform>& pose) {
@@ -631,7 +636,9 @@ bool IKRigUtils::USkeleton2RigSkeleton(USkeleton& sk, FIKRigSkeleton& rigsk) {
     return true;
 }
 
-bool IKRigUtils::getSoulPoseFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh, std::vector<SoulTransform>& pose) {
+// RVO: https://stackoverflow.com/a/10479595/2482283
+std::vector<SoulTransform> IKRigUtils::getSoulPoseTransformFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh) {
+    std::vector<SoulTransform> pose;
 
     SoulSkeleton& sk = skmesh.skeleton;
     std::vector<SoulJoint>&  joints = sk.joints;
@@ -656,10 +663,12 @@ bool IKRigUtils::getSoulPoseFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh,
         pose.push_back(t);
     }
 
-    return true;
+    return pose;
 }
 
-bool IKRigUtils::getSoulPoseFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh, SoulPose& outpose) {
+// RVO: https://stackoverflow.com/a/10479595/2482283
+SoulPose IKRigUtils::getSoulPoseFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh) {
+    SoulPose outpose;
 
     SoulSkeleton& sk = skmesh.skeleton;
     std::vector<SoulJoint>&  joints = sk.joints;
@@ -684,7 +693,7 @@ bool IKRigUtils::getSoulPoseFromMesh(SoulScene& scene, SoulSkeletonMesh& skmesh,
         outpose.transforms.push_back(t);
     }
 
-    return true;
+    return outpose;
 }
 
 void IKRigUtils::debugPrintFPose(SoulSkeleton& sk, std::vector<FTransform>& pose) {
@@ -699,14 +708,46 @@ void IKRigUtils::debugPrintFPose(SoulSkeleton& sk, std::vector<FTransform>& pose
     }
 }
 
+void IKRigUtils::debugPrintFPose(SoulSkeleton& sk, std::vector<FTransform>& pose, std::vector<FTransform>& initpose) {
+    for (size_t i = 0; i < pose.size(); i++) {
+        FVector& t = pose[i].Translation;
+        FVector& s = pose[i].Scale3D;
+        FQuat& ir = initpose[i].Rotation;
+        FQuat& r = pose[i].Rotation;
+        glm::dquat iq = glm::dquat(ir.w, ir.x, ir.y, ir.z);
+        glm::dquat q = glm::dquat(r.w, r.x, r.y, r.z);
+        glm::dvec3 ie = glm::eulerAngles(iq);
+        glm::dvec3 e = glm::eulerAngles(q);
+        ie *= 180.0 / glm::pi<double>();
+        e *= 180.0 / glm::pi<double>();
+        glm::dvec3 de = e - ie;
+
+
+        printf("%zu %s t(%.2f, %.2f, %.2f) s(%.2f, %.2f, %.2f) r.wxyz(%.2f, %.2f, %.2f, %.2f) init.euler(%.2f, %.2f, %.2f) euler(%.2f, %.2f, %.2f) eu.delta(%.2f, %.2f, %.2f)\n",
+            i, 
+            sk.joints[i].name.c_str(), 
+            t.x, t.y, t.z,
+            s.x, s.y, s.z,
+            r.w, r.x, r.y, r.z,
+            ie.x, ie.y, ie.z,
+            e.x, e.y, e.z,
+            de.x, de.y, de.z
+        );
+    }
+}
+
 void IKRigUtils::debugPrintSoulPose(SoulSkeleton& sk, std::vector<SoulTransform>& pose) {
     for (size_t i = 0; i < pose.size(); i++) {
-        printf("%zu %s t(%.2f, %.2f, %.2f) s(%.2f, %.2f, %.2f) r.wxyz(%.2f, %.2f, %.2f, %.2f)\n",
+        glm::quat q = pose[i].rotation;
+        glm::vec3 e = glm::eulerAngles(q);
+        e *= 180.0f / glm::pi<float>();
+        printf("%zu %s t(%.2f, %.2f, %.2f) s(%.2f, %.2f, %.2f) r.wxyz(%.2f, %.2f, %.2f, %.2f) euler:(%.2f, %.2f, %.2f)\n",
             i, 
             sk.joints[i].name.c_str(), 
             pose[i].translation.x, pose[i].translation.y, pose[i].translation.z,
             pose[i].scale.x, pose[i].scale.y, pose[i].scale.z,
-            pose[i].rotation.w, pose[i].rotation.x, pose[i].rotation.y, pose[i].rotation.z
+            pose[i].rotation.w, pose[i].rotation.x, pose[i].rotation.y, pose[i].rotation.z,
+            e.x, e.y, e.z
         );
     }
 }
@@ -879,8 +920,7 @@ void IKRigUtils::debugPrintSkeletonTreeTransform(SoulScene& scene, SoulSkeletonM
     //std::vector<SoulJointNode> tree;
     //tree = buildJointTree(skmesh.skeleton);
 
-    std::vector<SoulTransform> pose;
-    getSoulPoseFromMesh(scene, skmesh, pose);
+    std::vector<SoulTransform> pose = getSoulPoseTransformFromMesh(scene, skmesh);
 
     // name t.x, t.y t.z s.x s.y s.z q.x q.y q.z q.w
     for(size_t i = 0; i < skmesh.skeleton.joints.size(); i++) {
@@ -894,11 +934,8 @@ void IKRigUtils::debugPrintSkeletonTreeTransform(SoulScene& scene, SoulSkeletonM
 }
 
 void IKRigUtils::debugPrintSkeletonTreeGTransform(SoulScene& scene, SoulSkeletonMesh& skmesh) {
-    std::vector<SoulTransform> localpose;
-    std::vector<SoulTransform> pose;
-
-    getSoulPoseFromMesh(scene, skmesh, localpose);
-    SoulPoseToGlobal(skmesh.skeleton, localpose, pose);
+    std::vector<SoulTransform> localpose = getSoulPoseTransformFromMesh(scene, skmesh);
+    std::vector<SoulTransform> pose = SoulPoseToGlobal(skmesh.skeleton, localpose);
 
     // name t.x, t.y t.z s.x s.y s.z q.x q.y q.z q.w
     for(size_t i = 0; i < skmesh.skeleton.joints.size(); i++) {
@@ -951,14 +988,14 @@ void IKRigUtils::debugPrintNodeTree(SoulNode* node, int depth) {
 
 void IKRigUtils::debugPrintSKM(std::string const& name, SoulScene& scene, SoulSkeletonMesh& skm, CoordType srccoord, CoordType workcoord) {
     printf("%s:\n", name.c_str());
-    SoulPose temppose1, temppose2;
-    IKRigUtils::getSoulPoseFromMesh(scene, skm, temppose1);
+    SoulPose temppose1 = IKRigUtils::getSoulPoseFromMesh(scene, skm);
+    SoulPose temppose2;
 
     std::string srccoordstr = IKRigUtils::CoordTypeToString(srccoord);
     printf("skeleton tree1L on srccoord:%s\n", srccoordstr.c_str());
     IKRigUtils::debugPrintSoulPose(skm.skeleton, temppose1.transforms);
     printf("skeleton tree1G on srccoord:%s\n", srccoordstr.c_str());
-    IKRigUtils::SoulPoseToGlobal(skm.skeleton, temppose1.transforms, temppose2.transforms);
+    temppose2.transforms = IKRigUtils::SoulPoseToGlobal(skm.skeleton, temppose1.transforms);
     IKRigUtils::debugPrintSoulPose(skm.skeleton, temppose2.transforms);
     printf("skeleton tree1L on srccoord:%s\n", srccoordstr.c_str());
     IKRigUtils::SoulPoseToLocal(skm.skeleton, temppose2.transforms, temppose1.transforms);
@@ -968,7 +1005,7 @@ void IKRigUtils::debugPrintSKM(std::string const& name, SoulScene& scene, SoulSk
     printf("skeleton tree1L on workcoord\n");
     IKRigUtils::debugPrintSoulPose(skm.skeleton, temppose1.transforms);
     printf("skeleton tree1G on workcoord\n");
-    IKRigUtils::SoulPoseToGlobal(skm.skeleton, temppose1.transforms, temppose2.transforms);
+    temppose2.transforms = IKRigUtils::SoulPoseToGlobal(skm.skeleton, temppose1.transforms);
     IKRigUtils::debugPrintSoulPose(skm.skeleton, temppose2.transforms);
     printf("skeleton tree1L on workcoord\n");
     IKRigUtils::SoulPoseToLocal(skm.skeleton, temppose2.transforms, temppose1.transforms);
@@ -996,14 +1033,23 @@ void IKRigUtils::debugPrintIOSoulPose(std::string const& name, SoulPose& pose, S
         
     printf("source skeleton tree1G on srccoord: %d\n", frame);
     SoulPose tempposeG;
-    IKRigUtils::SoulPoseToGlobal(skm.skeleton, pose.transforms, tempposeG.transforms);
+    tempposeG.transforms = IKRigUtils::SoulPoseToGlobal(skm.skeleton, pose.transforms);
     IKRigUtils::debugPrintSoulPose(skm.skeleton, tempposeG.transforms);
 }
 
-void IKRigUtils::debugPrintIOFPose(std::string const& name, SoulSkeletonMesh& skm, std::vector<FTransform>& inposeLocal, std::vector<FTransform>& inpose, int frame) {
+void IKRigUtils::debugPrintIOFPose(std::string const& name, 
+    SoulSkeletonMesh& skm, 
+    std::vector<FTransform>& inposeLocal, 
+    std::vector<FTransform>& inpose, 
+    std::vector<FTransform>& initInPoseLocal, 
+    int frame) {
+
+    std::vector<FTransform> initInPoseGlobal;
+    FPoseToLocal(skm.skeleton, initInPoseLocal, initInPoseGlobal); 
+
     printf("%s:\n", name.c_str());
     printf("fpose local on workcoord\n");
-    IKRigUtils::debugPrintFPose(skm.skeleton, inposeLocal);
+    IKRigUtils::debugPrintFPose(skm.skeleton, inposeLocal, initInPoseLocal);
     printf("fpose global on workcoord\n");
-    IKRigUtils::debugPrintFPose(skm.skeleton, inpose);
+    IKRigUtils::debugPrintFPose(skm.skeleton, inpose, initInPoseGlobal);
 }

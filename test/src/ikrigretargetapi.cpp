@@ -25,8 +25,8 @@ int myadd(int a, int b) {
     return a + b;
 }
 
-//#define DEBUG_POSE_PRINT
-//#define DEBUG_POSE_PRINT_EVERY_FRAME
+// #define DEBUG_POSE_PRINT
+// #define DEBUG_POSE_PRINT_EVERY_FRAME
 
 #ifdef DEBUG_POSE_PRINT
     #define DEBUG_PRINT_SKM(name, scene, skm, srccoord, workcoord) IKRigUtils::debugPrintSKM(name, scene, *scene.skmeshes[0], srccoord, workcoord);
@@ -39,11 +39,11 @@ int myadd(int a, int b) {
 #if defined(DEBUG_POSE_PRINT) &&  defined(DEBUG_POSE_PRINT_EVERY_FRAME)
     //#define DEBUG_PRINT(fmt, ...) printf(fmt, ##__VA_ARGS__)
     #define DEBUG_PRINT(...) printf(__VA_ARGS__)
-    #define DEBUG_PRINT_IO_FPOSE(name, skm, poselocal, poseglobal, frame) IKRigUtils::debugPrintIOFPose(name, skm, poselocal, poseglobal, frame)
+    #define DEBUG_PRINT_IO_FPOSE(name, skm, poselocal, poseglobal, initInPoseLocal, frame) IKRigUtils::debugPrintIOFPose(name, skm, poselocal, poseglobal, initInPoseLocal, frame)
     #define DEBUG_PRINT_IO_SOULPOSE(name, poselocal, skm, frame) IKRigUtils::debugPrintIOSoulPose(name, poselocal, skm, frame)
 #else
     #define DEBUG_PRINT(fmt, ...)
-    #define DEBUG_PRINT_IO_FPOSE(name, skm, poselocal, poseglobal, frame)
+    #define DEBUG_PRINT_IO_FPOSE(name, skm, poselocal, poseglobal, initInPoseLocal, frame)
     #define DEBUG_PRINT_IO_SOULPOSE(name, poselocal, skm, frame)
 #endif
 
@@ -51,8 +51,7 @@ int myadd(int a, int b) {
 static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh& skmesh,
                         SoulJointAnimation& animation, std::vector<SoulIK::SoulPose>& poses) {
 
-    std::vector<SoulIK::SoulTransform> refpose(skmesh.skeleton.joints.size()); 
-    IKRigUtils::getSoulPoseFromMesh(scene, skmesh, refpose);
+    std::vector<SoulIK::SoulTransform> refpose = IKRigUtils::getSoulPoseTransformFromMesh(scene, skmesh);
 
     std::vector<SoulAniChannel> channelsSparse(skmesh.skeleton.joints.size());  // [jointId][frame]
     std::vector<SoulAniChannel> channelsDense(skmesh.skeleton.joints.size());   // [jointId][frame]
@@ -67,7 +66,8 @@ static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh
     // interpolation
     std::vector<SoulIK::SoulTransform> curpose = refpose;
     for(int jointId = 0; jointId < skmesh.skeleton.joints.size(); jointId++) {
-        
+        double prevTime = 0;
+        double curTime = 0;
         int prevFrame = 0;
         int curFrame = 0;
         int frameCount = static_cast<int>(skmesh.animation.duration + 1);
@@ -85,19 +85,22 @@ static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh
             auto& DenseKeys = channelsDense[jointId].PositionKeys;
             DenseKeys.resize(frameCount);
 
+            prevTime = 0.0;
             prevFrame = 0;
             glm::vec3 prevValue = SparseKeys[0].value;
             glm::vec3 curValue;
             for (int j = 0; j < SparseKeys.size(); j++) {
-                curFrame = static_cast<int>(SparseKeys[j].time);
+                curTime = SparseKeys[j].time;
+                curFrame = static_cast<int>(round(curTime));
                 curValue = SparseKeys[j].value;
                 for(int frame = prevFrame; frame <= curFrame; frame++) {
                     DenseKeys[frame].time = frame;
-                    float alpha = prevFrame == curFrame ? 1.0f : static_cast<float>(frame - prevFrame) / static_cast<float>(curFrame - prevFrame);
+                    float alpha = (curTime - prevTime) < 1e-4 ? 1.0 : (frame - prevFrame) / (curTime - prevTime);
                     DenseKeys[frame].value = glm::mix(prevValue, curValue, alpha);
                 }
 
                 // next iteration
+                prevTime = curTime;
                 prevFrame = curFrame;
                 prevValue = curValue;
             }
@@ -121,19 +124,22 @@ static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh
             auto& DenseKeys = channelsDense[jointId].ScalingKeys;
             DenseKeys.resize(frameCount);
 
+            prevTime = 0.0;
             prevFrame = 0;
             glm::vec3 prevValue = SparseKeys[0].value;
             glm::vec3 curValue;
             for (int j = 0; j < SparseKeys.size(); j++) {
-                curFrame = static_cast<int>(SparseKeys[j].time);
+                curTime = SparseKeys[j].time;
+                curFrame = static_cast<int>(round(curTime));
                 curValue = SparseKeys[j].value;
                 for(int frame = prevFrame; frame <= curFrame; frame++) {
                     DenseKeys[frame].time = frame;
-                    float alpha = prevFrame == curFrame ? 1.0f : static_cast<float>(frame - prevFrame) / static_cast<float>(curFrame - prevFrame);
+                    float alpha = (curTime - prevTime) < 1e-4 ? 1.0 : (frame - prevFrame) / (curTime - prevTime);
                     DenseKeys[frame].value = glm::mix(prevValue, curValue, alpha);
                 }
 
                 // next iteration
+                prevTime = curTime;
                 prevFrame = curFrame;
                 prevValue = curValue;
             }
@@ -157,20 +163,25 @@ static void buildPoseAnimationByInterpolation(SoulScene& scene, SoulSkeletonMesh
             auto& DenseKeys = channelsDense[jointId].RotationKeys;
             DenseKeys.resize(frameCount);
 
+            prevTime = 0.0;
             prevFrame = 0;
             glm::quat prevValue = SparseKeys[0].value;
             glm::quat curValue;
             for (int j = 0; j < SparseKeys.size(); j++) {
-                curFrame = static_cast<int>(SparseKeys[j].time);
+                curTime = SparseKeys[j].time;
+                curFrame = static_cast<int>(round(curTime));
                 curValue = SparseKeys[j].value;
                 for(int frame = prevFrame; frame <= curFrame; frame++) {
                     DenseKeys[frame].time = frame;
-                    float alpha = prevFrame == curFrame ? 1.0f : static_cast<float>(frame - prevFrame) / static_cast<float>(curFrame - prevFrame);
-                    DenseKeys[frame].value = glm::lerp(prevValue, curValue, alpha);
+                    float alpha = (curTime - prevTime) < 1e-4 ? 1.0 : (frame - prevFrame) / (curTime - prevTime);
+                    DenseKeys[frame].value = glm::mix(prevValue, curValue, alpha);
+                    //alpha = glm::clamp(alpha, 0.0f, 1.0f);
+                    //DenseKeys[frame].value = glm::lerp(prevValue, curValue, alpha);
                     DenseKeys[frame].value = glm::normalize(DenseKeys[frame].value);
                 }
 
                 // next iteration
+                prevTime = curTime;
                 prevFrame = curFrame;
                 prevValue = curValue;
             }
@@ -341,6 +352,10 @@ bool retargetFBX(std::string const& srcAnimationFile,
     std::vector<FTransform> inpose;
     std::vector<FTransform> inposeLocal;
     std::vector<FTransform> outposeLocal;
+    std::vector<FTransform> initInPoseLocal = srcusk.refpose;
+    std::vector<FTransform> initOutPoseLocal = tgtusk.refpose;
+    //std::vector<SoulTransform> initSoulInPoseLocal;
+    //std::vector<SoulTransform> initSoulOutPoseLocal;
     for(int frame = 0; frame < frameCount; frame++) {
 
         DEBUG_PRINT("frame:%d\n", frame);
@@ -354,14 +369,14 @@ bool retargetFBX(std::string const& srcAnimationFile,
 
         // to global
         IKRigUtils::FPoseToGlobal(srcskm.skeleton, inposeLocal, inpose);
-        DEBUG_PRINT_IO_FPOSE("inFPose workcoord", srcskm, inposeLocal, inpose, frame);
+        DEBUG_PRINT_IO_FPOSE("inFPose workcoord", srcskm, inposeLocal, inpose, initInPoseLocal, frame);
 
         // retarget
         std::vector<FTransform>& outpose = ikretarget.RunRetargeter(inpose, SpeedValuesFromCurves, DeltaTime);
 
         // to local
         IKRigUtils::FPoseToLocal(tgtskm.skeleton, outpose, outposeLocal);
-        DEBUG_PRINT_IO_FPOSE("outFpose workcoord", tgtskm, outposeLocal, outpose, frame);
+        DEBUG_PRINT_IO_FPOSE("outFpose workcoord", tgtskm, outposeLocal, outpose, initOutPoseLocal, frame);
 
         // coord convert
         IKRigUtils::LocalFPoseCoordConvert(twork2tgt, workcoord, tgtcoord, outposeLocal);
