@@ -1,13 +1,28 @@
 
+| Documentation  | Linux             | MacOS             | Windows           |       PyPI        |
+|      :---:     |       :---:       |       :---:       |       :---:       |       :---:       |
+| [![docs][1]][2]| [![rgl-ci][3]][4] | [![rgl-ci][5]][6] | [![rgl-ci][7]][8] | [![pypi][9]][10] |
+
+[1]: https://readthedocs.org/projects/mitsuba/badge/?version=stable
+[2]: #readme
+[3]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba3_LinuxAmd64gcc9)/statusIcon.svg
+[4]: #linux
+[5]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba3_WindowsAmd64msvc2020)/statusIcon.svg
+[6]: #macos
+[7]: https://img.shields.io/badge/YouTube-View-green?style=plastic&logo=youtube
+[8]: #windows
+[9]: https://img.shields.io/pypi/v/mitsuba.svg?color=green
+[10]: #python
+
 - [todo and issues](#todo-and-issues)
 - [build](#build)
   * [platform](#platform)
-  * [python build](#python-build)
+  * [python](#python)
   * [cmake option](#cmake-option)
   * [general build](#general-build)
   * [linux](#linux)
   * [macos](#macos)
-  * [windows build and test c++](#windows-build-and-test-c--)
+  * [windows](#windows)
   * [build release](#build-release)
   * [prerequisite](#prerequisite)
 - [algorithm](#algorithm)
@@ -79,7 +94,7 @@
     2. linux
     3. windows
 
-## python build
+## python
 
     pip install .
     
@@ -125,7 +140,7 @@
     make -j16
 
 
-## windows build and test c++
+## windows
 
     rm -rf build
     mkdir build && cd build
