@@ -33,6 +33,10 @@ PYBIND11_MODULE(ikrigretarget, m) {
     py::bind_vector<std::vector<SoulIKRigRetargetConfig::SoulIKRigChain>>(m, "VectorSoulIKRigChain");
     py::bind_vector<std::vector<SoulIKRigRetargetConfig::SoulIKRigChainMapping>>(m, "VectorSoulIKRigChainMapping");
 
+    py::implicitly_convertible<py::list, std::vector<int>>();
+    py::implicitly_convertible<py::list, std::vector<SoulIKRigRetargetConfig::SoulIKRigChain>>();
+    py::implicitly_convertible<py::list, std::vector<SoulIKRigRetargetConfig::SoulIKRigChainMapping>>();
+
     py::enum_<CoordType>(m, "CoordType")
         .value("RightHandZupYfront", CoordType::RightHandZupYfront)
         .value("RightHandYupZfront", CoordType::RightHandYupZfront);
@@ -131,7 +135,7 @@ PYBIND11_MODULE(ikrigretarget, m) {
 
 
 
- #ifdef VERSION_INFO
+#ifdef VERSION_INFO
 
 #define v0 MACRO_STRINGIFY(VERSION_INFO)0
 #if v11 == 0

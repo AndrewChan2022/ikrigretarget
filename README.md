@@ -67,13 +67,9 @@
 
     should generate only frames containing in source animation
 
-1. python interface
+1. python bind
 
-    a. config.SourceChains.append(item) is fine 
-
-       config.SourceChains = [item1, item2] // error
-
-    b. copy dll to package
+    a. copy dll to package
 
 2. ik part
 
@@ -386,14 +382,71 @@ skin shader: average position of several joint
 # usage
 
 ## working coordinate system
-
     right hand
+    z up, x left, y front
 
-    z up
+## python example
 
-    x left
+```python
 
-    y front
+import sys, os
+import ikrigretarget as ir
+
+def config_gpt_meta():
+
+    config = ir.SoulIKRigRetargetConfig()
+
+    config.SourceCoord      = ir.CoordType.RightHandZupYfront
+    config.WorkCoord        = ir.CoordType.RightHandZupYfront
+    config.TargetCoord      = ir.CoordType.RightHandYupZfront
+
+    config.SourceRootType   = ir.ERootType.RootZMinusGroundZ
+    config.TargetRootType   = ir.ERootType.RootZ
+
+    config.SourceRootBone   = "Pelvis"
+    config.SourceGroundBone = "Left_foot"
+    config.TargetRootBone   = "Rol01_Torso01HipCtrlJnt_M"
+    config.TargetGroundBone = "Rol01_Leg01FootJnt_L"
+
+
+    ### source chain
+    # name         start                 end
+    config.SourceChains = [
+        ir.SoulIKRigChain("spine",       "Spine1",             "Spine3"),
+        ir.SoulIKRigChain("head",        "Neck",               "Head"),
+    ]
+
+    ...
+
+    ### target chain
+    config.TargetChains.append(ir.SoulIKRigChain("spine",       "Rol01_Torso0102Jnt_M",             "Rol01_Neck0101Jnt_M"))
+    config.TargetChains.append(ir.SoulIKRigChain("head",        "Rol01_Neck0102Jnt_M",              "Head_M"))
+    ...
+
+    ### chain mapping
+    config.ChainMapping.append(ir.SoulIKRigChainMapping(True,  False,  "spine",        "spine"))
+    config.ChainMapping.append(ir.SoulIKRigChainMapping(True,  False,  "head",         "head"))
+
+    ...
+
+    return config
+
+
+
+if __name__ == "__main__":
+    
+    config = config_gpt_meta()
+    print(config)
+
+    srcAnimationFile = "gpt_motion_smpl.fbx"
+    srcTPoseFile = "GPT_T-Pose.fbx"
+    targetFile = "3D_Avatar2_Rig_0723.fbx"
+    targetTPoseFile = "3D_Avatar2_Rig_0723_itpose.fbx"
+    outFile = "out.fbx"
+
+    ret = ir.retargetFBX(srcAnimationFile, srcTPoseFile, config.SourceRootBone, targetFile, targetTPoseFile, outFile, config)
+    print(ret)
+```
 
 ## source files
 
@@ -779,68 +832,6 @@ IKRigUtils::LocalPoseCoordConvert(twork2tgt, outposeLocal, workcoord, tgtcoord);
 IKRigUtils::FPose2SoulPose(outposeLocal, outposes[frame]);
 ```
 
-## python example
-
-```python
-
-import sys, os
-import ikrigretarget as ir
-
-def config_gpt_meta():
-
-    config = ir.SoulIKRigRetargetConfig()
-
-    config.SourceCoord      = ir.CoordType.RightHandZupYfront
-    config.WorkCoord        = ir.CoordType.RightHandZupYfront
-    config.TargetCoord      = ir.CoordType.RightHandYupZfront
-
-    config.SourceRootType   = ir.ERootType.RootZMinusGroundZ
-    config.TargetRootType   = ir.ERootType.RootZ
-
-    config.SourceRootBone   = "Pelvis"
-    config.SourceGroundBone = "Left_foot"
-    config.TargetRootBone   = "Rol01_Torso01HipCtrlJnt_M"
-    config.TargetGroundBone = "Rol01_Leg01FootJnt_L"
-
-
-    ### source chain
-    # name         start                 end
-    config.SourceChains.append(ir.SoulIKRigChain("spine",       "Spine1",             "Spine3"))
-    config.SourceChains.append(ir.SoulIKRigChain("head",        "Neck",               "Head"))
-
-    ...
-
-    ### source chain
-    config.TargetChains.append(ir.SoulIKRigChain("spine",       "Rol01_Torso0102Jnt_M",             "Rol01_Neck0101Jnt_M"))
-    config.TargetChains.append(ir.SoulIKRigChain("head",        "Rol01_Neck0102Jnt_M",              "Head_M"))
-    ...
-
-    ### chain mapping
-    config.ChainMapping.append(ir.SoulIKRigChainMapping(True,  False,  "spine",        "spine"))
-    config.ChainMapping.append(ir.SoulIKRigChainMapping(True,  False,  "head",         "head"))
-
-    ...
-
-    return config
-
-
-
-if __name__ == "__main__":
-    
-    config = config_gpt_meta()
-    print(config)
-
-    srcAnimationFile = "gpt_motion_smpl.fbx"
-    srcTPoseFile = "GPT_T-Pose.fbx"
-    targetFile = "3D_Avatar2_Rig_0723.fbx"
-    targetTPoseFile = "3D_Avatar2_Rig_0723_itpose.fbx"
-    outFile = "out.fbx"
-
-    ret = ir.retargetFBX(srcAnimationFile, srcTPoseFile, config.SourceRootBone, targetFile, targetTPoseFile, outFile, config)
-    print(ret)
-```
-
-
 # feature work
 
 develop maya plugin based on this lib
@@ -848,6 +839,19 @@ develop maya plugin based on this lib
 render the skeleton and animation so easy debug
 
 # Release notes
+
+version 1.1.3: 2023.4.20:
+
+    python binding can assign python list to cpp std::vector
+
+    method1:
+    config.SourceChains.append(chain1)
+    config.SourceChains.append(chain2)
+
+    method2:
+    config.SourceChains = [chain1, chain2]
+
+
 
 version 1.1.2: 2023.4.20
 

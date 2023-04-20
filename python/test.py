@@ -2,7 +2,6 @@
 import sys, os
 import ikrigretarget as ir
 
-### TODO: config.SourceChains = [...] not available
 def config_gpt_meta():
 
     config = ir.SoulIKRigRetargetConfig()
@@ -22,32 +21,34 @@ def config_gpt_meta():
 
     ### source chain
     # name         start                 end
-    config.SourceChains.append(ir.SoulIKRigChain("spine",       "Spine1",             "Spine3"))
-    config.SourceChains.append(ir.SoulIKRigChain("head",        "Neck",               "Head"))
+    config.SourceChains = [
+        ir.SoulIKRigChain("spine",       "Spine1",             "Spine3"),
+        ir.SoulIKRigChain("head",        "Neck",               "Head"),
 
-    # lleg
-    config.SourceChains.append(ir.SoulIKRigChain("lleg1",       "Left_hip",          "Left_hip"))
-    config.SourceChains.append(ir.SoulIKRigChain("lleg2",       "Left_knee",         "Left_knee"))
-    config.SourceChains.append(ir.SoulIKRigChain("lleg3",       "Left_ankle",        "Left_ankle"))
+        # lleg
+        ir.SoulIKRigChain("lleg1",       "Left_hip",          "Left_hip"),
+        ir.SoulIKRigChain("lleg2",       "Left_knee",         "Left_knee"),
+        ir.SoulIKRigChain("lleg3",       "Left_ankle",        "Left_ankle"),
 
-    # rleg
-    config.SourceChains.append(ir.SoulIKRigChain("rleg1",       "Right_hip",         "Right_hip"))
-    config.SourceChains.append(ir.SoulIKRigChain("rleg2",       "Right_knee",        "Right_knee"))
-    config.SourceChains.append(ir.SoulIKRigChain("rleg3",       "Right_ankle",       "Right_ankle"))
+        # rleg
+        ir.SoulIKRigChain("rleg1",       "Right_hip",         "Right_hip"),
+        ir.SoulIKRigChain("rleg2",       "Right_knee",        "Right_knee"),
+        ir.SoulIKRigChain("rleg3",       "Right_ankle",       "Right_ankle"),
 
-    # larm
-    config.SourceChains.append(ir.SoulIKRigChain("larm0",       "Left_collar",       "Left_collar"))
-    config.SourceChains.append(ir.SoulIKRigChain("larm1",       "Left_shoulder",     "Left_shoulder"))
-    config.SourceChains.append(ir.SoulIKRigChain("larm2",       "Left_elbow",        "Left_elbow"))
-    config.SourceChains.append(ir.SoulIKRigChain("larm3",       "Left_wrist",        "Left_wrist"))
+        # larm
+        ir.SoulIKRigChain("larm0",       "Left_collar",       "Left_collar"),
+        ir.SoulIKRigChain("larm1",       "Left_shoulder",     "Left_shoulder"),
+        ir.SoulIKRigChain("larm2",       "Left_elbow",        "Left_elbow"),
+        ir.SoulIKRigChain("larm3",       "Left_wrist",        "Left_wrist"),
 
-    # rarm
-    config.SourceChains.append(ir.SoulIKRigChain("larm0",       "Left_collar",       "Left_collar"))
-    config.SourceChains.append(ir.SoulIKRigChain("rram1",       "Right_shoulder",    "Right_shoulder"))
-    config.SourceChains.append(ir.SoulIKRigChain("rram2",       "Right_elbow",       "Right_elbow"))
-    config.SourceChains.append(ir.SoulIKRigChain("rram3",       "Right_wrist",       "Right_wrist"))
+        # rarm
+        ir.SoulIKRigChain("larm0",       "Left_collar",       "Left_collar"),
+        ir.SoulIKRigChain("rram1",       "Right_shoulder",    "Right_shoulder"),
+        ir.SoulIKRigChain("rram2",       "Right_elbow",       "Right_elbow"),
+        ir.SoulIKRigChain("rram3",       "Right_wrist",       "Right_wrist"),
+    ]
 
-    ### source chain
+    ### target chain
     config.TargetChains.append(ir.SoulIKRigChain("spine",       "Rol01_Torso0102Jnt_M",             "Rol01_Neck0101Jnt_M"))
     config.TargetChains.append(ir.SoulIKRigChain("head",        "Rol01_Neck0102Jnt_M",              "Head_M"))
 
@@ -108,17 +109,19 @@ def test():
 
     config = ir.SoulIKRigRetargetConfig()
 
-    # source chain error
-    config.SourceChains = [
+    # source chain
+    config.SourceChains.append(ir.SoulIKRigChain("name0", "start0", "end1"))
+    config.SourceChains.append(ir.SoulIKRigChain("name1", "start1", "end1"))
+
+    # target chain
+    config.TargetChains = [
         ir.SoulIKRigChain("name0", "start0", "end1"),
         ir.SoulIKRigChain("name1", "start1", "end1")
     ]
-
-
+    
     # int array
     config.IntArray.append(1)
-    config.IntArray.append(2)
-    config.IntArray.append(3)
+    config.IntArray = [1, 2, 3]
 
     print(config)
     
