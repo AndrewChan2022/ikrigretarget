@@ -391,7 +391,7 @@ bool retargetFBX(std::string const& srcAnimationFile,
     /////////////////////////////////////////////
     // output pose animation to mesh0
     writePoseAnimationToMesh(tempoutposes, tgtskm, frameCount, srcskm.animation.ticksPerSecond);
-    fbxTarget.writeSkeletonMesh(outfile);
+    fbxTarget.writeSkeletonMesh(outfile, srcscene.getMetaByKey("FrameRate"), srcscene.getMetaByKey("CustomFrameRate"));
 
     return true;
 }

@@ -589,7 +589,7 @@ TestCase case_Flair2() {
     TestCase testCase;
 
     testCase.config = config_flair_meta(); 
-    testCase.srcAnimationFile = "srcAnimation.fbx";
+    testCase.srcAnimationFile = "45_Degree_Left_Turn_From_Idle.fbx";
     testCase.srcTPoseFile = "Y_Bot.fbx";
     testCase.targetFile = "3D_Avatar2_Rig_0723.fbx";
     testCase.targetTPoseFile = "3D_Avatar2_Rig_0723_itpose.fbx";
@@ -646,9 +646,9 @@ int main(int argc, char *argv[]) {
 
     /////////////////////////////////////////////
     // setting of coord
-    //TestCase testCase       = case_Flair2(); 
+    TestCase testCase       = case_Flair2(); 
     //TestCase testCase       = case_S1Walking();
-    TestCase testCase       = case_gpt();
+    //TestCase testCase       = case_gpt();
     auto config             = testCase.config;
 
     // printf("%s", config.to_string().c_str());

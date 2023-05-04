@@ -35,7 +35,7 @@ namespace SoulIK {
 
         // write
         void setScene(std::shared_ptr<SoulScene>& soulScene) { m_soulScene = soulScene; }
-        void writeSkeletonMesh(std::string outPath, float scale = 1.0);
+        void writeSkeletonMesh(std::string outPath, const SoulMetaData* frameRate = nullptr, const SoulMetaData* customFrameRate = nullptr, float scale = 1.0);
 
         // other
         bool hasAnimation();

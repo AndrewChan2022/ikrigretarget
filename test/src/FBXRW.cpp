@@ -766,10 +766,10 @@ bool FBXRWImpl::generateMeshFromPureSkeleton(SoulScene& soulScene, std::string c
 
 static void ____write____(){}
 
-void FBXRW::writeSkeletonMesh(std::string outPath, float scale) {
+void FBXRW::writeSkeletonMesh(std::string outPath, const SoulMetaData* frameRate, const SoulMetaData* customFrameRate, float scale) {
 
 
-    std::cout << "start write to file:" << outPath << std::endl; 
+    std::cout << "start write to file:" << outPath << std::endl;
 
     Exporter exporter;
     // aiReturn ret2 = exporter.Export(pimpl->importer.GetScene(), "fbx", outPath);
@@ -820,6 +820,44 @@ void FBXRW::writeSkeletonMesh(std::string outPath, float scale) {
 
     // build mesh
     pimpl->createMeshes(m_soulScene->skmeshes, scene);
+
+    // meta
+    m_soulScene->removeMetaByKey("FrameRate");
+    m_soulScene->removeMetaByKey("CustomFrameRate");
+    //frameRate != nullptr && m_soulScene->metaData.push_back(*frameRate);
+    frameRate != nullptr ? m_soulScene->metaData.push_back(*frameRate) : void();
+    customFrameRate != nullptr ? m_soulScene->metaData.push_back(*customFrameRate) : void();
+
+    if (const SoulMetaData* pmeta = m_soulScene->getMetaByKey("FrameRate")) {
+        scene->mMetaData = new aiMetadata;
+        scene->mMetaData->mNumProperties = 2;
+        scene->mMetaData->mKeys = new aiString[2];
+        scene->mMetaData->mValues = new aiMetadataEntry[2];
+
+        scene->mMetaData->mKeys[0] = aiString("TimeMode");
+        scene->mMetaData->mValues[0].mType = AI_INT32;
+        scene->mMetaData->mValues[0].mData = (void*)new int32_t;
+        *(int32_t*)scene->mMetaData->mValues[0].mData =  pmeta->value.int32Value;
+
+        const SoulMetaData* pCustomFrameRate = m_soulScene->getMetaByKey("CustomFrameRate");
+        double CustomFrameRate = pCustomFrameRate != nullptr ? pCustomFrameRate->value.doubleValue : -1;
+        scene->mMetaData->mKeys[1] = aiString("CustomFrameRate");
+        scene->mMetaData->mValues[1].mType = AI_DOUBLE;
+        scene->mMetaData->mValues[1].mData = (void*)new double;
+        *(double*)scene->mMetaData->mValues[1].mData =  CustomFrameRate;
+    }
+    //if(m_soulScene->skmeshes.size() != 0) {
+        // auto& sk = *m_soulScene->skmeshes[0];
+        // auto& ani = sk.animation;
+        // scene->mRootNode->mMetaData = new aiMetadata;
+        // scene->mRootNode->mMetaData->mNumProperties = 1;
+        // scene->mRootNode->mMetaData->mKeys = new aiString;
+        // scene->mRootNode->mMetaData->mKeys[0] = aiString("FrameRate");
+        // scene->mRootNode->mMetaData->mValues = new aiMetadataEntry;
+        // scene->mRootNode->mMetaData->mValues->mType = AI_INT32;
+        // scene->mRootNode->mMetaData->mValues->mData = (void*)new int32_t;
+        // *(int32_t*)scene->mRootNode->mMetaData->mValues->mData = 6;
+    //}
     
     // export as meter by set GlobalScale = 1/100, which is default
     aiReturn ret = exporter.Export(scene, "fbx", outPath);
@@ -1098,6 +1136,7 @@ void FBXRWImpl::createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeleton
             auto& element = nodeAnimation->mPositionKeys[k];
             auto& e = channel.PositionKeys[k];
             element.mTime = e.time / animation.mTicksPerSecond;
+            //element.mTime = e.time;
             element.mValue = aiVector3D(e.value.x, e.value.y, e.value.z);
         }
 
@@ -1107,6 +1146,7 @@ void FBXRWImpl::createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeleton
             auto& element = nodeAnimation->mRotationKeys[k];
             auto& e = channel.RotationKeys[k];
             element.mTime = e.time / animation.mTicksPerSecond;
+            //element.mTime = e.time;
             element.mValue = aiQuaterniont(e.value.w, e.value.x, e.value.y, e.value.z);
         }
 
@@ -1116,6 +1156,7 @@ void FBXRWImpl::createSkeletonAnimation(std::vector<std::shared_ptr<SoulSkeleton
             auto& element = nodeAnimation->mScalingKeys[k];
             auto& e = channel.ScalingKeys[k];
             element.mTime = e.time / animation.mTicksPerSecond;
+            //element.mTime = e.time;
             element.mValue = aiVector3D(e.value.x, e.value.y, e.value.z);
         }
     }

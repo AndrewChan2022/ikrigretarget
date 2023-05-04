@@ -227,6 +227,8 @@ namespace SoulIK {
 
         // member function
         std::shared_ptr<SoulNode> findNodeByName(std::string const& name) const;
+        const SoulMetaData* getMetaByKey(const std::string& key);
+        void removeMetaByKey(const std::string& key);
     };
 }
 

@@ -135,3 +135,34 @@ static std::shared_ptr<SoulNode> findNodeByName(std::string const& name, std::sh
 std::shared_ptr<SoulNode> SoulScene::findNodeByName(std::string const& name) const {
     return ::findNodeByName(name, rootNode, 0);
 }
+
+const SoulIK::SoulMetaData* SoulIK::SoulScene::getMetaByKey(const std::string& key) {
+
+    auto it = std::find_if(metaData.begin(), metaData.end(), [&](const auto& e) {
+        return e.key == key;
+    });
+    if (it != metaData.end()) {
+        return &(*it);
+    }
+    return nullptr;
+}
+void SoulIK::SoulScene::removeMetaByKey(const std::string& key) {
+
+    // slow remove: 1. remove middle value and move all value after it one step front
+    //              2. return last hole position
+    //              3. erase last hole
+    // metaData.erase(std::remove_if(metaData.begin(), metaData.end(), [](const auto& e){ 
+    //     return e.key == key;
+    // }), metaData.end());
+
+    // fast remove:  1. swap middle and last
+    //               2. erase last hole
+    auto it = std::find_if(metaData.begin(), metaData.end(), [&](const auto& e) {
+        return e.key == key;
+    });
+    if (it != metaData.end()) {
+        std::swap(*it, metaData.back());
+        auto lastit = metaData.end() - 1;
+        metaData.erase(lastit, metaData.end());
+    }
+}
