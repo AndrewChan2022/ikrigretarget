@@ -61,7 +61,11 @@ class CMakeBuild(build_ext):
 
         #### assimp as embeded static lib
         cmake_args += [f"-DEMBED_ASSIMP=ON"]
-        cmake_args += [f"-DBUILD_SHARED_LIBS=OFF"]
+        print("self.plat_name:", self.plat_name)  # "pip install . -v" to show message
+        if self.plat_name == "linux-x86_64":
+            cmake_args += [f"-DBUILD_SHARED_LIBS=ON"]
+        else:
+            cmake_args += [f"-DBUILD_SHARED_LIBS=OFF"]
 
         if self.compiler.compiler_type != "msvc":
             # Using Ninja-build since it a) is available as a wheel and b)

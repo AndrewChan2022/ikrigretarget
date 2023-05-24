@@ -97,6 +97,10 @@ std::string SoulIKRigRetargetConfig::to_string() {
     char* buf = (char*)s.data();
     int len = 0;
     int curLen = 0;
+    
+    #ifdef __linux__
+    #define sprintf_s snprintf
+    #endif
     len += sprintf_s(buf + len, buflen-len, "<SoulIKRigRetargetConfig:\n\n");
 
     len += sprintf_s(buf + len, buflen-len, "CoordType:\n");

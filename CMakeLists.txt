@@ -11,6 +11,22 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(LIB_NAME libikrigretarget)
 project(${LIB_NAME})
 
+########### other prj
+
+if(UNIX AND NOT APPLE)
+    set(EMBED_ASSIMP ON)
+endif()
+if(EMBED_ASSIMP)
+    add_subdirectory(contrib/assimp)
+endif()
+
+########### cxx flags
+
+# linux
+if(UNIX AND NOT APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-pie -fPIC")
+endif()
+
 ################## lib
 
 # add lib then set property 
@@ -61,12 +77,5 @@ endif()
 
 ########### other prj
 
-if(UNIX AND NOT APPLE)
-    set(EMBED_ASSIMP ON)
-endif()
-
-if(EMBED_ASSIMP)
-    add_subdirectory(contrib/assimp)
-endif()
 add_subdirectory(test)
 add_subdirectory(python)

@@ -16,42 +16,42 @@
 
 - [todo and issues](#todo-and-issues)
 - [build](#build)
-  * [platform](#platform)
-  * [python](#python)
-  * [cmake option](#cmake-option)
-  * [general build](#general-build)
-  * [linux](#linux)
-  * [macos](#macos)
-  * [windows](#windows)
-  * [build release](#build-release)
-  * [prerequisite](#prerequisite)
+  - [platform](#platform)
+  - [prerequisite](#prerequisite)
+  - [python](#python)
+  - [cmake option](#cmake-option)
+  - [general build](#general-build)
+  - [linux](#linux)
+  - [macos](#macos)
+  - [windows](#windows)
+  - [build release](#build-release)
 - [algorithm](#algorithm)
-  * [coordinate hand](#coordinate-hand)
-  * [transform represent](#transform-represent)
-  * [storage order](#storage-order)
-  * [transform in our code](#transform-in-our-code)
-  * [quaternion order](#quaternion-order)
-  * [skeleton pose transform](#skeleton-pose-transform)
-  * [root retarget](#root-retarget)
-  * [chain FK retarget](#chain-fk-retarget)
-  * [chain IK retarget](#chain-ik-retarget)
-  * [Pole Match retarget](#pole-match-retarget)
-  * [render of joint pose animation](#render-of-joint-pose-animation)
+  - [coordinate hand](#coordinate-hand)
+  - [transform represent](#transform-represent)
+  - [storage order](#storage-order)
+  - [transform in our code](#transform-in-our-code)
+  - [quaternion order](#quaternion-order)
+  - [skeleton pose transform](#skeleton-pose-transform)
+  - [root retarget](#root-retarget)
+  - [chain FK retarget](#chain-fk-retarget)
+  - [chain IK retarget](#chain-ik-retarget)
+  - [Pole Match retarget](#pole-match-retarget)
+  - [render of joint pose animation](#render-of-joint-pose-animation)
 - [usage](#usage)
-  * [working coordinate system](#working-coordinate-system)
-  * [source files](#source-files)
-  * [header files](#header-files)
-  * [full example](#full-example)
-  * [input model](#input-model)
-  * [coordtype convert](#coordtype-convert)
-  * [init of uskeleton](#init-of-uskeleton)
-  * [root retarget config](#root-retarget-config)
-  * [chain retarget config](#chain-retarget-config)
-  * [put config all to IKRigRetargetAsset](#put-config-all-to-ikrigretargetasset)
-  * [tpose](#tpose)
-  * [init of processor](#init-of-processor)
-  * [run retarget](#run-retarget)
-  * [python example](#python-example)
+  - [working coordinate system](#working-coordinate-system)
+  - [python example](#python-example)
+  - [source files](#source-files)
+  - [header files](#header-files)
+  - [full example](#full-example)
+  - [input model](#input-model)
+  - [coordtype convert](#coordtype-convert)
+  - [init of uskeleton](#init-of-uskeleton)
+  - [root retarget config](#root-retarget-config)
+  - [chain retarget config](#chain-retarget-config)
+  - [put config all to IKRigRetargetAsset](#put-config-all-to-ikrigretargetasset)
+  - [tpose](#tpose)
+  - [init of processor](#init-of-processor)
+  - [run retarget:](#run-retarget)
 - [feature work](#feature-work)
 - [Release notes](#release-notes)
 - [Acknowledgements](#acknowledgements)
@@ -91,6 +91,17 @@
     2. linux
     3. windows
 
+    compiler:
+    1. clang 17
+    2. msvc 17
+    3. gcc 17
+
+## prerequisite
+
+linux:
+
+    sudo apt-get install zlib1g-dev
+
 ## python
 
     pip install .
@@ -118,10 +129,14 @@
 
 ## linux
 
-    // linux will force -DEMBED_ASSIMP=ON
+    // linux will force -DEMBED_ASSIMP=ON -DBUILD_SHARED_LIBS=ON
+    // here use gcc
+    
+    sudo apt-get install zlib1g-dev
+
     rm -rf build
     mkdir build && cd build
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DEMBED_ASSIMP=ON
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DEMBED_ASSIMP=ON
     make -j16
 
 ## macos
@@ -157,8 +172,6 @@
     mkdir build && cd build
     cmake .. -DCMAKE_BUILD_TYPE=RELEASE
     make VERBOSE=1
-
-## prerequisite
 
 # algorithm
 
@@ -839,6 +852,10 @@ develop maya plugin based on this lib
 render the skeleton and animation so easy debug
 
 # Release notes
+
+version 1.1.4: 2023.5.24:
+
+    fix bug for linux and gcc
 
 version 1.1.3: 2023.4.20:
 
