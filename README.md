@@ -31,6 +31,7 @@
   - [storage order](#storage-order)
   - [transform in our code](#transform-in-our-code)
   - [quaternion order](#quaternion-order)
+  - [quaternion interpolation](#quaternion-interpolation)
   - [skeleton pose transform](#skeleton-pose-transform)
   - [root retarget](#root-retarget)
   - [chain FK retarget](#chain-fk-retarget)
@@ -71,17 +72,18 @@
 
     a. copy dll to package
 
-2. ik part
+2. ik part not implement
 
-3. fbx sdk
+3. fbx sdk, replace assimp lib
 
-4. render part
+    assimp import and export fbx not stable
+
+4. render part not implement
 
     cross platform
 
     RHI of d3d12/vulkan/metal, no OpenGL
 
-    sdf, rt gi, ...
 
 # build
 
@@ -276,6 +278,16 @@ col major:  m[col][row]
 
 order of all quat: right is first
 
+## quaternion interpolation
+
+slerp is linear interpolation on arc of 4d unit sphere.
+
+fastlerp is linear interpolation on chord of 4d unit sphere.
+
+because chord and arc mapping not uniform, so fastlerp will lead to unequall speed of each time step.
+
+[<img src="./img/slerp.jpg" width="500"/>](./img/slerp.jpg)
+
 ## skeleton pose transform
 
 reference:  game engine architecture chapter 12.3.3
@@ -299,7 +311,7 @@ col represent:
 
 $$P_{5->M} =  P_{0->M} \times P_{3->0} \times P_{4->3} \times P_{5->4} $$
 
-![pose transform](/img/posetransform.png "pose transform")
+![pose transform](./img/posetransform.png "pose transform")
 
 
 
