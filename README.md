@@ -410,6 +410,9 @@ skin shader: average position of several joint
     right hand
     z up, x left, y front
 
+    front is toward screen user
+    back is far away from screen user
+
 ## python example
 
 ```python
