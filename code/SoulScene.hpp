@@ -23,6 +23,11 @@
 #include "glm/ext/scalar_constants.hpp" // glm::pi
 #include "glm/gtx/matrix_decompose.hpp" 
 
+#ifdef BUILD_LIB_IKRIGRETARGET
+#    define LIBRARY_API __declspec(dllexport)
+#else
+#    define LIBRARY_API __declspec(dllimport)
+#endif
 
 // SoulScene only for general data represent, not for data process and render
 // you should define your native scene data structure for your processor or renderer
@@ -97,7 +102,7 @@ namespace SoulIK {
 
     // skeleton animation
     // TODO: need optimize
-    struct SoulTransform {
+    struct LIBRARY_API SoulTransform {
         glm::vec3 translation;
         glm::quat rotation;
         glm::vec3 scale;

@@ -77,6 +77,13 @@ else()
             $<$<CONFIG:RelWithDebInfo>:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib/win/assimp/Release/assimp-vc143-mt.dll>
             $<TARGET_FILE_DIR:testikrigretarget> 
         )
+
+        # copy dll of another target
+        add_custom_command(TARGET testikrigretarget POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+            $<TARGET_FILE:libikrigretarget>
+            $<TARGET_FILE_DIR:testikrigretarget>
+        )
     endif()
 
 endif()

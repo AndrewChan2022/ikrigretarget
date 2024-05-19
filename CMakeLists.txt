@@ -31,7 +31,9 @@ endif()
 
 # add lib then set property 
 # or add lib with property
-add_library(${LIB_NAME} STATIC)
+# add_library(${LIB_NAME} STATIC)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+add_library(${LIB_NAME} SHARED)
 
 ################## inc
 include_directories(./code)

@@ -5,6 +5,7 @@
 //  Created by kai chen on 3/24/23.
 //
 
+#define BUILD_LIB_IKRIGRETARGET
 #include "SoulScene.hpp"
 
 using namespace SoulIK;
