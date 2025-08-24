@@ -5,7 +5,7 @@ import sys
 import distutils.sysconfig
 from pathlib import Path
 
-########### debug not:  pip install -v . 
+########### debug :  pip install -v . 
 ########### debug :  python setup.py install
 
 from setuptools import Extension, setup, find_packages
